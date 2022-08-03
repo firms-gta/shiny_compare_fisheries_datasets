@@ -1,4 +1,4 @@
-package <- jsonlite::read_json('./srv/geoflow-shiny/package.json')
+package <- jsonlite::read_json('./srv/shiny_compare_tunaatlas_datasests/package.json')
 invisible(lapply(package$dependencies, function(pkg){
   from <- 'cran'
   pkg_installer <- remotes::install_version
@@ -13,5 +13,3 @@ invisible(lapply(package$dependencies, function(pkg){
   pkg_args <- pkg[names(pkg)!="from"]
   do.call(pkg_installer, pkg_args)
 }))
-
-
