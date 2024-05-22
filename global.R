@@ -1,0 +1,53 @@
+library(shiny)
+library(geojsonio)
+library(plyr)
+library(dplyr)
+library(DBI)
+library(leaflet)
+library(leaflet.extras)
+library(leafpm)
+library(mapedit)
+library(sf)
+library(sp)
+library(plotly)
+library(DT)
+library(ncdf4)
+library(raster)
+library(maps)
+library(ggplot2)
+library(XML)
+# library(streamgraph)
+library(viridis)
+library(xts)
+library(dygraphs)
+library(tidyr)
+####################################################################################################################################################################################################################################
+source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i1_SpeciesByOcean.R")
+source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
+####################################################################################################################################################################################################################################
+
+new_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
+wkt <- reactiveVal(new_wkt) 
+switch_unit <- reactiveVal(TRUE) 
+query_metadata <- reactiveVal() 
+query_all_datasets <- reactiveVal() 
+
+target_dataset <- dbGetQuery(con, "SELECT DISTINCT(dataset) FROM public.i1i2_spatial_all_datasets_with_flags ORDER BY dataset;")
+target_species <- dbGetQuery(con, "SELECT DISTINCT(species) FROM public.i1i2_spatial_all_datasets_with_flags ORDER BY species;")
+target_year <- dbGetQuery(con, "SELECT DISTINCT(year) FROM public.i1i2_spatial_all_datasets_with_flags ORDER BY year;")
+target_gear <- dbGetQuery(con, "SELECT DISTINCT(gear_group) as gear FROM public.i1i2_spatial_all_datasets_with_flags ORDER BY gear_group;")
+target_ocean <- dbGetQuery(con, "SELECT DISTINCT(ocean) as ocean FROM public.i1i2_spatial_all_datasets_with_flags ORDER BY ocean;")
+target_unit <- dbGetQuery(con, "SELECT DISTINCT(unit) AS unit FROM public.i1i2_spatial_all_datasets_with_flags ORDER BY unit;")
+target_area <- dbGetQuery(con, "SELECT DISTINCT(area)::varchar AS area FROM public.i1i2_spatial_all_datasets_with_flags ORDER BY area DESC;")
+target_fishingfleet <- dbGetQuery(con, "SELECT DISTINCT(fishingfleet_label)::varchar AS fishingfleet FROM public.i1i2_spatial_all_datasets_with_flags ORDER BY fishingfleet DESC;")
+
+default_species <- 'YFT'
+default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-1)
+default_gear <- unique(target_gear)
+default_dataset <- unique(target_dataset$dataset)
+default_unit <-  c('t','no')
+default_area <- unique(target_area$area)
+default_fishingfleet  <-  c('Australia')
+
+filters_combinations <- dbGetQuery(con, "SELECT species, year, gear_group  as gear ,fishingfleet_label as fishingfleet FROM public.i1i2_spatial_all_datasets_with_flags GROUP BY species, year,gear_group,fishingfleet_label;")
+
