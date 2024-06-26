@@ -1,7 +1,6 @@
 server <- function(input, output, session) {
   
   ########################################################## Dynamic filters ########################################################## 
-  switch_measurement_unit <- reactiveVal()
   
   change <- reactive({
     unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
@@ -21,7 +20,7 @@ server <- function(input, output, session) {
   )
   
   observeEvent(input$switched, {
-    if(switch_measurement_unit()){switch_measurement_unit(FALSE)}else{switch_measurement_unit(TRUE)}
+    if(switch_unit()){switch_unit(FALSE)}else{switch_unit(TRUE)}
   })
   
   
@@ -274,7 +273,7 @@ server <- function(input, output, session) {
     if(length(unique(df_i1$measurement_unit))>1){
       df_i1_t <- df_i1 %>% filter(measurement_unit  == 't') 
       df_i1_no <- df_i1 %>% filter(measurement_unit == 'no')  
-      # if(switch_measurement_unit()){
+      # if(switch_unit()){
       #   df_i1 <- df_i1_no
       # }else{
       #   df_i1 <- df_i1_t
@@ -411,7 +410,7 @@ server <- function(input, output, session) {
     if(length(unique(df_i2$measurement_unit))>1){
       df_i2_t <- df_i2 %>% filter(measurement_unit == 't')
       df_i2_no <- df_i2 %>% filter(measurement_unit == 'no')
-      if(switch_measurement_unit()){
+      if(switch_unit()){
         df_i2 <- df_i2_no
       }else{
         df_i2 <- df_i2_t
@@ -425,7 +424,7 @@ server <- function(input, output, session) {
       fig <- plot_ly()
       for(d in 1:length(unique(df_i2$dataset))){
         cat(df_i2$dataset[d])
-        fig <- fig %>% add_pie(data = df_i2 %>% filter(dataset == unique(df_i2$dataset)[d]), labels = ~gridtype, alues = ~measurement_value,
+        fig <- fig %>% add_pie(data = df_i2 %>% filter(dataset == unique(df_i2$dataset)[d]), labels = ~gridtype, values = ~measurement_value,
                                name = paste0("Dataset : ",df_i2$dataset[d]), domain = list(row =row[d], column =column[d]))
       }
       fig <- fig %>% layout(title = "One pie chart showing the total catch by type of spatial objects (identifed by its gridtype) for each dataset using selected measurement_unit(s)", showlegend = T,
