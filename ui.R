@@ -19,17 +19,17 @@ ui <- fluidPage(
                                         selectInput(
                                           inputId = "unit",
                                           label = "Unit",
-                                          choices = target_unit$unit,
+                                          choices = target_measurement_unit$measurement_unit,
                                           multiple = TRUE,
                                           selected= default_unit,
                                           width = "99%"
                                         ),
                                         selectInput(
-                                          inputId = "area",
-                                          label = "Area",
-                                          choices = target_area$area,
+                                          inputId = "gridtype",
+                                          label = "Grditype",
+                                          choices = target_gridtype$gridtype,
                                           multiple = TRUE,
-                                          selected= default_area,
+                                          selected= default_gridtype,
                                           width = "99%"
                                         ),
                                         selectInput(
@@ -49,19 +49,19 @@ ui <- fluidPage(
                                           width = "99%"
                                         ),
                                         selectInput(
-                                          inputId = "gear",
+                                          inputId = "gear_type",
                                           label = "Gear",
-                                          choices = target_gear$gear,
+                                          choices = target_gear_type$gear_type,
                                           multiple = TRUE,
-                                          selected= target_gear$gear,
+                                          selected= target_gear_type$gear_type,
                                           width = "99%"
                                         ),
                                         selectInput(
-                                          inputId = "fishingfleet",
-                                          label = "fishingfleet",
-                                          choices = target_fishingfleet$fishingfleet,
+                                          inputId = "fishing_fleet",
+                                          label = "fishing_fleet",
+                                          choices = target_flag$fishing_fleet,
                                           multiple = TRUE,
-                                          selected= default_fishingfleet,
+                                          selected= default_fishing_fleet,
                                           width = "99%"
                                         ),
                                         textInput("yourWKT","Paste you WKT",value=new_wkt),
@@ -80,7 +80,7 @@ ui <- fluidPage(
                                           inputId = "switched",
                                           label = "Switch unit for pie chart"
                                         ),
-                                        plotlyOutput("pie_area_catch", width="100%"),
+                                        plotlyOutput("pie_gridtype_catch", width="100%"),
                                         tags$br(),
                                         plotlyOutput("barplot_datasets", width="100%"),
                                         tags$br(),
