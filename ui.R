@@ -106,7 +106,7 @@ ui <- fluidPage(
                                         # )
                           ),
                           
-                          absolutePanel(id = "logo", class = "card", bottom = 15, right = 100, width = 80, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", bottom = 15, right = 150, width = 80, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.ird.fr/', tags$img(src='https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg',height='178',width='216'))
                           )
                       )
