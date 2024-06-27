@@ -34,38 +34,38 @@ server <- function(input, output, session) {
   
   #set the main parameterized query (options for geom might be st_collect(geom) or  ST_ConvexHull(st_collect(geom)) as convexhull )
   sql_query <- eventReactive(input$submit, {
-    if(is.null(input$year)){year_name=target_year$year}else{year_name=input$year}
+    if(is.null(input$year)){year_name=target_year}else{year_name=input$year}
     # if(is.null(input$dataset)){dataset_name=target_dataset$dataset}else{year_name=input$dataset}
     query <- glue::glue_sql(
       "SELECT dataset, measurement_unit,  gear_type, year, species, measurement_value, gridtype, fishing_fleet, geom  FROM public.shinycatch 
-      WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
+      WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326)) 
       AND  dataset IN ({dataset_name*}) 
       AND  species IN ({species_name*}) 
-      AND gear_type IN ({gear_type_name*})
-      AND fishing_fleet IN ({fishing_fleet_name*})
-      AND year IN ({year_name*})",
-      # AND measurement_unit IN ({measurement_unit_name*}) ",
-      # AND gridtype::varchar IN ({gridtype_name*})
+      AND gear_type IN ({gear_type_name*}) 
+      AND fishing_fleet IN ({fishing_fleet_name*}) 
+      AND year IN ({year_name*}) 
+      AND gridtype::varchar IN ({gridtype_name*}) 
+      AND measurement_unit IN ({measurement_unit_name*}) ",
       wkt = wkt(),
       dataset_name = input$dataset,
       species_name = input$species,
       gear_type_name = input$gear_type,
       fishing_fleet_name = input$fishing_fleet,
       year_name = year_name,
-      measurement_unit_name = input$measurement_unit,
+      measurement_unit_name = input$unit,
       gridtype_name = input$gridtype,
       .con = con)
   },
   ignoreNULL = FALSE)
   
   metadata <- reactive({
-    query_metadata(paste0("SELECT geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY geom"))
+    query_metadata(paste0("SELECT dataset, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY dataset,geom"))
     st_read(con, query = query_metadata()) 
   })  
   
   # measurement_unit,  gear_type, year, species ;")
   data_all_datasets <- eventReactive(input$submit, {
-    query_all_datasets(paste0("SELECT dataset, year, species, sum(measurement_value) as measurement_value, measurement_unit FROM (",sql_query(),") AS foo GROUP BY dataset, year, species, measurement_unit"))
+    query_all_datasets(paste0("SELECT dataset, year, sum(measurement_value) as measurement_value, measurement_unit FROM (",sql_query(),") AS foo GROUP BY dataset, year, measurement_unit"))
     st_read(con, query = query_all_datasets())
   },
   # on.exit(dbDisconnect(conn), add = TRUE)
@@ -105,7 +105,7 @@ server <- function(input, output, session) {
   ignoreNULL = FALSE)
   
   ########################################################## Outputs: text & Data tables ########################################################## 
-  output$measurement_value <- renderText({ 
+  output$value <- renderText({ 
     wkt()
     # output$measurement_value <- renderText({ input$caption })
   })
@@ -152,9 +152,14 @@ server <- function(input, output, session) {
   output$mymap <- renderLeaflet({
     
     df <- metadata()
+    bbox <- st_bbox(df) %>% 
+      as.vector()  
     centroid <-  st_convex_hull(df) %>% st_centroid()
     lat_centroid <- st_coordinates(centroid)[2]
     lon_centroid <- st_coordinates(centroid)[1]
+    
+    datasets <- unique(df$dataset)
+    
     
     pal <- colorNumeric(
       palette = "YlGnBu",
@@ -170,33 +175,60 @@ server <- function(input, output, session) {
     map_leaflet <- leaflet() %>%
       setView(lng = lon_centroid, lat =lat_centroid, zoom = 3
       ) %>%  
+      fitBounds(bbox[1], bbox[2], bbox[3], bbox[4])  %>%
       clearBounds() %>%
-      addProviderTiles("Esri.OceanBasemap")  %>% 
-      addPolygons(data = df,
-                  label = ~measurement_value,
-                  popup = ~paste0("Captures pour cette espece: ", round(measurement_value), " tonnes(t) et des brouettes"),
-                  # fillColor = ~pal_fun(measurement_value),
-                  fillColor = ~qpal(measurement_value),
-                  fill = TRUE,
-                  fillOpacity = 0.8,
-                  smoothFactor = 0.5
-                  # color = ~pal(measurement_value)
-      ) %>%
+      # Base groups
+      addProviderTiles("Esri.OceanBasemap") 
+    # addPolygons(data = df,
+    #             label = ~value,
+    #             popup = ~paste0("Captures pour cette espece: ", round(value), " tonnes(t) et des brouettes"),
+    #             # fillColor = ~pal_fun(value),
+    #             fillColor = ~qpal(value),
+    #             fill = TRUE,
+    #             fillOpacity = 0.8,
+    #             smoothFactor = 0.5
+    #             # color = ~pal(value)
+    # ) %>%
+    
+    # Overlay groups
+    for(d in datasets){
+      this_layer <- df %>% filter(dataset %in% d)
+      map_leaflet <- map_leaflet  %>% 
+        addPolygons(data = this_layer,
+                    label = ~measurement_value,
+                    popup = ~paste0("Captures pour cette espece: ", round(measurement_value), " tonnes(t) et des brouettes"),
+                    # fillColor = ~pal_fun(value),
+                    fillColor = ~qpal(measurement_value),
+                    fill = TRUE,
+                    fillOpacity = 0.8,
+                    smoothFactor = 0.5,
+                    group=eval(d)
+                    # color = ~pal(value)
+        )
+    }
+    # Layers control
+    map_leaflet <- map_leaflet   %>% 
       addDrawToolbar(
         targetGroup = "draw",
         editOptions = editToolbarOptions(
           selectedPathOptions = selectedPathOptions()
         )
-      )  %>%
+      )     %>% 
       addLayersControl(
-        overlayGroups = c("draw"),
+        position = "topleft", 
+        baseGroups = c("draw"),
+        overlayGroups = datasets,
         options = layersControlOptions(collapsed = FALSE)
       )  %>% 
-      leaflet::addLegend("bottomright", pal = qpal, values = df$measurement_value,
+      leaflet::addLegend("bottomleft", pal = qpal, values = df$measurement_value,
                          title = "Total catch per cell for selected criteria",
                          labFormat = labelFormat(prefix = "MT "),
                          opacity = 1
-      )  
+      )
+    
+    # map_leaflet
+    
+    
   })
   
   
@@ -338,30 +370,38 @@ server <- function(input, output, session) {
     df_i1 <- as_tibble(df_i1)  # %>% top_n(3)
     
     
+    
     if(length(unique(df_i1$measurement_unit))>1){
       df_i1_t <- df_i1 %>% filter(measurement_unit  == 't') 
       df_i1_no <- df_i1 %>% filter(measurement_unit == 'no')  
-      for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(species,year,measurement_unit))))){
-        this_dataset <-colnames(dplyr::select(df_i1_t,-c(species,year,measurement_unit)))[d]
-        if(sum(dplyr::select(df_i1_t, this_dataset))>0){
-          # data  <- df_i1_t  %>% dplyr::select(c(year,!!this_dataset))
-          if(d==1){
-            fig <- plot_ly(df_i1_t, x = df_i1_t$year, y =df_i1_t[,this_dataset][[1]], name = paste0(this_dataset,"_",d), type = 'scatter', mode = 'lines' )
-          }else{
-            fig <-  fig %>% add_trace(y = df_i1_t[,this_dataset][[1]], name = paste0(this_dataset,"_t"), mode = 'lines') 
+      if(nrow(df_i1_t)>0){
+        
+        # for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(species,year,measurement_unit))))){
+        for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(year,measurement_unit)))) ){
+          this_dataset <-colnames(dplyr::select(df_i1_t,-c(year,measurement_unit)))[d]
+          if(sum(dplyr::select(df_i1_t, this_dataset))>0){
+            # data  <- df_i1_t  %>% dplyr::select(c(year,!!this_dataset))
+            if(d==1){
+              fig <- plot_ly(df_i1_t, x = df_i1_t$year, y =df_i1_t[,this_dataset][[1]], name = paste0(this_dataset,"_",d), type = 'scatter', mode = 'lines' )
+            }else{
+              fig <-  fig %>% add_trace(y = df_i1_t[,this_dataset][[1]], name = paste0(this_dataset,"_t"), mode = 'lines') 
+            }
           }
         }
       }
-      for(d in 1:length(colnames(dplyr::select(df_i1_no,-c(species,year,measurement_unit))))){
-        this_dataset <-colnames(dplyr::select(df_i1_no,-c(species,year,measurement_unit)))[d]
-        if(sum(dplyr::select(df_i1_no, this_dataset))>0){
-          fig <-  fig %>% add_trace(x = df_i1_no$year, y = df_i1_no[,this_dataset][[1]], name = paste0(this_dataset,"_no"), mode = 'lines') 
+      if(nrow(df_i1_no)>0){
+        for(d in 1:length(colnames(dplyr::select(df_i1_no,-c(year,measurement_unit))))){
+          this_dataset <-colnames(dplyr::select(df_i1_no,-c(year,measurement_unit)))[d]
+          if(sum(dplyr::select(df_i1_no, this_dataset))>0){
+            fig <-  fig %>% add_trace(x = df_i1_no$year, y = df_i1_no[,this_dataset][[1]], name = paste0(this_dataset,"_no"), mode = 'lines') 
+          }
         }
       }
       
+      
     }else{
-      for(d in 1:length(colnames(dplyr::select(df_i1,-c(species,year,measurement_unit))))){
-        this_dataset <-colnames(dplyr::select(df_i1,-c(species,year,measurement_unit)))[d]
+      for(d in 1:length(colnames(dplyr::select(df_i1,-c(year,measurement_unit))))){
+        this_dataset <-colnames(dplyr::select(df_i1,-c(year,measurement_unit)))[d]
         if(sum(dplyr::select(df_i1, this_dataset))>0){
           # data  <- df_i1  %>% dplyr::select(c(year,!!this_dataset))
           if(d==1){

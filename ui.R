@@ -1,6 +1,18 @@
 ui <- fluidPage(
-  titlePanel("Tuna Atlas: spatial indicators (maps, charts, plots...)"),
-  navbarPage(title="TunaAtlas", 
+  # titlePanel("Global Tuna Atlas"),
+  navbarPage(title="Compare datasets",
+             position = c("fixed-top"),
+             fluid = TRUE,
+             collapsible = TRUE,
+             # tags$head(
+             #   tags$style(HTML('.navbar-nav > li > a, .navbar-brand {
+             #                padding-top:4px !important; 
+             #                padding-bottom:0 !important;
+             #                height: 5%;
+             #                width: 80%;
+             #                }
+             #               .navbar {min-height:25px !important;}'))
+             # ),
              tabPanel("Interactive Indicator 11",
                       div(class="outer",
                           tags$head(includeCSS("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/styles.css")),
@@ -11,7 +23,7 @@ ui <- fluidPage(
                                         selectInput(
                                           inputId = "dataset",
                                           label = "Dataset",
-                                          choices = target_dataset$dataset,
+                                          choices = target_dataset,
                                           multiple = TRUE,
                                           selected= default_dataset,
                                           width = "99%"
@@ -19,15 +31,15 @@ ui <- fluidPage(
                                         selectInput(
                                           inputId = "unit",
                                           label = "Unit",
-                                          choices = target_measurement_unit$measurement_unit,
+                                          choices = target_measurement_unit,
                                           multiple = TRUE,
                                           selected= default_unit,
                                           width = "99%"
                                         ),
                                         selectInput(
                                           inputId = "gridtype",
-                                          label = "Grditype",
-                                          choices = target_gridtype$gridtype,
+                                          label = "Gridtype",
+                                          choices = target_gridtype,
                                           multiple = TRUE,
                                           selected= default_gridtype,
                                           width = "99%"
@@ -35,7 +47,7 @@ ui <- fluidPage(
                                         selectInput(
                                           inputId = "species",
                                           label = "Species",
-                                          choices = target_species$species,
+                                          choices = target_species,
                                           multiple = TRUE,
                                           selected= default_species,
                                           width = "99%"
@@ -43,7 +55,7 @@ ui <- fluidPage(
                                         selectInput(
                                           inputId = "year",
                                           label = "Year",
-                                          choices = target_year$year,
+                                          choices = target_year,
                                           multiple = TRUE,
                                           selected= default_year,
                                           width = "99%"
@@ -51,15 +63,15 @@ ui <- fluidPage(
                                         selectInput(
                                           inputId = "gear_type",
                                           label = "Gear",
-                                          choices = target_gear_type$gear_type,
+                                          choices = target_gear_type,
                                           multiple = TRUE,
-                                          selected= target_gear_type$gear_type,
+                                          selected= default_gear_type,
                                           width = "99%"
                                         ),
                                         selectInput(
                                           inputId = "fishing_fleet",
                                           label = "fishing_fleet",
-                                          choices = target_flag$fishing_fleet,
+                                          choices = target_flag,
                                           multiple = TRUE,
                                           selected= default_fishing_fleet,
                                           width = "99%"
@@ -94,7 +106,7 @@ ui <- fluidPage(
                                         # )
                           ),
                           
-                          absolutePanel(id = "logo", class = "card", bottom = 15, left = 60, width = 80, fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "logo", class = "card", bottom = 15, right = 100, width = 80, fixed=TRUE, draggable = FALSE, height = "auto",
                                         tags$a(href='https://www.ird.fr/', tags$img(src='https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg',height='178',width='216'))
                           )
                       )
@@ -163,5 +175,5 @@ ui <- fluidPage(
                         )
                       )
              )
-  )
+             )
 )
