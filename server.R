@@ -37,14 +37,14 @@ server <- function(input, output, session) {
     if(is.null(input$year)){year_name=target_year}else{year_name=input$year}
     # if(is.null(input$dataset)){dataset_name=target_dataset$dataset}else{year_name=input$dataset}
     query <- glue::glue_sql(
-      "SELECT dataset, measurement_unit,  gear_type, year, species, measurement_value, gridtype, fishing_fleet, geom  FROM public.shinycatch 
+      "SELECT dataset, measurement_unit,  gear_type, year, species, measurement_value, gridtype, fishing_fleet, geom  FROM shinycatch 
       WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326)) 
       AND  dataset IN ({dataset_name*}) 
       AND  species IN ({species_name*}) 
       AND gear_type IN ({gear_type_name*}) 
       AND fishing_fleet IN ({fishing_fleet_name*}) 
       AND year IN ({year_name*}) 
-      AND gridtype::varchar IN ({gridtype_name*}) 
+      AND gridtype IN ({gridtype_name*}) 
       AND measurement_unit IN ({measurement_unit_name*}) ",
       wkt = wkt(),
       dataset_name = input$dataset,
@@ -85,14 +85,14 @@ server <- function(input, output, session) {
   ignoreNULL = FALSE)
   
   data_barplot_all_datasets <- eventReactive(input$submit, {
-    st_read(con, query = paste0("SELECT  dataset, measurement_unit, count(*)::decimal AS count, SUM(measurement_value) AS measurement_value  FROM (",sql_query(),") AS foo GROUP BY dataset, measurement_unit ORDER BY dataset"))
+    st_read(con, query = paste0("SELECT  dataset, measurement_unit, count(*) AS count, SUM(measurement_value) AS measurement_value  FROM (",sql_query(),") AS foo GROUP BY dataset, measurement_unit ORDER BY dataset"))
   },
   # on.exit(dbDisconnect(conn), add = TRUE)
   ignoreNULL = FALSE)
   
   
   data_i1 <- eventReactive(input$submit, {
-    st_read(con, query = paste0("SELECT dataset, measurement_unit,  to_date(year::varchar(4),'YYYY') AS year, species, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY  dataset, measurement_unit,  year, species"))
+    st_read(con, query = paste0("SELECT dataset, measurement_unit, year, species, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY  dataset, measurement_unit,  year, species"))
   },
   # on.exit(dbDisconnect(conn), add = TRUE)
   ignoreNULL = FALSE)
@@ -446,7 +446,7 @@ server <- function(input, output, session) {
   
   output$pie_gridtype_catch<- renderPlotly({ 
     
-    df_i2 = data_pie_gridtype_catch()   %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) # %>% filter(measurement_unit == 't') # %>% filter(dataset=='global_nominal_catch_firms_level0')
+    df_i2 = data_pie_gridtype_catch() %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) # %>% filter(measurement_unit == 't') # %>% filter(dataset=='global_nominal_catch_firms_level0')
     if(length(unique(df_i2$measurement_unit))>1){
       df_i2_t <- df_i2 %>% filter(measurement_unit == 't')
       df_i2_no <- df_i2 %>% filter(measurement_unit == 'no')

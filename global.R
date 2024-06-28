@@ -56,8 +56,8 @@ flog.info("Reactive values initialized successfully.")
 # default_fishing_fleet <- unique(target_flag$fishing_fleet)
 # flog.info("Default filter values set.")
 
-# mode="gpkg"
-mode="postgres"
+mode="gpkg"
+# mode="postgres"
 if(mode=="gpkg"){
   gpkg_file <- "~/Bureau/CODE/IRDTunaAtlas/Global_Tuna_Atlas.gpkg"
   # df_sf <- readRDS("public_public.shinycatch.RDS")
@@ -131,7 +131,7 @@ default_fishing_fleet <- target_flag
 
 
 # Log and retrieve combinations for filters
-filters_combinations <- dbGetQuery(con, "SELECT species, year, gear_type, fishing_fleet FROM public.shinycatch GROUP BY species, year, gear_type, fishing_fleet;")
+filters_combinations <- dbGetQuery(con, "SELECT species, year, gear_type, fishing_fleet FROM shinycatch GROUP BY species, year, gear_type, fishing_fleet;")
 flog.info("Filter combinations retrieved and stored.")
 
 # Logging the successful execution of the script up to this point
