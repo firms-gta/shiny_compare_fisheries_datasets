@@ -9,10 +9,10 @@ flog.info("External R scripts sourced successfully.")
 
 # Initialize reactive values and default WKT for mapping
 new_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
-wkt <- reactiveVal(new_wkt) 
-switch_unit <- reactiveVal(TRUE) 
-query_metadata <- reactiveVal() 
-query_all_datasets <- reactiveVal() 
+wkt <- reactiveVal(new_wkt)
+switch_unit <- reactiveVal(TRUE)
+query_metadata <- reactiveVal()
+query_all_datasets <- reactiveVal()
 flog.info("Reactive values initialized successfully.")
 
 # Database connection setup
@@ -27,7 +27,7 @@ flog.info("Reactive values initialized successfully.")
 # target_gear_type <- dbGetQuery(con, "SELECT DISTINCT(gear_type) FROM public.shinycatch ORDER BY gear_type;")
 # target_measurement_unit <- dbGetQuery(con, "SELECT DISTINCT(measurement_unit) FROM public.shinycatch ORDER BY measurement_unit;")
 # target_fishing_mode <- dbGetQuery(con, "SELECT DISTINCT(fishing_mode) FROM public.shinycatch ORDER BY fishing_mode;")
-# 
+#
 # saveRDS(list(target_dataset = target_dataset,
 #              target_species = target_species,
 #              target_year = target_year,
@@ -41,11 +41,11 @@ flog.info("Reactive values initialized successfully.")
 #   target_data <- readRDS(file_path)
 #   list2env(target_data, .GlobalEnv)
 # }
-# 
+#
 # # Call the function to load data
 # load_target_data("data/target.rds")
 # flog.info("Database queries for filter options completed successfully.")
-# 
+#
 # # Set default values for the UI filters
 # default_species <- 'YFT'
 # default_year <- c(seq(min(target_year$year), max(target_year$year)) + min(target_year$year) - 1)
@@ -56,10 +56,10 @@ flog.info("Reactive values initialized successfully.")
 # default_fishing_fleet <- unique(target_flag$fishing_fleet)
 # flog.info("Default filter values set.")
 
-mode="gpkg"
-# mode="postgres"
+# mode="gpkg"
+mode="postgres"
 if(mode=="gpkg"){
-  gpkg_file <- "~/Bureau/CODE/IRDTunaAtlas/Global_Tuna_Atlas.gpkg"
+  gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
   # df_sf <- readRDS("public_public.shinycatch.RDS")
   # st_write(df_sf,gpkg_file,layer = "public.shinycatch",delete_dsn = TRUE)
   
@@ -71,7 +71,7 @@ if(mode=="gpkg"){
   dbListTables(con)
 }else{
   # source(file = "~/Desktop/CODES/IRDTunaAtlas/credentials.R")
-  try(dotenv::load_dot_env("../tunaatlas_pie_map_shiny_OLD/connection_tunaatlas_inv.txt"))
+  try(dotenv::load_dot_env("~/blue-cloud-dataspace/GlobalFisheriesAtlas/shiny_compare_tunaatlas_datasests/connection_tunaatlas_inv.txt"))
   
   db_host <- Sys.getenv("DB_HOST")
   db_port <- as.integer(Sys.getenv("DB_PORT"))
@@ -84,13 +84,14 @@ if(mode=="gpkg"){
 }
 
 
-df_sf <- readRDS("~/Bureau/CODE/IRDTunaAtlas/shinycatch.RDS")
+df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.RDS")
+# df_sf <- readRDS("~/blue-cloud-dataspace/tunaatlas_pie_map_shiny/tunaatlas_pie_map_shiny/data/datasf.rds")
 
 new_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
-wkt <- reactiveVal(new_wkt) 
-switch_unit <- reactiveVal(TRUE) 
-query_metadata <- reactiveVal() 
-query_all_datasets <- reactiveVal() 
+wkt <- reactiveVal(new_wkt)
+switch_unit <- reactiveVal(TRUE)
+query_metadata <- reactiveVal()
+query_all_datasets <- reactiveVal()
 
 
 # target_dataset <- st_read(con, query="SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
@@ -107,7 +108,7 @@ target_measurement_unit <-  unique(df_sf$measurement_unit)
 # target_area <-  st_read(con, query="SELECT DISTINCT(ST_Area(geom)) AS area FROM public.shinycatch ORDER BY area DESC;")
 # target_area <-    tibble(wkb=unique(df_sf$geom)) %>% st_read()
 target_gridtype <-   unique(df_sf$gridtype)
-# df_sf %>% group_by(geom_id) 
+# df_sf %>% group_by(geom_id)
 target_flag <-  unique(df_sf$fishing_fleet)
 
 # default_species <- c('YFT','SKJ','BET','SBF','ALB')
@@ -127,7 +128,7 @@ default_fishing_fleet <- target_flag
 #check what are existing / possible combinations between dimension values
 # filters_combinations <-  st_read(con, query="SELECT species, year, gear_type as gear FROM public.shinycatch GROUP BY species, year,gear_type;")
 # df_sf %>% group_by(species, year,gear_type)
-
+# toto
 
 
 # Log and retrieve combinations for filters
