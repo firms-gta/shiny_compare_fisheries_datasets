@@ -83,15 +83,14 @@ if(mode=="gpkg"){
   flog.info("Database connection established.")
 }
 
+flog.info("Reading big data")
 
 df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.RDS")
+
+flog.info("Big data read")
+
 # df_sf <- readRDS("~/blue-cloud-dataspace/tunaatlas_pie_map_shiny/tunaatlas_pie_map_shiny/data/datasf.rds")
 
-new_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
-wkt <- reactiveVal(new_wkt)
-switch_unit <- reactiveVal(TRUE)
-query_metadata <- reactiveVal()
-query_all_datasets <- reactiveVal()
 
 
 # target_dataset <- st_read(con, query="SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
