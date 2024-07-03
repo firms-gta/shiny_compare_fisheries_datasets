@@ -155,6 +155,18 @@
       ],
       "Hash": "20d81ec18bde233d8cc3265761fe8c93"
     },
+    "XML": {
+      "Package": "XML",
+      "Version": "3.99-0.17",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "methods",
+        "utils"
+      ],
+      "Hash": "bc2a8a1139d8d4bd9c46086708945124"
+    },
     "askpass": {
       "Package": "askpass",
       "Version": "1.2.0",
