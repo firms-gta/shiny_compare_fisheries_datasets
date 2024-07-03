@@ -85,7 +85,7 @@ if(mode=="gpkg"){
 
 flog.info("Reading big data")
 
-df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.RDS")
+df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds")
 
 flog.info("Big data read")
 
