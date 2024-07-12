@@ -47,7 +47,7 @@ WORKDIR /root/shiny_compare_tunaatlas_datasests
 COPY renv.lock ./
 COPY .Rprofile ./
 COPY renv/activate.R renv/
-COPY renv/settings.json renv/
+# @juldebar COPY renv/settings.json renv/
 
 # Set renv cache location
 ENV RENV_PATHS_CACHE renv/.cache
