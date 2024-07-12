@@ -1,4 +1,4 @@
-FROM rocker/r-ver:4.2.3
+FROM rocker/r-ver:4.4.0
 
 MAINTAINER Julien Barde "julien.barde@ird.fr"
 
@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     git \
     libnetcdf-dev \
     curl \
+    libprotobuf-dev \
+    protobuf-compiler \
     libjq-dev
     
 # Update and upgrade the system
@@ -50,7 +52,7 @@ COPY renv/activate.R renv/
 # @juldebar COPY renv/settings.json renv/
 
 # Set renv cache location
-ENV RENV_PATHS_CACHE renv/.cache
+ENV RENV_PATHS_CACHE=renv/.cache
 
 # Restore renv packages
 RUN R -e "renv::activate()"
