@@ -59,7 +59,8 @@ WORKDIR /root/shiny_compare_tunaatlas_datasests
 # Copy renv configuration and lockfile
 COPY renv.lock ./
 COPY .Rprofile ./
-COPY renv renv
+COPY renv/activate.R renv/activate.R
+#COPY renv renv
 # @juldebar COPY renv/settings.json renv/
 
 # Restore renv packages
@@ -74,8 +75,6 @@ ENV RENV_PATHS_CACHE=renv/.cache
 
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
-
-
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
