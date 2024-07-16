@@ -70,7 +70,7 @@ ENV RENV_PATHS_CACHE=renv/.cache
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 
 # Restore renv packages
-# RUN R -e "renv::activate()"
+RUN R -e "renv::activate()"
 RUN R -e "renv::restore()"
 
 # Expose port 3838 for the Shiny app
