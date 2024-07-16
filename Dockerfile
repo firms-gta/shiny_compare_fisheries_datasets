@@ -4,7 +4,8 @@ FROM rocker/shiny:4.4.0
 #FROM rocker/r-ver:latest
 
 LABEL org.opencontainers.image.authors="julien.barde@ird.fr" org.opencontainers.image.authors="bastien.grasset@ird.fr"
-LABEL maintainer "Julien Barde <julien.barde@ird.fr>"
+LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
+LABEL org.opencontainers.image.source https://github.com/firms-gta/shiny_compare_tunaatlas_datasests
 
 # Update and upgrade the system with option -y to tells apt-get to assume the answer to all prompts is yes.
 RUN apt update && apt upgrade -y
@@ -70,7 +71,7 @@ ENV RENV_PATHS_CACHE=renv/.cache
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 
 # Restore renv packages
-RUN R -e "renv::activate()"
+# RUN R -e "renv::activate()"
 RUN R -e "renv::restore()"
 
 # Expose port 3838 for the Shiny app
