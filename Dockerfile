@@ -46,9 +46,9 @@ RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
 # git clone https://github.com/firms-gta/shiny_compare_tunaatlas_datasests.git
 # Set environment variables for renv cache
-ARG RENV_PATHS_ROOT=/root/shiny_compare_tunaatlas_datasests/renv/.cache
+ARG RENV_PATHS_ROOT
 # RENV_PATHS_ROOT: ~/.cache/R/renv
-ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
+#ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
 
 # Make a directory in the container
 RUN mkdir -p ${RENV_PATHS_ROOT}
@@ -61,6 +61,11 @@ COPY renv.lock ./
 COPY .Rprofile ./
 COPY renv renv
 # @juldebar COPY renv/settings.json renv/
+
+# Restore renv packages
+# RUN R -e "renv::activate()"
+RUN R -e "renv::restore()"
+
 # Copy the rest of the application code
 COPY . .
 
@@ -70,9 +75,7 @@ ENV RENV_PATHS_CACHE=renv/.cache
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 
-# Restore renv packages
-# RUN R -e "renv::activate()"
-RUN R -e "renv::restore()"
+
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
