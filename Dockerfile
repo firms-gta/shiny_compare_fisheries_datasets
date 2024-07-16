@@ -45,7 +45,7 @@ RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
 # git clone https://github.com/firms-gta/shiny_compare_tunaatlas_datasests.git
 # Set environment variables for renv cache
-# ARG RENV_PATHS_ROOT=/root/shiny_compare_tunaatlas_datasests/renv/.cache
+ARG RENV_PATHS_ROOT=/root/shiny_compare_tunaatlas_datasests/renv/.cache
 # RENV_PATHS_ROOT: ~/.cache/R/renv
 ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
 
