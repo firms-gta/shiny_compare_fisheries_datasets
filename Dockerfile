@@ -69,7 +69,7 @@ ENV RENV_PATHS_CACHE=renv/.cache
 # Restore renv packages
 RUN R -e "renv::restore()"
 
-FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache AS base
+FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
 
 WORKDIR /root/shiny_compare_tunaatlas_datasests
 # Copy the rest of the application code
