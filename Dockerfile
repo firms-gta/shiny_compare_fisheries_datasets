@@ -40,10 +40,8 @@ RUN apt update && apt upgrade -y && apt clean
 RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
 # FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache AS base
-# Set environment variables for renv cache
+# Set environment variables for renv cache, see doc https://docs.docker.com/build/cache/backends/
 ARG RENV_PATHS_ROOT
-# RENV_PATHS_ROOT: ~/.cache/R/renv
-#ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
 
 # Make a directory in the container
 RUN mkdir -p ${RENV_PATHS_ROOT}
@@ -67,8 +65,6 @@ ENV RENV_PATHS_CACHE=renv/.cache
 RUN R -e "renv::restore()"
 
 #FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
-
-WORKDIR /root/shiny_compare_tunaatlas_datasests
 # Copy the rest of the application code
 COPY  . .
 
