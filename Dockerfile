@@ -5,6 +5,7 @@ FROM rocker/shiny:4.4.0
 
 LABEL org.opencontainers.image.authors="julien.barde@ird.fr" org.opencontainers.image.authors="bastien.grasset@ird.fr"
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
+#connect this container (GHitHub package) to the repository
 LABEL org.opencontainers.image.source https://github.com/firms-gta/shiny_compare_tunaatlas_datasests
 
 # Update and upgrade the system with option -y to tells apt-get to assume the answer to all prompts is yes.
@@ -33,18 +34,11 @@ RUN apt install -y \
     libjq-dev \
     cmake
 ## update system libraries
-RUN apt update && \
-    apt upgrade -y && \
-    apt clean
+RUN apt update && apt upgrade -y && apt clean
     
-# Install R core package dependencies
-#RUN install2.r --error --skipinstalled --ncpus -1 httpuv
-#RUN R -e "install.packages(c('renv', 'remotes','jsonlite', 'yaml'), repos='https://cran.r-project.org/')"
+# Install R core package dependencies (we might specify the version of renv package)
 RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
-#RUN Rscript -e 'renv::restore()'
 
-
-# git clone https://github.com/firms-gta/shiny_compare_tunaatlas_datasests.git
 # Set environment variables for renv cache
 ARG RENV_PATHS_ROOT
 # RENV_PATHS_ROOT: ~/.cache/R/renv
@@ -58,7 +52,7 @@ WORKDIR /root/shiny_compare_tunaatlas_datasests
 
 # Copy renv configuration and lockfile
 COPY renv.lock ./
-COPY .Rprofile ./
+#COPY .Rprofile ./
 COPY renv/activate.R renv/activate.R
 #COPY renv renv
 # @juldebar COPY renv/settings.json renv/
