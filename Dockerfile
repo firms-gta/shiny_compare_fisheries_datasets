@@ -39,7 +39,7 @@ RUN apt update && apt upgrade -y && apt clean
 # Install R core package dependencies (we might specify the version of renv package)
 RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
-FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache AS base
+# FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache AS base
 # Set environment variables for renv cache
 ARG RENV_PATHS_ROOT
 # RENV_PATHS_ROOT: ~/.cache/R/renv
@@ -73,7 +73,7 @@ RUN R -e "renv::restore()"
 
 WORKDIR /root/shiny_compare_tunaatlas_datasests
 # Copy the rest of the application code
-COPY --from=base . .
+COPY  . .
 
 
 # Create directories for configuration
