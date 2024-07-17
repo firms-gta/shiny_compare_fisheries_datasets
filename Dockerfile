@@ -39,6 +39,7 @@ RUN apt update && apt upgrade -y && apt clean
 # Install R core package dependencies (we might specify the version of renv package)
 RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
+FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache AS base
 # Set environment variables for renv cache
 ARG RENV_PATHS_ROOT
 # RENV_PATHS_ROOT: ~/.cache/R/renv
@@ -52,20 +53,28 @@ WORKDIR /root/shiny_compare_tunaatlas_datasests
 
 # Copy renv configuration and lockfile
 COPY renv.lock ./
-#COPY .Rprofile ./
+COPY .Rprofile ./
 COPY renv/activate.R renv/activate.R
 #COPY renv renv
 # @juldebar COPY renv/settings.json renv/
 
+
+# change default location of cache to project folder
+# see documentation for Multi-stage builds => https://cran.r-project.org/web/packages/renv/vignettes/docker.html
+# Set renv cache location 
+RUN mkdir renv/.cache
+ENV RENV_PATHS_CACHE=renv/.cache
+
+
 # Restore renv packages
-# RUN R -e "renv::activate()"
 RUN R -e "renv::restore()"
 
-# Copy the rest of the application code
-COPY . .
+FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache AS base
 
-# Set renv cache location
-ENV RENV_PATHS_CACHE=renv/.cache
+WORKDIR /root/shiny_compare_tunaatlas_datasests
+# Copy the rest of the application code
+COPY --from=base . .
+
 
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
