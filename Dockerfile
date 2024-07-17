@@ -75,7 +75,6 @@ WORKDIR /root/shiny_compare_tunaatlas_datasests
 # Copy the rest of the application code
 COPY  . .
 
-
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 
