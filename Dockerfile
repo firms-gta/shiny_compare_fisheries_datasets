@@ -55,9 +55,8 @@ WORKDIR /root/shiny_compare_tunaatlas_datasests
 COPY renv.lock ./
 COPY .Rprofile ./
 COPY renv/activate.R renv/activate.R
+COPY renv/settings.json renv/
 #COPY renv renv
-# @juldebar COPY renv/settings.json renv/
-
 
 # change default location of cache to project folder
 # see documentation for Multi-stage builds => https://cran.r-project.org/web/packages/renv/vignettes/docker.html
