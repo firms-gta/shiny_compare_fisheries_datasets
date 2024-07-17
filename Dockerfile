@@ -63,7 +63,6 @@ COPY renv/settings.json renv/settings.json
 RUN mkdir renv/.cache
 ENV RENV_PATHS_CACHE=renv/.cache
 
-
 # Restore renv packages
 RUN R -e "renv::restore()"
 
