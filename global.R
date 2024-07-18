@@ -60,7 +60,7 @@ flog.info("Reactive values initialized successfully.")
 mode="postgres"
 if(mode=="gpkg"){
   gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
-  # df_sf <- readRDS("public_public.shinycatch.RDS")
+  # df_sf <- readRDS("shinycatch.RDS")
   # st_write(df_sf,gpkg_file,layer = "public.shinycatch",delete_dsn = TRUE)
   
   con <- dbConnect(RSQLite::SQLite(), dbname = gpkg_file)
@@ -71,7 +71,8 @@ if(mode=="gpkg"){
   dbListTables(con)
 }else{
   # source(file = "~/Desktop/CODES/IRDTunaAtlas/credentials.R")
-  try(dotenv::load_dot_env("~/blue-cloud-dataspace/GlobalFisheriesAtlas/shiny_compare_tunaatlas_datasests/connection_tunaatlas_inv.txt"))
+  # try(dotenv::load_dot_env("~/blue-cloud-dataspace/GlobalFisheriesAtlas/shiny_compare_tunaatlas_datasests/connection_tunaatlas_inv.txt"))
+  try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
   
   db_host <- Sys.getenv("DB_HOST")
   db_port <- as.integer(Sys.getenv("DB_PORT"))
@@ -90,7 +91,17 @@ try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_app
 
 if(!exists("df_sf")){
   df_sf <- readRDS(here::here("data/shinycatch.rds"))
-}
+  df_sf <- readRDS(here::here("shinycatch.RDS"))
+  write.csv(df_sf,"shinycatch.csv")
+  st_write(df_sf,"shinycatch_bis.csv")
+  library(data.table)
+  # setwd("file_path")
+  files <- list.files(pattern = ".csv")
+  # data <- rbindlist(lap  # files <- list.files(pattern = ".csv")
+  data <- rbindlist(lapply(files,fread,sep=","))
+  fread("shinycatch_bis.csv")
+  
+  }
 
 
 flog.info("Big data read")
