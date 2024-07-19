@@ -72,11 +72,18 @@ if(mode=="gpkg"){
   res <- dbSendQuery(con, "select load_extension('/usr/lib/x86_64-linux-gnu/mod_spatialite.so');")
   res <-st_read(con,query="select sqlite_version(), spatialite_version();")
   dbListTables(con)
+}else if(mode=="RDS"){
+  flog.info("Loading main data file")
+  # try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
+  try(df_sf <- readRDS(here::here("shinycatch.RDS")))
 }else{
   # source(file = "~/Desktop/CODES/IRDTunaAtlas/credentials.R")
   # try(dotenv::load_dot_env("~/blue-cloud-dataspace/GlobalFisheriesAtlas/shiny_compare_tunaatlas_datasests/connection_tunaatlas_inv.txt"))
   try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
-  
+  flog.info("Loading main data file")
+# try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
+# try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
+try(df_sf <- readRDS(here::here("shinycatch.RDS")))
   db_host <- Sys.getenv("DB_HOST")
   db_port <- as.integer(Sys.getenv("DB_PORT"))
   db_name <- Sys.getenv("DB_NAME")
@@ -87,37 +94,39 @@ if(mode=="gpkg"){
   flog.info("Database connection established.")
 }
 
-flog.info("Loading main data file")
-# try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
-# try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
-try(df_sf <- rreadRDS(here::here("Shinycatch.RDS")))
 
 if(!exists("df_sf")){
   df_sf <- readRDS(here::here("data/shinycatch.rds"))
   }
 # df_sf <- readRDS("~/blue-cloud-dataspace/tunaatlas_pie_map_shiny/tunaatlas_pie_map_shiny/data/datasf.rds")
-
+#check what are existing / possible combinations between dimension values (to adapt the values of filters dynamically)
+# filters_combinations <- dbGetQuery(con, "SELECT species, year, gear_type, fishing_fleet FROM shinycatch GROUP BY species, year, gear_type, fishing_fleet;")
+filters_combinations <- df_sf %>% group_by(species, year, gear_type, fishing_fleet)
+flog.info("Filter combinations retrieved and stored.")
 
 flog.info("Big data read")
 
 flog.info("Set values of filters")
 
-# target_dataset <- st_read(con, query="SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
+# target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
 target_dataset <- unique(df_sf$dataset)
-# target_species <-  st_read(con, query="SELECT DISTINCT(species) FROM public.shinycatch ORDER BY species;")
+# target_species <-  dbGetQuery(con,"SELECT DISTINCT(species) FROM public.shinycatch ORDER BY species;")
 target_species <-  unique(df_sf$species)
-# target_year <-  st_read(con, query="SELECT DISTINCT(year) FROM public.shinycatch ORDER BY year;")
+# target_year <-  dbGetQuery(con,"SELECT DISTINCT(year) FROM public.shinycatch ORDER BY year;")
 target_year <-  unique(df_sf$year)
-# target_gear <-  st_read(con, query="SELECT DISTINCT(gear_type) as gear FROM public.shinycatch ORDER BY gear_type;")
+# target_gear <-  dbGetQuery(con,"SELECT DISTINCT(gear_type) as gear FROM public.shinycatch ORDER BY gear_type;")
 target_gear_type <-  unique(df_sf$gear_type)
 # target_ocean <- st_read(pool, "SELECT DISTINCT(ocean) as ocean FROM public.shinycatch ORDER BY ocean;")
-# target_unit <-  st_read(con, query="SELECT DISTINCT(measurement_unit) AS unit FROM public.shinycatch ORDER BY unit;")
+# target_unit <-  dbGetQuery(con,"SELECT DISTINCT(measurement_unit) AS unit FROM public.shinycatch ORDER BY unit;")
 target_measurement_unit <-  unique(df_sf$measurement_unit)
-# target_area <-  st_read(con, query="SELECT DISTINCT(ST_Area(geom)) AS area FROM public.shinycatch ORDER BY area DESC;")
+# target_area <-  dbGetQuery(con,"SELECT DISTINCT(ST_Area(geom)) AS area FROM public.shinycatch ORDER BY area DESC;")
 # target_area <-    tibble(wkb=unique(df_sf$geom)) %>% st_read()
 target_gridtype <-   unique(df_sf$gridtype)
 # df_sf %>% group_by(geom_id)
 target_flag <-  unique(df_sf$fishing_fleet)
+
+
+flog.info("Set filters values to be seflected by default")
 
 # default_species <- c('YFT','SKJ','BET','SBF','ALB')
 default_species <- c('YFT','SKJ')
@@ -158,11 +167,6 @@ default_fishing_fleet <- target_flag
 #   query_metadata(paste0("SELECT dataset, geom, sum(measurement_value) AS measurement_value FROM(",default_sql_query,") AS foo GROUP BY dataset,geom"))
 #   st_read(con, query = query_metadata()) 
 # })  
-
-
-#check what are existing / possible combinations between dimension values (to adapt the values of filters dynamically)
-filters_combinations <- dbGetQuery(con, "SELECT species, year, gear_type, fishing_fleet FROM shinycatch GROUP BY species, year, gear_type, fishing_fleet;")
-flog.info("Filter combinations retrieved and stored.")
 
 # Logging the successful execution of the script up to this point
 flog.info("Initial setup and data retrieval completed successfully.")
