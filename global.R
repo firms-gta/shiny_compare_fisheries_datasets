@@ -61,11 +61,11 @@ flog.info("Reactive values initialized successfully.")
 
 # mode="gpkg"
 mode="postgres"
+mode="RDS"
 if(mode=="gpkg"){
+  flog.info("Loading main data from GPKG file")
   gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
-  # df_sf <- readRDS("shinycatch.RDS")
   # st_write(df_sf,gpkg_file,layer = "public.shinycatch",delete_dsn = TRUE)
-  
   con <- dbConnect(RSQLite::SQLite(), dbname = gpkg_file)
   # result <- dbSendQuery(con, "ALTER TABLElihinycatch RENAME to public.shinycatch;")
   
@@ -73,17 +73,14 @@ if(mode=="gpkg"){
   res <-st_read(con,query="select sqlite_version(), spatialite_version();")
   dbListTables(con)
 }else if(mode=="RDS"){
-  flog.info("Loading main data file")
+  flog.info("Loading main data from RDS file")
   # try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
   try(df_sf <- readRDS(here::here("shinycatch.RDS")))
 }else{
-  # source(file = "~/Desktop/CODES/IRDTunaAtlas/credentials.R")
-  # try(dotenv::load_dot_env("~/blue-cloud-dataspace/GlobalFisheriesAtlas/shiny_compare_tunaatlas_datasests/connection_tunaatlas_inv.txt"))
+  flog.info("Loading main data from Postgres database")
   try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
   flog.info("Loading main data file")
-# try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
-# try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
-try(df_sf <- readRDS(here::here("shinycatch.RDS")))
+  try(df_sf <- readRDS(here::here("shinycatch.RDS")))
   db_host <- Sys.getenv("DB_HOST")
   db_port <- as.integer(Sys.getenv("DB_PORT"))
   db_name <- Sys.getenv("DB_NAME")
@@ -93,17 +90,35 @@ try(df_sf <- readRDS(here::here("shinycatch.RDS")))
   con <- dbConnect(RPostgreSQL::PostgreSQL(), host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password)
   flog.info("Database connection established.")
 }
-
+# st_as_text(head(df_sf))
+list_area_id <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area) %>% dplyr::summarise(ogc_fid = first(ogc_fid)) # %>% st_as_sf(wkt="geom")
+df_distinct_geom <- df_sf %>%  dplyr::filter(ogc_fid %in% list_area_id$ogc_fid)
+# 
+# list_area_id  %>% inner_join(df_sf, by = "ogc_fid") 
+# 
+# list_area_id <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area,geom) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% 
+#   dplyr::select(codesource_area,geom)  %>% dplyr::mutate(as.character(geom)) %>% st_as_sf(wkt="geom")   %>%  dplyr::mutate(geom=gsub("POLYGONlist(list(c","",paste0("POLYGON",as.character(geom)))) #%>% st_as_sf(wkt=geom)  %>% filter(!st_is_empty(.))
+# # head(df_sf) %>% sf::st_as_text()
+# temp_df <- df_sf %>% dplyr::select(codesource_area) %>% filter(!st_is_empty(.)) %>% dplyr::distinct() 
+# temp_df %>% distinct()
+# df_distinct_geom <- dplyr::left_join(list_area_id,temp_df)
+# df_distinct_geom
+# # library(tidyverse)
+# # distinct.sf(.data, ..., .keep_all = FALSE)
+# df_distinct_geom <- df_sf %>% st_equals(df_sf)
+# head(df_sf)   %>% st_cast("POLYGON")  %>% as.data.frame()  %>%   st_as_sf(wkt="geom") dplyr::mutate(geom=gsub("MULTIPOLYGON","POLYGON",geom))  %>% st_as_sf(wkt="geom") 
 
 if(!exists("df_sf")){
+  flog.info("Try  if a default file for filters is pre-calculated")
   df_sf <- readRDS(here::here("data/shinycatch.rds"))
   }
 # df_sf <- readRDS("~/blue-cloud-dataspace/tunaatlas_pie_map_shiny/tunaatlas_pie_map_shiny/data/datasf.rds")
 #check what are existing / possible combinations between dimension values (to adapt the values of filters dynamically)
 # filters_combinations <- dbGetQuery(con, "SELECT species, year, gear_type, fishing_fleet FROM shinycatch GROUP BY species, year, gear_type, fishing_fleet;")
-filters_combinations <- df_sf %>% group_by(species, year, gear_type, fishing_fleet)
+filters_combinations <- df_sf  %>% st_drop_geometry() %>%  dplyr::group_by(species, year, gear_type, fishing_fleet) %>% dplyr::summarise(count = n())
+# head(filters_combinations)
 flog.info("Filter combinations retrieved and stored.")
-
+head(df_sf)
 flog.info("Big data read")
 
 flog.info("Set values of filters")
