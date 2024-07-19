@@ -29,75 +29,83 @@ server <- function(input, output, session) {
   # )
   
   ########################################################## DATA & SQL queries ########################################################## 
-  
   #set the main parameterized query (options for geom might be st_collect(geom) or  ST_ConvexHull(st_collect(geom)) as convexhull )
   sql_query <- eventReactive(input$submit, {
-    if(is.null(input$year)){year_name=target_year}else{year_name=input$year}
-    # if(is.null(input$dataset)){dataset_name=target_dataset$dataset}else{year_name=input$dataset}
-    query <- glue::glue_sql(
-      "SELECT dataset, measurement_unit,  gear_type, year, species, measurement_value, gridtype, fishing_fleet, geom  FROM shinycatch 
-      WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326)) 
-      AND  dataset IN ({dataset_name*}) 
-      AND  species IN ({species_name*}) 
-      AND gear_type IN ({gear_type_name*}) 
-      AND fishing_fleet IN ({fishing_fleet_name*}) 
-      AND year IN ({year_name*}) 
-      AND gridtype IN ({gridtype_name*}) 
-      AND measurement_unit IN ({measurement_unit_name*}) ",
-      wkt = wkt(),
-      dataset_name = input$dataset,
-      species_name = input$species,
-      gear_type_name = input$gear_type,
-      fishing_fleet_name = input$fishing_fleet,
-      year_name = year_name,
-      measurement_unit_name = input$unit,
-      gridtype_name = input$gridtype,
-      .con = con)
+  query <- df_sf %>% 
+    dplyr::filter(st_within(df_sf, wkt(), sparse = FALSE), dataset %in% input$dataset, gear_type_name %in% input$gear_type, year_name %in% year_name, measurement_unit_name %in% input$unit, gridtype_name %in% input$gridtype) %>% 
+    dplyr::select(dataset, measurement_unit,  gear_type, year, species, measurement_value, gridtype, fishing_fleet)
   },
   ignoreNULL = FALSE)
   
+  # 
+  # sql_query <- eventReactive(input$submit, {
+  #   if(is.null(input$year)){year_name=target_year}else{year_name=input$year}
+  #   # if(is.null(input$dataset)){dataset_name=target_dataset$dataset}else{year_name=input$dataset}
+  #   query <- glue::glue_sql(
+  #     "SELECT dataset, measurement_unit,  gear_type, year, species, measurement_value, gridtype, fishing_fleet, geom FROM shinycatch 
+  #     WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326)) 
+  #     AND  dataset IN ({dataset_name*}) 
+  #     AND  species IN ({species_name*}) 
+  #     AND gear_type IN ({gear_type_name*}) 
+  #     AND fishing_fleet IN ({fishing_fleet_name*}) 
+  #     AND year IN ({year_name*}) 
+  #     AND gridtype IN ({gridtype_name*}) 
+  #     AND measurement_unit IN ({measurement_unit_name*}) ",
+  #     wkt = wkt(),
+  #     dataset_name = input$dataset,
+  #     species_name = input$species,
+  #     gear_type_name = input$gear_type,
+  #     fishing_fleet_name = input$fishing_fleet,
+  #     year_name = year_name,
+  #     measurement_unit_name = input$unit,
+  #     gridtype_name = input$gridtype,
+  #     .con = con)
+  # },
+  # ignoreNULL = FALSE)
+  # 
   metadata <- reactive({
     query_metadata(paste0("SELECT dataset, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY dataset,geom"))
     st_read(con, query = query_metadata()) 
+    
   })  
   
   # measurement_unit,  gear_type, year, species ;")
   data_all_datasets <- eventReactive(input$submit, {
     query_all_datasets(paste0("SELECT dataset, year, sum(measurement_value) as measurement_value, measurement_unit FROM (",sql_query(),") AS foo GROUP BY dataset, year, measurement_unit"))
-    st_read(con, query = query_all_datasets())
+    dbGetQuery(con,query_all_datasets())
   },
   # on.exit(dbDisconnect(conn), add = TRUE)
   ignoreNULL = FALSE)
   
   
   data_pie_all_datasets <- eventReactive(input$submit, {
-    st_read(con, query = paste0("SELECT dataset, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY  dataset"))
+    dbGetQuery(con,paste0("SELECT dataset, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY  dataset"))
     
   },
   # on.exit(dbDisconnect(conn), add = TRUE)
   ignoreNULL = FALSE)
   
   data_pie_gridtype_catch <- eventReactive(input$submit, {
-    st_read(con, query = paste0("SELECT dataset, gridtype, measurement_unit, count(*), SUM(measurement_value)  as measurement_value FROM (",sql_query(),") AS foo GROUP BY dataset, gridtype, measurement_unit ORDER BY dataset"))
+    dbGetQuery(con,paste0("SELECT dataset, gridtype, measurement_unit, count(*), SUM(measurement_value)  as measurement_value FROM (",sql_query(),") AS foo GROUP BY dataset, gridtype, measurement_unit ORDER BY dataset"))
   },
   ignoreNULL = FALSE)
   
   data_barplot_all_datasets <- eventReactive(input$submit, {
-    st_read(con, query = paste0("SELECT  dataset, measurement_unit, count(*) AS count, SUM(measurement_value) AS measurement_value  FROM (",sql_query(),") AS foo GROUP BY dataset, measurement_unit ORDER BY dataset"))
+    dbGetQuery(con,paste0("SELECT  dataset, measurement_unit, count(*) AS count, SUM(measurement_value) AS measurement_value  FROM (",sql_query(),") AS foo GROUP BY dataset, measurement_unit ORDER BY dataset"))
   },
   # on.exit(dbDisconnect(conn), add = TRUE)
   ignoreNULL = FALSE)
   
   
   data_i1 <- eventReactive(input$submit, {
-    st_read(con, query = paste0("SELECT dataset, measurement_unit, year, species, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY  dataset, measurement_unit,  year, species"))
+    dbGetQuery(con,paste0("SELECT dataset, measurement_unit, year, species, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY  dataset, measurement_unit,  year, species"))
   },
   # on.exit(dbDisconnect(conn), add = TRUE)
   ignoreNULL = FALSE)
   
   
   data_i2 <- eventReactive(input$submit, {
-    st_read(con, query = paste0("SELECT measurement_unit, gear_type AS gear_type, year, species, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY measurement_unit, gear_type, year, species")) 
+    dbGetQuery(con,paste0("SELECT measurement_unit, gear_type AS gear_type, year, species, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY measurement_unit, gear_type, year, species")) 
   },
   # on.exit(dbDisconnect(conn), add = TRUE)
   ignoreNULL = FALSE)
