@@ -13,11 +13,13 @@ ui <- fluidPage(
              #                }
              #               .navbar {min-height:25px !important;}'))
              # ),
+             # map_leafletUI("id_1"),
              tabPanel("Interactive Indicator 11",
                       div(class="outer",
                           tags$head(includeCSS("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/styles.css")),
-                          # leafletOutput('map_i11', width = "60%", height = 1500),
-                          leafletOutput("mymap", width="100%", height="100%"),
+                          map_leafletUI("id_1"),
+                          # leafletOutput("myMap"),
+                          # leafletOutput("mymap", width="100%", height="100%"),
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 150,  left = "3%", width = "21%", height = "auto",
                                         selectInput(

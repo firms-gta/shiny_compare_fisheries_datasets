@@ -1,11 +1,14 @@
 source(here::here('install.R'))
 # Log the successful loading of libraries
 flog.info("All libraries loaded successfully.")
+source(here::here('modules/map_leaflet.R'))
 
 # Source external R scripts for additional functionalities
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i1_SpeciesByOcean.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
 flog.info("External R scripts sourced successfully.")
+
+
 
 # Initialize reactive values and default WKT for mapping
 new_wkt <- 'POLYGON((-180 -90, 180 -90, 180 90, -180 90, -180 -90))'
@@ -87,20 +90,23 @@ if(mode=="gpkg"){
 flog.info("Reading big data")
 
 
+# try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
 try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
 
 if(!exists("df_sf")){
+  # df_sf <- readRDS(here::here("data/shinycatch.rds"))
   df_sf <- readRDS(here::here("data/shinycatch.rds"))
-  df_sf <- readRDS(here::here("shinycatch.RDS"))
-  write.csv(df_sf,"shinycatch.csv")
-  st_write(df_sf,"shinycatch_bis.csv")
-  library(data.table)
+  # write.csv(df_sf,"shinycatch.csv")
+  # st_write(df_sf,"shinycatch_bis.csv")
+  # library(data.table)
   # setwd("file_path")
-  files <- list.files(pattern = ".csv")
+  # files <- list.files(pattern = ".csv")
   # data <- rbindlist(lap  # files <- list.files(pattern = ".csv")
-  data <- rbindlist(lapply(files,fread,sep=","))
-  fread("shinycatch_bis.csv")
-  
+  # data <- rbindlist(lapply(files,fread,sep=","))
+  # df_sf <- fread("shinycatch_bis.csv")
+  # df_sf <- st_read("shinycatch_bis.csv")
+  # sfarrow::st_write_parquet(df_sf, "gta.parquet")
+  # df_sf <- sfarrow::st_read_parquet("gta.parquet")
   }
 
 
@@ -141,16 +147,41 @@ default_gridtype <- c("1deg_x_1deg","5deg_x_5deg")
 # default_area <- unique(target_area$gridtype)
 default_fishing_fleet <- target_flag
 
-#check what are existing / possible combinations between dimension values
-# filters_combinations <-  st_read(con, query="SELECT species, year, gear_type as gear FROM public.shinycatch GROUP BY species, year,gear_type;")
-# df_sf %>% group_by(species, year,gear_type)
-# toto
+# 
+# default_sql_query <-  glue::glue_sql(
+#     "SELECT dataset, measurement_unit,  gear_type, year, species, measurement_value, gridtype, fishing_fleet, geom  FROM shinycatch 
+#       WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326)) 
+#       AND  dataset IN ({dataset_name*}) 
+#       AND  species IN ({species_name*}) 
+#       AND gear_type IN ({gear_type_name*}) 
+#       AND fishing_fleet IN ({fishing_fleet_name*}) 
+#       AND year IN ({year_name*}) 
+#       AND gridtype IN ({gridtype_name*}) 
+#       AND measurement_unit IN ({measurement_unit_name*}) ",
+#     wkt = wkt(),
+#     dataset_name = default_dataset,
+#     species_name = default_species,
+#     type,
+#     fishing_fleet_name = default_fishing_fleet,
+#     year_name = default_year,
+#     measurement_unit_name = default_unit,
+#     gridtype_name = default_gridtype,
+#     .con = con)
+# 
+# default_metadata <- reactive({
+#   query_metadata(paste0("SELECT dataset, geom, sum(measurement_value) AS measurement_value FROM(",default_sql_query,") AS foo GROUP BY dataset,geom"))
+#   st_read(con, query = query_metadata()) 
+# })  
 
 
-# Log and retrieve combinations for filters
+#check what are existing / possible combinations between dimension values (to adapt the values of filters dynamically)
 filters_combinations <- dbGetQuery(con, "SELECT species, year, gear_type, fishing_fleet FROM shinycatch GROUP BY species, year, gear_type, fishing_fleet;")
 flog.info("Filter combinations retrieved and stored.")
 
 # Logging the successful execution of the script up to this point
 flog.info("Initial setup and data retrieval completed successfully.")
+
+#---------------------------------------------------------------------------------------
+source(here::here("ui.R"))
+source(here::here("server.R"))
 
