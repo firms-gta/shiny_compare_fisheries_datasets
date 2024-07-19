@@ -87,34 +87,20 @@ if(mode=="gpkg"){
   flog.info("Database connection established.")
 }
 
-flog.info("Reading big data")
-
-
+flog.info("Loading main data file")
 # try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
-try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
+# try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
+try(df_sf <- rreadRDS(here::here("Shinycatch.RDS")))
 
 if(!exists("df_sf")){
-  # df_sf <- readRDS(here::here("data/shinycatch.rds"))
   df_sf <- readRDS(here::here("data/shinycatch.rds"))
-  # write.csv(df_sf,"shinycatch.csv")
-  # st_write(df_sf,"shinycatch_bis.csv")
-  # library(data.table)
-  # setwd("file_path")
-  # files <- list.files(pattern = ".csv")
-  # data <- rbindlist(lap  # files <- list.files(pattern = ".csv")
-  # data <- rbindlist(lapply(files,fread,sep=","))
-  # df_sf <- fread("shinycatch_bis.csv")
-  # df_sf <- st_read("shinycatch_bis.csv")
-  # sfarrow::st_write_parquet(df_sf, "gta.parquet")
-  # df_sf <- sfarrow::st_read_parquet("gta.parquet")
   }
+# df_sf <- readRDS("~/blue-cloud-dataspace/tunaatlas_pie_map_shiny/tunaatlas_pie_map_shiny/data/datasf.rds")
 
 
 flog.info("Big data read")
 
-# df_sf <- readRDS("~/blue-cloud-dataspace/tunaatlas_pie_map_shiny/tunaatlas_pie_map_shiny/data/datasf.rds")
-
-
+flog.info("Set values of filters")
 
 # target_dataset <- st_read(con, query="SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
 target_dataset <- unique(df_sf$dataset)
