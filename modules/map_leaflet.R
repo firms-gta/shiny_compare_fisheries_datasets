@@ -19,11 +19,16 @@ map_leafletServer <- function(id,metadata) {
     output$mymap <- renderLeaflet({
       
       df <- metadata()
+      flog.info(class(df))
+      
       bbox <- st_bbox(df) %>% as.vector()  
       centroid <-  st_convex_hull(df) %>% st_centroid()
       lat_centroid <- st_coordinates(centroid)[2]
       lon_centroid <- st_coordinates(centroid)[1]
       
+      flog.info("lat_centroid")
+      flog.info(lat_centroid)
+      datasets <- unique(df$dataset)
       flog.info("listing different datasets")
       datasets <- unique(df$dataset)
       flog.info(datasets)
@@ -34,7 +39,7 @@ map_leafletServer <- function(id,metadata) {
         domain = df$measurement_value
       )
       # brewer.pal(7, "OrRd")
-      pal_fun <- colorQuantile(   "YlOrRd", NULL, n = 10)
+      pal_fun <- colorQuantile("YlOrRd", NULL, n = 10)
       
       qpal <- colorQuantile(rev(viridis::viridis(10)),
                             df$measurement_value, n=10)
@@ -94,7 +99,7 @@ map_leafletServer <- function(id,metadata) {
                            opacity = 1
         )
       
-      # map_leaflet
+      map_leaflet
       # return(map_leaflet)
   })
   

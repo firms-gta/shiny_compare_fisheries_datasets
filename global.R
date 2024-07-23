@@ -75,25 +75,30 @@ if(mode=="gpkg"){
 }else if(mode=="RDS"){
   flog.info("Loading main data from RDS file")
   # try(df_sf <- readRDS("~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/shinycatch.rds"))
-  try(df_sf <- readRDS(here::here("shinycatch.RDS")))
-}else{
+  try(
+    # df_sf <- readRDS(here::here("shinycatch.RDS"))
+    ) 
+}
+  # }else{
   flog.info("Loading main data from Postgres database")
   try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
   flog.info("Loading main data file")
-  try(df_sf <- readRDS(here::here("shinycatch.RDS")))
+  # try(df_sf <- readRDS(here::here("shinycatch.RDS")))
   db_host <- Sys.getenv("DB_HOST")
   db_port <- as.integer(Sys.getenv("DB_PORT"))
   db_name <- Sys.getenv("DB_NAME")
   db_user <- Sys.getenv("DB_USER_READONLY")
   db_password <- Sys.getenv("DB_PASSWORD")
-  
+
   con <- dbConnect(RPostgreSQL::PostgreSQL(), host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password)
   flog.info("Database connection established.")
-}
+  df_sf <-  st_read(con,query = "SELECT * FROM public.shinycatch LIMIT 100000;")
+  
+# }
 # st_as_text(head(df_sf))
 list_area_id <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area) %>% dplyr::summarise(ogc_fid = first(ogc_fid)) # %>% st_as_sf(wkt="geom")
-df_distinct_geom <- df_sf %>%  dplyr::filter(ogc_fid %in% list_area_id$ogc_fid)
-# 
+df_distinct_geom <- df_sf %>% dplyr::filter(ogc_fid %in% list_area_id$ogc_fid) %>% dplyr::select(codesource_area)
+# class(df_distinct_geom)
 # list_area_id  %>% inner_join(df_sf, by = "ogc_fid") 
 # 
 # list_area_id <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area,geom) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% 
@@ -110,7 +115,7 @@ df_distinct_geom <- df_sf %>%  dplyr::filter(ogc_fid %in% list_area_id$ogc_fid)
 
 if(!exists("df_sf")){
   flog.info("Try  if a default file for filters is pre-calculated")
-  df_sf <- readRDS(here::here("data/shinycatch.rds"))
+  # df_sf <- readRDS(here::here("data/shinycatch.rds"))
   }
 # df_sf <- readRDS("~/blue-cloud-dataspace/tunaatlas_pie_map_shiny/tunaatlas_pie_map_shiny/data/datasf.rds")
 #check what are existing / possible combinations between dimension values (to adapt the values of filters dynamically)
