@@ -1,5 +1,9 @@
 server <- function(input, output, session) {
   
+  
+  initial_data <- reactiveVal()
+  initial_data(df_sf)
+  
   ########################################################## Dynamic filters ########################################################## 
   
   change <- reactive({
@@ -7,8 +11,11 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$resetWkt, {
-    wkt(new_wkt)
+    wkt(bbox)
   })
+    observe({
+  updateTextInput(session, "yourWKT", value =  wkt())
+    })
   
   observeEvent(input$species,{
     temp <- filters_combinations %>% filter(species %in% change()[1])
@@ -27,147 +34,111 @@ server <- function(input, output, session) {
   #   updateSelectInput(session,"gear",choices = unique(temp$gear),selected=unique(temp$gear))
   # }
   # )
+  flog.info("##########################################################")
+  flog.info("set the main parameterized query (options for geom might be st_collect(geom) or  ST_ConvexHull(st_collect(geom)) as convexhull )")
   
-  ########################################################## DATA & SQL queries ########################################################## 
-  #set the main parameterized query (options for geom might be st_collect(geom) or  ST_ConvexHull(st_collect(geom)) as convexhull )
-  sql_query <- eventReactive(input$submit, {
-    list_areas <- df_distinct_geom  %>%  
-      dplyr::filter(st_within(.,st_as_sfc(wkt() , crs = 4326), sparse = FALSE))
-    sql_query <- df_sf %>% dplyr::filter(codesource_area %in%  unique(list_areas$codesource_area),
-                            dataset %in% input$dataset,
-                            species %in% input$species,
-                            gear_type %in% input$gear_type,
-                            year %in% input$year,
-                            fishing_fleet %in% input$fishing_fleet,
-                            measurement_value %in% input$unit,
-                            gridtype %in% input$gridtype) %>%
-    dplyr::select(codesource_area,dataset, measurement_unit,gear_type, year, species, measurement_value, gridtype, fishing_fleet)
-    sql_query
-  },
-  ignoreNULL = FALSE)
-
-  # sql_query <- eventReactive(input$submit, {
-  #   if(is.null(input$year)){year_name=target_year}else{year_name=input$year}
-  #   # if(is.null(input$dataset)){dataset_name=target_dataset$dataset}else{year_name=input$dataset}
-  #   query <- glue::glue_sql(
-  #     "SELECT dataset, measurement_unit,  gear_type, year, species, measurement_value, gridtype, fishing_fleet, geom FROM shinycatch
-  #     WHERE ST_Within(geom,ST_GeomFromText(({wkt*}),4326))
-  #     AND  dataset IN ({dataset_name*})
-  #     AND  species IN ({species_name*})
-  #     AND gear_type IN ({gear_type_name*})
-  #     AND fishing_fleet IN ({fishing_fleet_name*})
-  #     AND year IN ({year_name*})
-  #     AND gridtype IN ({gridtype_name*})
-  #     AND measurement_unit IN ({measurement_unit_name*}) ",
-  #     wkt = wkt(),
-  #     dataset_name = input$dataset,
-  #     species_name = input$species,
-  #     gear_type_name = input$gear_type,
-  #     fishing_fleet_name = input$fishing_fleet,
-  #     year_name = year_name,
-  #     measurement_unit_name = input$unit,
-  #     gridtype_name = input$gridtype,
-  #     .con = con)
-  #   st_read(con, query =query)
+  # flog.info("Filter areas id in the current wkt")
+  # list_areas(df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc(wkt(), crs = 4326), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% as.vector())
+  # flog.info("Fist ten values of the matching areas : %s", list_areas()[1:10])
+  
+  # input$applytWkt
+  # list_areas <-  eventReactive(input$mymap_draw_new_feature, {
+  #   # feature <- input$mymap_draw_new_feature
+  #   # geoJson <- geojsonio::as.json(feature)
+  #   # geom <- st_read(geoJson) # wkt(st_as_text(st_geometry(geom[1,])))
+  #   sf_wkt <- st_as_sfc(wkt, crs = 4326)
+  #   df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc(wkt()), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
   # },
   # ignoreNULL = FALSE)
 
   
+  flog.info("Apply current filters to the main datasets when click on submit")
+  sql_query <- eventReactive(input$submit, {
+    req(initial_data())
+    req(wkt())
+    wkt <- bbox
+    wkt <- wkt()
+    # sf_wkt <- st_as_sfc("POLYGON ((25.83984 -26.27371, 25.83984 2.635789, 60.29297 2.635789, 60.29297 -26.27371, 25.83984 -26.27371))" , crs = 4326)
+    sf_wkt <- st_as_sfc(wkt , crs = 4326)
+    list_areas <- df_distinct_geom[st_within(df_distinct_geom, sf_wkt, sparse = FALSE), ] %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
+    # list_areas <- df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc(wkt()), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
+    # list_areas(df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc("POLYGON ((25.83984 -26.27371, 25.83984 2.635789, 60.29297 2.635789, 60.29297 -26.27371, 25.83984 -26.27371))", crs = 4326), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull())
+    sql_query <- df_sf   %>%  dplyr::filter(
+      codesource_area %in% list_areas,
+      dataset %in% input$dataset,
+      species %in% input$species,
+      gear_type %in% input$gear_type,
+      year %in% input$year,
+      fishing_fleet %in% input$fishing_fleet,
+      measurement_unit %in% input$unit,
+      gridtype %in% input$gridtype)   # %>% dplyr::group_by(codesource_area,dataset, species,gear_type, year, fishing_fleet, measurement_unit, gridtype) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) #%>% top_n(10000)
     
-  metadata <- reactive({
-    # query_metadata(paste0("SELECT dataset, geom, sum(measurement_value) AS measurement_value FROM(",sql_query(),") AS foo GROUP BY "))
-    # st_read(con, query = query_metadata())
-    # sql_query()$grp = sapply(st_equals(sql_query()), max)
-    req(sql_query())
-    list_cwp <- sql_query() %>% st_drop_geometry() %>% 
-      dplyr::group_by(dataset,codesource_area) %>%
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))
-    metadata <- df_distinct_geom   %>% filter(!st_is_empty(.)) %>% left_join(list_cwp)
-    metadata
-    # list_cwp  %>% left_join(df_distinct_geom)  %>% filter(!st_is_empty(.))
-    
-  })  
-  
+                            
+    flog.info("Main data: %s", head(sql_query))
+    sql_query
+  },
+  ignoreNULL = FALSE)
+
+
   # measurement_unit,  gear_type, year, species ;")
-  data_all_datasets <- eventReactive(input$submit, {
+  data_all_datasets <- reactive({
     # query_all_datasets(paste0("SELECT dataset, year, sum(measurement_value) as measurement_value, measurement_unit FROM (",sql_query(),") AS foo GROUP BY dataset, year, measurement_unit"))
     # dbGetQuery(con,query_all_datasets())
     data_all_datasets <- sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, year, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
     data_all_datasets
-  },
-  # on.exit(dbDisconnect(conn), add = TRUE)
-  ignoreNULL = FALSE)
+  })
   
   
-  data_pie_all_datasets <- eventReactive(input$submit, {
+  data_pie_all_datasets <- reactive({
     # dbGetQuery(con,paste0("SELECT dataset, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY  dataset"))
     data_pie_all_datasets <- sql_query() %>% st_drop_geometry()  %>% dplyr::group_by(dataset) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
     data_pie_all_datasets
     
-  },
-  # on.exit(dbDisconnect(conn), add = TRUE)
-  ignoreNULL = FALSE)
+  })
   
-  data_pie_gridtype_catch <- eventReactive(input$submit, {
-    # dbGetQuery(con,paste0("SELECT dataset, gridtype, measurement_unit, count(*), SUM(measurement_value)  as measurement_value FROM (",sql_query(),") AS foo GROUP BY dataset, gridtype, measurement_unit ORDER BY dataset"))
-    data_pie_gridtype_catch <- sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, gridtype, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
-    data_pie_gridtype_catch
-  },
-  ignoreNULL = FALSE)
+  data_pie_gridtype_catch <- reactive({
+    sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, gridtype, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
+  })
   
-  data_barplot_all_datasets <- eventReactive(input$submit, {
-    # dbGetQuery(con,paste0("SELECT  dataset, measurement_unit, count(*) AS count, SUM(measurement_value) AS measurement_value  FROM (",sql_query(),") AS foo GROUP BY dataset, measurement_unit ORDER BY dataset"))
-    data_barplot_all_datasets <- sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
-    data_barplot_all_datasets
-  },
-  # on.exit(dbDisconnect(conn), add = TRUE)
-  ignoreNULL = FALSE)
+  data_barplot_all_datasets <- reactive({
+    sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
+  })
   
   
-  data_i1 <- eventReactive(input$submit, {
-    # dbGetQuery(con,paste0("SELECT dataset, measurement_unit, year, species, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY  dataset, measurement_unit,  year, species"))
-    data_i1 <- sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, measurement_unit, year, species) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
-    data_i1
-  },
-  # on.exit(dbDisconnect(conn), add = TRUE)
-  ignoreNULL = FALSE)
+  data_i1 <- reactive({
+    sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, measurement_unit, year, species) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
+  })
+  
+  data_i2 <- reactive({
+    sql_query() %>% st_drop_geometry()  %>% dplyr::group_by(measurement_unit, gear_type, year, species) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
+  })
   
   
-  data_i2 <- eventReactive(input$submit, {
-    # dbGetQuery(con,paste0("SELECT measurement_unit, gear_type AS gear_type, year, species, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY measurement_unit, gear_type, year, species")) 
-    data_i2 <- sql_query() %>% st_drop_geometry()  %>% dplyr::group_by(measurement_unit, gear_type, year, species) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
-    data_i2
-  },
-  # on.exit(dbDisconnect(conn), add = TRUE)
-  ignoreNULL = FALSE)
+  flog.info("##########################################################")
+  flog.info("Outputs: text & Data tables")
+  flog.info("##########################################################")
   
-  ########################################################## Outputs: text & Data tables ########################################################## 
-  output$value <- renderText({ 
+  output$dudule <- renderText({ 
     wkt()
     # output$measurement_value <- renderText({ input$caption })
   })
   
   output$sql_query <- renderText({ 
     # paste("Your SQL Query is : \n", sql_query())
+    wkt()
   })
   
-  output$query_metadata <- renderText({ 
-    # paste("Your SQL Query is : \n", query_metadata())
-  })
   
   output$query_all_datasets <- renderText({ 
     # paste("Your SQL Query is : \n", query_all_datasets())
+    paste("Here is the list of id areas within the current WKT : \n", list_areas)
+    list_areas
+    
   })
   
   
-  # output$DT_data <- renderDT({
-  #   data()
-  # })
-  
-  output$DT_query_metadata <- renderDT({
-    metadata() %>% st_drop_geometry()
-  })
-  
+
+  flog.info("Data all datasets")
   output$DT_data_all_datasets <- renderDT({
     data_all_datasets()
   })
@@ -181,132 +152,21 @@ server <- function(input, output, session) {
     paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", wkt())
   })
   
-  ########################################################## Outputs: maps / plots / charts ########################################################## 
+  
+  flog.info("##########################################################")
+  flog.info("Outputs: maps / plots / charts")
+  flog.info("##########################################################")
   
   
+  flog.info("Starting leaflet in the global map module")
   # callModule(module = map_leaflet, id = "id_1")
-  map_leafletServer(id = "id_1",metadata)
-# 
-# 
-#   output$mymap <- renderLeaflet({
-# 
-#     df <- metadata()
-#     bbox <- st_bbox(df) %>%
-#       as.vector()
-#     centroid <-  st_convex_hull(df) %>% st_centroid()
-#     lat_centroid <- st_coordinates(centroid)[2]
-#     lon_centroid <- st_coordinates(centroid)[1]
-# 
-#     datasets <- unique(df$dataset)
-# 
-# 
-#     pal <- colorNumeric(
-#       palette = "YlGnBu",
-#       domain = df$measurement_value
-#     )
-#     # brewer.pal(7, "OrRd")
-#     pal_fun <- colorQuantile(   "YlOrRd", NULL, n = 10)
-# 
-#     qpal <- colorQuantile(rev(viridis::viridis(10)),
-#                           df$measurement_value, n=10)
-# 
-#     # https://r-spatial.github.io/sf/articles/sf5.html
-#     map_leaflet <- leaflet() %>%
-#       setView(lng = lon_centroid, lat =lat_centroid, zoom = 3
-#       ) %>%
-#       fitBounds(bbox[1], bbox[2], bbox[3], bbox[4])  %>%
-#       clearBounds() %>%
-#       # Base groups
-#       addProviderTiles("Esri.OceanBasemap")
-#     # addPolygons(data = df,
-#     #             label = ~value,
-#     #             popup = ~paste0("Captures pour cette espece: ", round(value), " tonnes(t) et des brouettes"),
-#     #             # fillColor = ~pal_fun(value),
-#     #             fillColor = ~qpal(value),
-#     #             fill = TRUE,
-#     #             fillOpacity = 0.8,
-#     #             smoothFactor = 0.5
-#     #             # color = ~pal(value)
-#     # ) %>%
-# 
-#     # Overlay groups
-#     for(d in datasets){
-#       this_layer <- df %>% filter(dataset %in% d)
-#       map_leaflet <- map_leaflet  %>%
-#         addPolygons(data = this_layer,
-#                     label = ~measurement_value,
-#                     popup = ~paste0("Captures pour cette espece: ", round(measurement_value), " tonnes(t) et des brouettes"),
-#                     # fillColor = ~pal_fun(value),
-#                     fillColor = ~qpal(measurement_value),
-#                     fill = TRUE,
-#                     fillOpacity = 0.8,
-#                     smoothFactor = 0.5,
-#                     group=eval(d)
-#                     # color = ~pal(value)
-#         )
-#     }
-#     # Layers control
-#     map_leaflet <- map_leaflet   %>%
-#       addDrawToolbar(
-#         targetGroup = "draw",
-#         editOptions = editToolbarOptions(
-#           selectedPathOptions = selectedPathOptions()
-#         )
-#       )     %>%
-#       addLayersControl(
-#         position = "topleft",
-#         baseGroups = c("draw"),
-#         overlayGroups = datasets,
-#         options = layersControlOptions(collapsed = FALSE)
-#       )  %>%
-#       leaflet::addLegend("bottomleft", pal = qpal, values = df$measurement_value,
-#                          title = "Total catch per cell for selected criteria",
-#                          labFormat = labelFormat(prefix = "MT "),
-#                          opacity = 1
-#       )
-# 
-#     # map_leaflet
-# 
-# 
-#   })
-# 
-# 
-#   observe({
-#     #use the draw_stop event to detect when users finished drawing
-#     feature <- input$mymap_draw_new_feature
-#     req(input$mymap_draw_stop)
-#     print(feature)
-#     polygon_coordinates <- input$mymap_draw_new_feature$geometry$coordinates[[1]]
-#     # see  https://rstudio.github.io/leaflet/shiny.html
-#     bb <- input$mymap_bounds
-#     geom_polygon <- input$mymap_draw_new_feature$geometry
-#     # drawn_polygon <- Polygon(do.call(rbind,lapply(polygon_coordinates,function(x){c(x[[1]][1],x[[2]][1])})))
-#     geoJson <- geojsonio::as.json(feature)
-#     # spdf <- geojsonio::geojson_sp(feature)
-#     geom <- st_read(geoJson)
-#     wkt(st_as_text(st_geometry(geom[1,])))
-#     coord <- st_as_text(st_geometry(geom[1,]))
-# 
-#     north <- polygon_coordinates[[1]][[1]]
-#     south <- polygon_coordinates[[2]][[1]]
-#     east <- polygon_coordinates[[1]][[2]]
-#     west <- polygon_coordinates[[2]][[2]]
-# 
-# 
-#     if(is.null(polygon_coordinates))
-#       return()
-#     text<-paste("North ", north, "South ", east)
-# 
-#     mymap_proxy = leafletProxy("mymap") %>% clearPopups() %>% addPopups(south,west,coord)
-#     textOutput("wkt")
-# 
-#   })
-# 
+  map_leafletServer(id = "id_1",sql_query)
 
+  flog.info("Starting plot if indicator 2")
   output$plot2 <- renderPlotly({ 
     
     df_i2 <- data_i2()
-    
+    df_i2 <- as_tibble(df_i2)
     i2 <- Atlas_i2_SpeciesByGear(as.data.frame(df_i2),
                                  yearAttributeName="year",
                                  speciesAttributeName="species",
@@ -319,7 +179,7 @@ server <- function(input, output, session) {
   
   
   
-  
+  flog.info("Starting plot2 with streamgraph")
   output$plot2_streamgraph<- renderStreamgraph({ 
     df_i2 =  data_i2() %>% 
       streamgraph("gear_type", "measurement_value", "year", offset="zero", interpolate="step") %>%
@@ -330,6 +190,7 @@ server <- function(input, output, session) {
   
   
   
+  flog.info("Starting dygraph_all_datasets with Dygraph")
   output$dygraph_all_datasets <- renderDygraph({
     
     df_i1 <- data_all_datasets()  %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% spread(dataset, measurement_value, fill=0) 
@@ -390,14 +251,15 @@ server <- function(input, output, session) {
       #   
     }
     
-    g1 <- dygraph(tuna_catches_timeSeries, main = "Times series of measurement_values with selected measurement_units (tons or numbers) for the selected datasets") %>% dyRangeSelector() %>% dyLegend(labelsDiv = "legendDivID", labelsSeparateLines = T)
+    g1 <- dygraph(tuna_catches_timeSeries, main = "Times series of measurement_values with selected measurement_units (tons or numbers) for the selected datasets") %>% 
+      dyRangeSelector() %>% dyLegend(labelsDiv = "legendDivID", labelsSeparateLines = T)
     
     
     
   })
   
   
-  
+  flog.info("Starting plotly_time_series_all_datasets")
   output$plotly_time_series_all_datasets <- renderPlotly({
     
     
@@ -454,7 +316,7 @@ server <- function(input, output, session) {
   
   
   
-  
+  flog.info("Starting plotly pie_ratio_catch")
   output$pie_ratio_catch<- renderPlotly({ 
     # output$plot_species<- renderPlot({ 
     df_i2 = data_pie_all_datasets() # %>% spread(dataset, measurement_value, fill=0)  
@@ -463,6 +325,7 @@ server <- function(input, output, session) {
       total <- total$measurement_value
     }else{total=1}
     df_i2 =  df_i2 %>% mutate(measurement_value = measurement_value/total)  %>% subset(dataset!='global_nominal_catch_firms_level0')
+    df_i2 <- as_tibble(df_i2)
     
     fig <- plot_ly(df_i2, labels = ~dataset, values = ~measurement_value, type = 'pie',
                    # marker = list(colors = colors, line = list(color = '#FFFFFF', width = 1), sort = FALSE),
@@ -478,7 +341,7 @@ server <- function(input, output, session) {
   
   
   
-  
+  flog.info("Starting plotly pie_gridtype_catch")
   output$pie_gridtype_catch<- renderPlotly({ 
     
     df_i2 = data_pie_gridtype_catch() %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) # %>% filter(measurement_unit == 't') # %>% filter(dataset=='global_nominal_catch_firms_level0')
@@ -557,7 +420,7 @@ server <- function(input, output, session) {
   #   
   #   
   # })
-  
+  flog.info("Starting plotly barplot_datasets")
   output$barplot_datasets <- renderPlotly({
     # https://tutorials.cpsievert.me/20190821/#13
     # https://stackoverflow.com/questions/55002248/plotly-stacked-bar-chart-add-trace-loop-issue

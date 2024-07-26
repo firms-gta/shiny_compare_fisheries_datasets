@@ -12,28 +12,47 @@ map_leafletUI <- function(id) {
 }
 
 
-map_leafletServer <- function(id,metadata) {
+map_leafletServer <- function(id,sql_query) {
   flog.info("Starting global map module")
   moduleServer(id, function(input, output, session) {
-    # ns <- session$ns
-    output$mymap <- renderLeaflet({
+    ns <- session$ns
+    
+    
+    
+    data_map <- reactive({
+      flog.info("Filtering with new WKT  : %s", wkt())
       
-      df <- metadata()
-      flog.info(class(df))
+      req(sql_query())
+      list_cwp <- sql_query() %>% dplyr::filter(st_within(st_as_sfc(wkt(), crs = 4326), sparse = FALSE)) %>% st_drop_geometry() %>% 
+        dplyr::group_by(dataset,codesource_area) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup()
+      
+      # data_map <- df_distinct_geom %>% left_join(list_cwp)
+      data_map <- df_distinct_geom  %>% merge(list_cwp) %>% filter(!st_is_empty(.))
+      # list_cwp  %>% left_join(df_distinct_geom)  %>% filter(!st_is_empty(.))
+      flog.info("Main data: %s", head(data_map))
+      flog.info("Main data nrow: %s", nrow(data_map))
+      data_map
+    })  
+    output$mymap <- renderLeaflet({
+      # flog.info("Testing truthiness of the dataframe with req()")
+      # req(data_map(),TRUE)
+
+      df <- data_map()
+      flog.info("Main data check: %s", head(df))
+      
+      flog.info("Class of data object : %s", class(df))
+      flog.info("Column names : %s", colnames(df))
+      flog.info("Number of rows : %s", nrow(df))
       
       bbox <- st_bbox(df) %>% as.vector()  
       centroid <-  st_convex_hull(df) %>% st_centroid()
       lat_centroid <- st_coordinates(centroid)[2]
       lon_centroid <- st_coordinates(centroid)[1]
-      
-      flog.info("lat_centroid")
-      flog.info(lat_centroid)
+      flog.info("lat_centroid : %s",lat_centroid)
       datasets <- unique(df$dataset)
-      flog.info("listing different datasets")
-      datasets <- unique(df$dataset)
-      flog.info(datasets)
+      flog.info("listing different datasets : %s", datasets)
       
-      
+      flog.info("Setting the palette")
       pal <- colorNumeric(
         palette = "YlGnBu",
         domain = df$measurement_value
@@ -52,19 +71,10 @@ map_leafletServer <- function(id,metadata) {
         clearBounds() %>%
         # Base groups
         addProviderTiles("Esri.OceanBasemap") 
-      # addPolygons(data = df,
-      #             label = ~value,
-      #             popup = ~paste0("Captures pour cette espece: ", round(value), " tonnes(t) et des brouettes"),
-      #             # fillColor = ~pal_fun(value),
-      #             fillColor = ~qpal(value),
-      #             fill = TRUE,
-      #             fillOpacity = 0.8,
-      #             smoothFactor = 0.5
-      #             # color = ~pal(value)
-      # ) %>%
       
       # Overlay groups
       for(d in datasets){
+        flog.info("Adding one layer for each selected dataset : %s",d)
         this_layer <- df %>% filter(dataset %in% d)
         map_leaflet <- map_leaflet  %>% 
           addPolygons(data = this_layer,
@@ -98,20 +108,23 @@ map_leafletServer <- function(id,metadata) {
                            labFormat = labelFormat(prefix = "MT "),
                            opacity = 1
         )
-      
       map_leaflet
       # return(map_leaflet)
   })
   
-  
+  #https://cobalt-casco.github.io/r-shiny-geospatial/07-spatial-input-selection.html
   observe({
     #use the draw_stop event to detect when users finished drawing
     feature <- input$mymap_draw_new_feature
     req(input$mymap_draw_stop)
-    print(feature)
+    # print(feature)
+    flog.info("New wkt : %s",feature)
+    
     polygon_coordinates <- input$mymap_draw_new_feature$geometry$coordinates[[1]]
     # see  https://rstudio.github.io/leaflet/shiny.html
     bb <- input$mymap_bounds
+    flog.info("bb : %s",bb)
+    
     geom_polygon <- input$mymap_draw_new_feature$geometry
     # drawn_polygon <- Polygon(do.call(rbind,lapply(polygon_coordinates,function(x){c(x[[1]][1],x[[2]][1])})))
     geoJson <- geojsonio::as.json(feature)
@@ -119,6 +132,9 @@ map_leafletServer <- function(id,metadata) {
     geom <- st_read(geoJson)
     wkt(st_as_text(st_geometry(geom[1,])))
     coord <- st_as_text(st_geometry(geom[1,]))
+    flog.info("Filter areas id that are within the current wkt")
+    # list_areas(df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc(coord, crs = 4326), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>%pull())
+    flog.info("First ten values of the matching areas : %s", list_areas())
     
     north <- polygon_coordinates[[1]][[1]]
     south <- polygon_coordinates[[2]][[1]]
@@ -132,10 +148,17 @@ map_leafletServer <- function(id,metadata) {
     
     mymap_proxy = leafletProxy("mymap") %>% clearPopups() %>% addPopups(south,west,coord)
     textOutput("wkt")
-    
+
   })
   
+  # flog.info("View data of the global map")
+  # output$this_wkt <- renderText({
+  #   wkt()
+  # })
   
+  output$DT_query_data_map <- renderDT({
+    data_map()
+  })
   
   })
   flog.info("End of global map module")

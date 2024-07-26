@@ -14,12 +14,10 @@ ui <- fluidPage(
              #               .navbar {min-height:25px !important;}'))
              # ),
              # map_leafletUI("id_1"),
-             tabPanel("Interactive Indicator 11",
+             tabPanel("Datasets overview",
                       div(class="outer",
                           tags$head(includeCSS("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/styles.css")),
                           map_leafletUI("id_1"),
-                          # leafletOutput("myMap"),
-                          # leafletOutput("mymap", width="100%", height="100%"),
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 150,  left = "3%", width = "21%", height = "auto",
                                         selectInput(
@@ -78,12 +76,11 @@ ui <- fluidPage(
                                           selected= default_fishing_fleet,
                                           width = "99%"
                                         ),
-                                        textInput("yourWKT","Paste you WKT",value=new_wkt),
-                                        verbatimTextOutput("value"),
-                                        actionButton(
-                                          inputId = "submit",
-                                          label = "Submit"
-                                        ),
+                                        textInput("yourWKT","Paste you WKT",value=bbox),
+                                        verbatimTextOutput("dudule"),
+                                        
+                                        actionButton(inputId = "submit",label = "Submit"),
+                                        actionButton(inputId="applytWkt", label="Select features within this WKT"),
                                         actionButton("resetWkt", "Reset WKT to global"),
                                         tags$br()
                           ),
@@ -123,15 +120,15 @@ ui <- fluidPage(
              ),
              navbarMenu("Browse Data Tables",
                         tabPanel(
-                          title = "Browse query_metadata",
-                          DT::dataTableOutput("DT_query_metadata")
+                          title = "Browse map data",
+                          DT::dataTableOutput("DT_query_data_map")
                         ),
                         tabPanel(
-                          title = "Browse data_all_datasets",
+                          title = "Browse dat time series",
                           DT::dataTableOutput("DT_data_all_datasets")
                         ),
                         tabPanel(
-                          title = "Browse data_barplot_all_datasets",
+                          title = "Browse data bar plots",
                           DT::dataTableOutput("DT_data_barplot_all_datasets")
                         )
              ),
@@ -139,17 +136,17 @@ ui <- fluidPage(
              #   title = "Your filters",
              #   textOutput("selected_var")
              # ),
-             navbarMenu("Browse underlying SQL queries",
+             navbarMenu("Browse underlying filters",
                         tabPanel(
-                          title = "The main SQL query: sql_query: sql_query",
-                          textOutput("sql_query")
+                          title = "Thecurrent WKT",
+                          textOutput("dudule")
                         ),
                         tabPanel(
                           title = "SQL query: query_metadata",
                           textOutput("query_metadata")
                         ),
                         tabPanel(
-                          title = "SQL query: query_all_datasets",
+                          title = "Lits of areas id",
                           textOutput("query_all_datasets")
                         )
              ),
