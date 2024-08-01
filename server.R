@@ -11,7 +11,7 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$resetWkt, {
-    wkt(bbox)
+    wkt(default_wkt)
   })
     observe({
   updateTextInput(session, "yourWKT", value =  wkt())
@@ -56,14 +56,19 @@ server <- function(input, output, session) {
   sql_query <- eventReactive(input$submit, {
     req(initial_data())
     req(wkt())
-    wkt <- bbox
-    wkt <- wkt()
+    # bbox <- "POLYGON ((-180 -60, 180 -60, 180 70, -180 70, -180 -60))"
+    # wkt <- bbox
+    wkt <- wkt()    
     # sf_wkt <- st_as_sfc("POLYGON ((25.83984 -26.27371, 25.83984 2.635789, 60.29297 2.635789, 60.29297 -26.27371, 25.83984 -26.27371))" , crs = 4326)
     sf_wkt <- st_as_sfc(wkt , crs = 4326)
+    flog.info("sf_wkt: %s", sf_wkt)
     list_areas <- df_distinct_geom[st_within(df_distinct_geom, sf_wkt, sparse = FALSE), ] %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
-    # list_areas <- df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc(wkt()), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
-    # list_areas(df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc("POLYGON ((25.83984 -26.27371, 25.83984 2.635789, 60.29297 2.635789, 60.29297 -26.27371, 25.83984 -26.27371))", crs = 4326), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull())
-    sql_query <- df_sf   %>%  dplyr::filter(
+    # list_areas <- df_distinct_geom[st_contains(sf_wkt, df_distinct_geom, sparse = FALSE),] %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
+    # list_areas <- df_distinct_geom %>% dplyr::filter(st_within(df_distinct_geom,sf_wkt, sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
+    # list_areas <- df_distinct_geom %>% dplyr::filter(st_contains(sf_wkt, sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
+    flog.info("Number of different areas: %s", nrow(list_areas))
+    
+    sql_query <- initial_data()  %>%  dplyr::filter(
       codesource_area %in% list_areas,
       dataset %in% input$dataset,
       species %in% input$species,
@@ -71,9 +76,9 @@ server <- function(input, output, session) {
       year %in% input$year,
       fishing_fleet %in% input$fishing_fleet,
       measurement_unit %in% input$unit,
-      gridtype %in% input$gridtype)   # %>% dplyr::group_by(codesource_area,dataset, species,gear_type, year, fishing_fleet, measurement_unit, gridtype) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) #%>% top_n(10000)
-    
+      gridtype %in% input$gridtype) # %>% st_as_sf(wkt="geom")  # %>% dplyr::group_by(codesource_area,dataset, species,gear_type, year, fishing_fleet, measurement_unit, gridtype) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) #%>% top_n(10000)
                             
+    flog.info("Main data number rows: %s", nrow(sql_query))
     flog.info("Main data: %s", head(sql_query))
     sql_query
   },
@@ -84,33 +89,33 @@ server <- function(input, output, session) {
   data_all_datasets <- reactive({
     # query_all_datasets(paste0("SELECT dataset, year, sum(measurement_value) as measurement_value, measurement_unit FROM (",sql_query(),") AS foo GROUP BY dataset, year, measurement_unit"))
     # dbGetQuery(con,query_all_datasets())
-    data_all_datasets <- sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, year, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
+    data_all_datasets <- sql_query() %>% dplyr::group_by(dataset, year, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
     data_all_datasets
   })
   
   
   data_pie_all_datasets <- reactive({
     # dbGetQuery(con,paste0("SELECT dataset, sum(measurement_value) as measurement_value FROM (",sql_query(),") AS foo GROUP BY  dataset"))
-    data_pie_all_datasets <- sql_query() %>% st_drop_geometry()  %>% dplyr::group_by(dataset) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
+    data_pie_all_datasets <- sql_query() %>% dplyr::group_by(dataset) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
     data_pie_all_datasets
     
   })
   
   data_pie_gridtype_catch <- reactive({
-    sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, gridtype, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
+    sql_query() %>% dplyr::group_by(dataset, gridtype, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
   })
   
   data_barplot_all_datasets <- reactive({
-    sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
+    sql_query() %>% dplyr::group_by(dataset, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
   })
   
   
   data_i1 <- reactive({
-    sql_query()  %>% st_drop_geometry() %>% dplyr::group_by(dataset, measurement_unit, year, species) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
+    sql_query() %>% dplyr::group_by(dataset, measurement_unit, year, species) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
   })
   
   data_i2 <- reactive({
-    sql_query() %>% st_drop_geometry()  %>% dplyr::group_by(measurement_unit, gear_type, year, species) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
+    sql_query() %>% dplyr::group_by(measurement_unit, gear_type, year, species) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
   })
   
   
@@ -132,7 +137,7 @@ server <- function(input, output, session) {
   output$query_all_datasets <- renderText({ 
     # paste("Your SQL Query is : \n", query_all_datasets())
     paste("Here is the list of id areas within the current WKT : \n", list_areas)
-    list_areas
+    list_areas()
     
   })
   

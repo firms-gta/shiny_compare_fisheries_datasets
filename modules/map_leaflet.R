@@ -17,22 +17,25 @@ map_leafletServer <- function(id,sql_query) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    
-    
     data_map <- reactive({
       flog.info("Filtering with new WKT  : %s", wkt())
       
       req(sql_query())
-      list_cwp <- sql_query() %>% dplyr::filter(st_within(st_as_sfc(wkt(), crs = 4326), sparse = FALSE)) %>% st_drop_geometry() %>% 
-        dplyr::group_by(dataset,codesource_area) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup()
+      this_df <- sql_query()
+      # wkt <- "POLYGON ((-159.6094 -58.81374, -159.6094 43.06889, 112.5 43.06889, 112.5 -58.81374, -159.6094 -58.81374))"
+      # wkt <- wkt()
+      
+      data_map <- this_df %>% dplyr::group_by(dataset,codesource_area,geom) %>% 
+        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup() %>% filter(!is.na(geom))  %>% st_as_sf(wkt="geom", crs = 4326)
       
       # data_map <- df_distinct_geom %>% left_join(list_cwp)
-      data_map <- df_distinct_geom  %>% merge(list_cwp) %>% filter(!st_is_empty(.))
+      # data_map <- df_distinct_geom  %>% merge(list_cwp) %>% filter(!st_is_empty(.))
       # list_cwp  %>% left_join(df_distinct_geom)  %>% filter(!st_is_empty(.))
       flog.info("Main data: %s", head(data_map))
       flog.info("Main data nrow: %s", nrow(data_map))
       data_map
-    })  
+    }) 
+    
     output$mymap <- renderLeaflet({
       # flog.info("Testing truthiness of the dataframe with req()")
       # req(data_map(),TRUE)
@@ -65,10 +68,11 @@ map_leafletServer <- function(id,sql_query) {
       
       # https://r-spatial.github.io/sf/articles/sf5.html
       map_leaflet <- leaflet() %>%
-        setView(lng = lon_centroid, lat =lat_centroid, zoom = 3
-        ) %>%  
-        fitBounds(bbox[1], bbox[2], bbox[3], bbox[4])  %>%
-        clearBounds() %>%
+        # setView(lng = lon_centroid, lat =lat_centroid, zoom = 3
+        # ) %>%  
+        setMaxBounds(bbox[1], bbox[2], bbox[3], bbox[4]) %>%  
+        # fitBounds(bbox[1], bbox[2], bbox[3], bbox[4])  %>%
+        # clearBounds() %>%
         # Base groups
         addProviderTiles("Esri.OceanBasemap") 
       
@@ -118,12 +122,12 @@ map_leafletServer <- function(id,sql_query) {
     feature <- input$mymap_draw_new_feature
     req(input$mymap_draw_stop)
     # print(feature)
-    flog.info("New wkt : %s",feature)
+    flog.info("New wkt : %s", feature)
     
     polygon_coordinates <- input$mymap_draw_new_feature$geometry$coordinates[[1]]
     # see  https://rstudio.github.io/leaflet/shiny.html
-    bb <- input$mymap_bounds
-    flog.info("bb : %s",bb)
+    # bb <- input$mymap_bounds
+    # flog.info("bb mymap_bounds : %s",bb)
     
     geom_polygon <- input$mymap_draw_new_feature$geometry
     # drawn_polygon <- Polygon(do.call(rbind,lapply(polygon_coordinates,function(x){c(x[[1]][1],x[[2]][1])})))
@@ -134,7 +138,7 @@ map_leafletServer <- function(id,sql_query) {
     coord <- st_as_text(st_geometry(geom[1,]))
     flog.info("Filter areas id that are within the current wkt")
     # list_areas(df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc(coord, crs = 4326), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>%pull())
-    flog.info("First ten values of the matching areas : %s", list_areas())
+    # flog.info("First ten values of the matching areas : %s", list_areas())
     
     north <- polygon_coordinates[[1]][[1]]
     south <- polygon_coordinates[[2]][[1]]

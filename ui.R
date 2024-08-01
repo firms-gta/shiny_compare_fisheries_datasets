@@ -76,7 +76,7 @@ ui <- fluidPage(
                                           selected= default_fishing_fleet,
                                           width = "99%"
                                         ),
-                                        textInput("yourWKT","Paste you WKT",value=bbox),
+                                        textInput("yourWKT","Paste you WKT"),
                                         verbatimTextOutput("dudule"),
                                         
                                         actionButton(inputId = "submit",label = "Submit"),
