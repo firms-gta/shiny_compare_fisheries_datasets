@@ -4,7 +4,7 @@ source(here::here('install.R'))
 flog.info("All libraries loaded successfully.")
 
 # Initialize reactive values and default WKT for mapping
-# bbox <- "POLYGON ((-180 -60, 180 -60, 180 70, -180 70, -180 -60))"
+# bbox <- 'POLYGON ((-180 -60, 180 -60, 180 70, -180 70, -180 -60))'
 # bbox <- 'POLYGON ((10.01953 -28.76766, 10.01953 5.266008, 66.09375 5.266008, 66.09375 -28.76766, 10.01953 -28.76766))'
 bbox <- 'POLYGON ((-124.1016 -51.17934, -124.1016 49.15297, 207.0703 49.15297, 207.0703 -51.17934, -124.1016 -51.17934))'
 wkt <- reactiveVal(bbox)
@@ -13,7 +13,7 @@ query_all_datasets <- reactiveVal()
 list_areas  <- reactiveVal()
 # data_map <- reactiveVal()
 flog.info("Reactive values initialized successfully.")
-
+initial_data <- reactiveVal()
 
 mode="gpkg"
 mode="postgres"
@@ -166,6 +166,8 @@ load_ui_modules <- function() {
 load_ui_modules()
 flog.info("Modules loaded")
 
+
+initial_data(df_sf)
+rm(df_sf)
 source(here::here("ui.R"))
 source(here::here("server.R"))
-

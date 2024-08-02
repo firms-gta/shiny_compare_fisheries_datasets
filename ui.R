@@ -124,7 +124,7 @@ ui <- fluidPage(
                           DT::dataTableOutput("DT_query_data_map")
                         ),
                         tabPanel(
-                          title = "Browse dat time series",
+                          title = "Browse time series data",
                           DT::dataTableOutput("DT_data_all_datasets")
                         ),
                         tabPanel(

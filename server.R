@@ -1,11 +1,6 @@
 server <- function(input, output, session) {
   
-  
-  initial_data <- reactiveVal()
-  initial_data(df_sf)
-  
   ########################################################## Dynamic filters ########################################################## 
-  
   change <- reactive({
     unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
   })
@@ -53,8 +48,10 @@ server <- function(input, output, session) {
 
   
   flog.info("Apply current filters to the main datasets when click on submit")
-  sql_query <- eventReactive(input$submit, {
-    req(initial_data())
+  # sql_query <- eventReactive(input$submit, {
+    sql_query <- reactive({
+      
+    # req(initial_data())
     req(wkt())
     # bbox <- "POLYGON ((-180 -60, 180 -60, 180 70, -180 70, -180 -60))"
     # wkt <- bbox
@@ -62,9 +59,9 @@ server <- function(input, output, session) {
     # sf_wkt <- st_as_sfc("POLYGON ((25.83984 -26.27371, 25.83984 2.635789, 60.29297 2.635789, 60.29297 -26.27371, 25.83984 -26.27371))" , crs = 4326)
     sf_wkt <- st_as_sfc(wkt , crs = 4326)
     flog.info("sf_wkt: %s", sf_wkt)
-    list_areas <- df_distinct_geom[st_within(df_distinct_geom, sf_wkt, sparse = FALSE), ] %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
+    # list_areas <- df_distinct_geom[st_within(df_distinct_geom, sf_wkt, sparse = FALSE), ] %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
     # list_areas <- df_distinct_geom[st_contains(sf_wkt, df_distinct_geom, sparse = FALSE),] %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
-    # list_areas <- df_distinct_geom %>% dplyr::filter(st_within(df_distinct_geom,sf_wkt, sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
+    list_areas <- df_distinct_geom %>% dplyr::filter(st_within(df_distinct_geom,sf_wkt, sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
     # list_areas <- df_distinct_geom %>% dplyr::filter(st_contains(sf_wkt, sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
     flog.info("Number of different areas: %s", nrow(list_areas))
     
@@ -76,14 +73,29 @@ server <- function(input, output, session) {
       year %in% input$year,
       fishing_fleet %in% input$fishing_fleet,
       measurement_unit %in% input$unit,
-      gridtype %in% input$gridtype) # %>% st_as_sf(wkt="geom")  # %>% dplyr::group_by(codesource_area,dataset, species,gear_type, year, fishing_fleet, measurement_unit, gridtype) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) #%>% top_n(10000)
-                            
-    flog.info("Main data number rows: %s", nrow(sql_query))
-    flog.info("Main data: %s", head(sql_query))
-    sql_query
-  },
-  ignoreNULL = FALSE)
+      gridtype %in% input$gridtype)   %>%
+      dplyr::group_by(codesource_area,geom, dataset, species,gear_type, year, measurement_unit, gridtype) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) #%>% top_n(10000)
+    # %>% st_as_sf(wkt="geom")  # %>% dplyr::group_by(codesource_area,dataset, species,gear_type, year, fishing_fleet, measurement_unit, gridtype) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) #%>% top_n(10000)
 
+    
+    # sql_query <- initial_data() %>% dplyr::filter(
+    #   dataset %in% input$dataset,
+    #   species %in% input$species,
+    #   gear_type %in% input$gear_type,
+    #   year %in% input$year,
+    #   fishing_fleet %in% input$fishing_fleet,
+    #   measurement_unit %in% input$unit,
+    #   gridtype %in% input$gridtype)   %>% 
+    #   dplyr::group_by(codesource_area,geom, dataset, species,gear_type, year, measurement_unit, gridtype) %>%
+    #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>% 
+    #   filter(!is.na(gridtype)) %>% st_as_sf(wkt="geom",crs=4326) %>% dplyr::filter(st_within(initial_data(),sf_wkt, sparse = FALSE)) %>%  st_drop_geometry()
+    # 
+                          
+    flog.info("Main data number rows: %s", nrow(sql_query))
+    sql_query
+  # },
+  # ignoreNULL = FALSE)
+})
 
   # measurement_unit,  gear_type, year, species ;")
   data_all_datasets <- reactive({
@@ -123,6 +135,12 @@ server <- function(input, output, session) {
   flog.info("Outputs: text & Data tables")
   flog.info("##########################################################")
   
+  
+  
+  output$selected_var <- renderText({ 
+    paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", wkt())
+  })
+  
   output$dudule <- renderText({ 
     wkt()
     # output$measurement_value <- renderText({ input$caption })
@@ -130,7 +148,7 @@ server <- function(input, output, session) {
   
   output$sql_query <- renderText({ 
     # paste("Your SQL Query is : \n", sql_query())
-    wkt()
+    paste("You have selected the following filters:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", wkt())
   })
   
   
@@ -141,22 +159,23 @@ server <- function(input, output, session) {
     
   })
   
-  
+  flog.info("Data Table of the map")
+  output$DT_query_data_map <- renderDT({
+    sql_query()
+  })
 
-  flog.info("Data all datasets")
+  flog.info("Data Table of the time series")
   output$DT_data_all_datasets <- renderDT({
     data_all_datasets()
   })
   
+  flog.info("Data Table of the bar plots")
   output$DT_data_barplot_all_datasets <- renderDT({
     # data_barplot_all_datasets()   %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))  %>% pivot_wider(names_from = measurement_unit, measurement_values_from = c("measurement_value", "count"), names_sep="_",measurement_values_fill = 0)
     data_barplot_all_datasets() 
   }) 
   
-  output$selected_var <- renderText({ 
-    paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", wkt())
-  })
-  
+
   
   flog.info("##########################################################")
   flog.info("Outputs: maps / plots / charts")
