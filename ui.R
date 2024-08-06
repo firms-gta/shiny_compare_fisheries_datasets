@@ -17,7 +17,7 @@ ui <- fluidPage(
              tabPanel("Datasets overview",
                       div(class="outer",
                           tags$head(includeCSS("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/styles.css")),
-                          map_leafletUI("id_1"),
+                          map_leafletUI("map_global"),
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 150,  left = "3%", width = "21%", height = "auto",
                                         selectInput(
@@ -76,12 +76,13 @@ ui <- fluidPage(
                                           selected= default_fishing_fleet,
                                           width = "99%"
                                         ),
-                                        textInput("yourWKT","Paste you WKT"),
-                                        verbatimTextOutput("dudule"),
+                                        # textInput(inputId ="yourWKT",label ="Draw or paste a new WKT"),
+                                        map_leafletUI("other"),
+                                        actionButton(inputId ="resetWkt", label = "Reset WKT (no spatial filter)"),
+                                        # verbatimTextOutput("updatedWKT"),
                                         
                                         actionButton(inputId = "submit",label = "Submit"),
-                                        actionButton(inputId="applytWkt", label="Select features within this WKT"),
-                                        actionButton("resetWkt", "Reset WKT to global"),
+                                        # actionButton(inputId="applytWkt", label="Select features within this WKT"),
                                         tags$br()
                           ),
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
@@ -138,8 +139,8 @@ ui <- fluidPage(
              # ),
              navbarMenu("Browse underlying filters",
                         tabPanel(
-                          title = "Thecurrent WKT",
-                          textOutput("dudule")
+                          title = "The current WKT",
+                          textOutput("wkt")
                         ),
                         tabPanel(
                           title = "SQL query: query_metadata",

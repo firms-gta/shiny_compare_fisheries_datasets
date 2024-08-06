@@ -5,18 +5,16 @@ server <- function(input, output, session) {
     unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
   })
   
-  observeEvent(input$resetWkt, {
-    wkt(default_wkt)
-  })
-    observe({
-  updateTextInput(session, "yourWKT", value =  wkt())
-    })
+  # observeEvent(input$yourWKT,{
+  #   updateSelectInput(session = session,
+  #                     inputId = "yourWKT",
+  #                     selected = wkt())
+  # })
   
   observeEvent(input$species,{
     temp <- filters_combinations %>% filter(species %in% change()[1])
     updateSelectInput(session,"year",choices = unique(temp$year),selected=c(seq(min(temp$year):max(temp$year))+min(temp$year)-1))
     updateSelectInput(session,"gear_type",choices = unique(temp$gear_type),selected=unique(temp$gear_type))
-    
   }
   )
   
@@ -45,11 +43,15 @@ server <- function(input, output, session) {
   #   df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc(wkt()), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
   # },
   # ignoreNULL = FALSE)
-
+  
+  eventReactive(input$resetWkt, {
+    wkt(bbox)
+    },
+    ignoreNULL = FALSE)
   
   flog.info("Apply current filters to the main datasets when click on submit")
-  # sql_query <- eventReactive(input$submit, {
-    sql_query <- reactive({
+  sql_query <- eventReactive(input$submit, {
+    # sql_query <- reactive({
       
     # req(initial_data())
     req(wkt())
@@ -58,12 +60,15 @@ server <- function(input, output, session) {
     wkt <- wkt()    
     # sf_wkt <- st_as_sfc("POLYGON ((25.83984 -26.27371, 25.83984 2.635789, 60.29297 2.635789, 60.29297 -26.27371, 25.83984 -26.27371))" , crs = 4326)
     sf_wkt <- st_as_sfc(wkt , crs = 4326)
-    flog.info("sf_wkt: %s", sf_wkt)
+    flog.info("Current WKT is : %s", wkt)
     # list_areas <- df_distinct_geom[st_within(df_distinct_geom, sf_wkt, sparse = FALSE), ] %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
     # list_areas <- df_distinct_geom[st_contains(sf_wkt, df_distinct_geom, sparse = FALSE),] %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
-    list_areas <- df_distinct_geom %>% dplyr::filter(st_within(df_distinct_geom,sf_wkt, sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
+    list_areas <- df_distinct_geom %>% 
+      dplyr::filter(st_contains(sf_wkt, sparse = FALSE))  %>% 
+      st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
     # list_areas <- df_distinct_geom %>% dplyr::filter(st_contains(sf_wkt, sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
-    flog.info("Number of different areas: %s", nrow(list_areas))
+    df_distinct_geom %>% mutate(area=st_area(.)) %>% arrange(desc(area))
+    flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
     
     sql_query <- initial_data()  %>%  dplyr::filter(
       codesource_area %in% list_areas,
@@ -93,9 +98,9 @@ server <- function(input, output, session) {
                           
     flog.info("Main data number rows: %s", nrow(sql_query))
     sql_query
-  # },
-  # ignoreNULL = FALSE)
-})
+  },
+  ignoreNULL = FALSE)
+# })
 
   # measurement_unit,  gear_type, year, species ;")
   data_all_datasets <- reactive({
@@ -141,10 +146,10 @@ server <- function(input, output, session) {
     paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", wkt())
   })
   
-  output$dudule <- renderText({ 
-    wkt()
-    # output$measurement_value <- renderText({ input$caption })
-  })
+  # output$updatedWKT <- renderText({ 
+  #   wkt()
+  #   # output$measurement_value <- renderText({ input$caption })
+  # })
   
   output$sql_query <- renderText({ 
     # paste("Your SQL Query is : \n", sql_query())
@@ -154,8 +159,8 @@ server <- function(input, output, session) {
   
   output$query_all_datasets <- renderText({ 
     # paste("Your SQL Query is : \n", query_all_datasets())
-    paste("Here is the list of id areas within the current WKT : \n", list_areas)
-    list_areas()
+    paste("\n \n \n \n \n", "Here is the list of id areas within the current WKT : \n", list_areas())
+    # list_areas()
     
   })
   
@@ -184,7 +189,7 @@ server <- function(input, output, session) {
   
   flog.info("Starting leaflet in the global map module")
   # callModule(module = map_leaflet, id = "id_1")
-  map_leafletServer(id = "id_1",sql_query)
+  map_leafletServer(id = "map_global",sql_query)
 
   flog.info("Starting plot if indicator 2")
   output$plot2 <- renderPlotly({ 
