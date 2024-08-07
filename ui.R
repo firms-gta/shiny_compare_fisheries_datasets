@@ -77,9 +77,11 @@ ui <- fluidPage(
                                           width = "99%"
                                         ),
                                         # textInput(inputId ="yourWKT",label ="Draw or paste a new WKT"),
+                                        # textInput("yourWKT","Paste you WKT",value=new_wkt),
+                                        # textInput("yourWKT","Paste you WKT",value=textOutput("updatedWKT")),
+                                        verbatimTextOutput("updatedWKT"),
                                         map_leafletUI("other"),
                                         actionButton(inputId ="resetWkt", label = "Reset WKT (no spatial filter)"),
-                                        # verbatimTextOutput("updatedWKT"),
                                         
                                         actionButton(inputId = "submit",label = "Submit"),
                                         # actionButton(inputId="applytWkt", label="Select features within this WKT"),
@@ -113,6 +115,7 @@ ui <- fluidPage(
              ),
              tabPanel(
                title = "Plot indicator 2",
+               # map_leafletUI("map_global"),
                plotlyOutput("plot2")
              ),
              tabPanel(

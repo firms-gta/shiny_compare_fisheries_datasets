@@ -12,13 +12,17 @@ map_leafletServer <- function(id,sql_query) {
     ns <- session$ns
     
     data_map <- reactive({
-      # req(sql_query())
+      req(sql_query())
       this_df <- sql_query()
       flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(this_df))
-      # wkt <- "POLYGON ((-159.6094 -58.81374, -159.6094 43.06889, 112.5 43.06889, 112.5 -58.81374, -159.6094 -58.81374))"
+      flog.info("Sum of values per dataset and per area for mapping : %s", nrow(this_df))
+      current_selection <- st_as_sfc(wkt(), crs = 4326)
+      flog.info("WKT current_selection : %s", current_selection)
       
-      data_map <- this_df %>% filter(!is.na(gridtype)) %>% dplyr::group_by(dataset,codesource_area,geom) %>% 
-        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup() %>% st_as_sf(wkt="geom",crs=4326)
+      data_map <- this_df %>% # filter(!is.na(gridtype)) %>% st_as_sf(wkt="geom",crs=4326) %>% 
+      # dplyr::filter(st_contains(current_selection, sparse = FALSE)) %>%
+      dplyr::group_by(dataset,codesource_area,gridtype) %>% 
+        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup() 
         # left_join(df_distinct_geom,by="codesource_area")
       
       # data_map <- df_distinct_geom %>% left_join(list_cwp)
@@ -31,14 +35,14 @@ map_leafletServer <- function(id,sql_query) {
     
     output$map <- renderLeaflet({
       flog.info("Testing truthiness of the dataframe with req()")
+      # req(data_map())
       req(data_map())
-      req(wkt())
-      wkt <- wkt()
-      current_selection <- st_as_sfc(wkt, crs = 4326)
+      df <- data_map() 
+      current_selection <- st_as_sfc(wkt(), crs = 4326)
       # flog.info("Check current value of WKT  : %s", wkt)
-      spatial_footprint_1 <- df_distinct_geom  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% dplyr::filter(st_contains(current_selection, sparse = FALSE))  %>% st_combine() #%>% st_convex_hull()
-      spatial_footprint_5 <- df_distinct_geom  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% dplyr::filter(st_contains(current_selection, sparse = FALSE))  %>% st_combine() #%>% st_convex_hull()
-      remaining_polygons <- df_distinct_geom  %>%  dplyr::filter(st_contains(current_selection, sparse = FALSE))
+      spatial_footprint_1 <- df  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% dplyr::filter(st_contains(current_selection, sparse = FALSE))  %>% st_combine() #%>% st_convex_hull()
+      spatial_footprint_5 <- df  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% dplyr::filter(st_contains(current_selection, sparse = FALSE))  %>% st_combine() #%>% st_convex_hull()
+      remaining_polygons <- df  %>%  dplyr::filter(st_contains(current_selection, sparse = FALSE))
       all_polygons <- df_distinct_geom %>% st_combine() 
       
       # df_distinct_geom  %>% dplyr::filter(gridtype == '5deg_x_5deg')  %>% st_within(.,st_as_sfc(bbox, crs = 4326), sparse = FALSE)
@@ -46,8 +50,7 @@ map_leafletServer <- function(id,sql_query) {
       # flog.info("Filtering with new WKT  : %s", wkt)
       # bbx <- st_as_sfc(wkt(), crs = 4326)
       
-      # req(data_map())
-      df <- data_map()
+
       flog.info("Data map head again: %s", head(df))
       
       flog.info("Class of map data object : %s", class(df))
@@ -60,6 +63,8 @@ map_leafletServer <- function(id,sql_query) {
       # req(wkt())
       # wkt <- wkt()    
       # bbox <-  st_bbox(st_as_sfc(wkt() , crs = 4326)) %>% as.vector()
+      bbx <- st_bbox(remaining_polygons) |> as.numeric()
+      
       centroid <-  convex_hull %>% st_centroid()
       lat_centroid <- st_coordinates(centroid, crs = 4326)[2]
       lon_centroid <- st_coordinates(centroid, crs = 4326)[1]
@@ -85,17 +90,18 @@ map_leafletServer <- function(id,sql_query) {
         )
       ) %>% 
         clearShapes() %>%
-        setView(lng = lon_centroid, lat =lat_centroid, zoom = 3) %>%
+        # setView(lng = lon_centroid, lat =lat_centroid, zoom = 3) %>%
         # setMaxBounds(bbox[1], bbox[2], bbox[3], bbox[4], zoom = 3) %>%  
-        # fitBounds(lat1=bbox[1], lng1=bbox[2], lat2=bbox[3], lng2=bbox[4]) %>%  
+        fitBounds(lat1=bbx[1], lng1=bbx[2], lat2=bbx[3], lng2=bbx[4]) %>%
         # clearBounds() %>%
         # Base groups
-         addProviderTiles("CartoDB")  %>% addMouseCoordinates() %>%
+        # addProviderTiles("CartoDB")  %>% 
+        addMouseCoordinates() %>%
         # addProviderTiles("Esri.OceanBasemap")   %>% 
-        addPolygons(data = current_selection,fillColor = "transparent", group="current_selection") %>%
-        addPolygons(data = spatial_footprint_1,fillColor = "transparent", group="footprint1") %>%
-        addPolygons(data = spatial_footprint_5,fillColor = "transparent", group="footprint5") %>%
-        addPolygons(data = remaining_polygons,fillColor = "transparent", group="remaining")  %>%
+        addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection") %>%
+        addPolygons(data = spatial_footprint_1,color="grey",fillColor = "transparent", group="footprint1") %>%
+        addPolygons(data = spatial_footprint_5,color="grey",fillColor = "transparent", group="footprint5") %>%
+        addPolygons(data = remaining_polygons,color="red",fillColor = "transparent", group="remaining")  %>%
         addPolygons(data = all_polygons,fillColor = "transparent", group="all")
       
       # Overlay groups
@@ -136,7 +142,8 @@ map_leafletServer <- function(id,sql_query) {
                            title = "Total catch per cell for selected criteria",
                            labFormat = labelFormat(prefix = "MT "),
                            opacity = 1
-        ) 
+        )  %>%  addMiniMap(zoomLevelFixed = 1) 
+
       # %>% addMeasure(
       #     position = "bottomleft",
       #     primaryLengthUnit = "meters",
@@ -168,7 +175,7 @@ map_leafletServer <- function(id,sql_query) {
       # print(feature)
       flog.info("New wkt : %s", feature)
       
-      polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
+      # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
       
       map_proxy_server(
         id="other",
@@ -176,7 +183,7 @@ map_leafletServer <- function(id,sql_query) {
         feature=feature,
         parent_session = session
       )  
-    
+      updateTextInput(session,ns("yourWKT"), value = wkt())
   })
     })
   flog.info("End of global map module")
@@ -186,7 +193,7 @@ map_leafletServer <- function(id,sql_query) {
 map_proxy_UI <- function(id) {
   ns <- NS(id)
   tagList(
-    textInput(inputId = ns("yourWKT"),label ="Draw or paste a new WKT")
+    textInput(inputId = ns("yourWKT"),label ="Draw or paste a new WKT", value=new_wkt)
   )
 }
 
@@ -196,9 +203,10 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
     ns <- NS(id)
     map <- map_id
     flog.info("Within Proxy module !!!!!!!!!!!!!!!!!!!!!!")
-    
-    #https://cobalt-casco.github.io/r-shiny-geospatial/07-spatial-input-selection.html
     # observe({
+      
+    #https://cobalt-casco.github.io/r-shiny-geospatial/07-spatial-input-selection.html
+    # output$yourWKT <- renderText({
       #use the draw_stop event to detect when users finished drawing
       # req(input$map_draw_new_feature)
       # req(input$map_draw_stop)
@@ -206,38 +214,43 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
       # # print(feature)
       # flog.info("New wkt : %s", feature)
       # 
-      # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
+      polygon_coordinates <- feature$geometry$coordinates[[1]]
       # see  https://rstudio.github.io/leaflet/shiny.html
       # bb <- input$mymap_bounds
       # flog.info("bb mymap_boupolygon_coordinatesnds : %s",bb)
       
       # geom_polygon <- input$mymap_draw_new_feature$geometry
-      geoJson <- geojsonio::as.json(feature)
-      geom <- st_read(geoJson)
-      coord <- st_as_text(st_geometry(geom[1,]))
-      new_wkt = wkt(coord)
-      updateTextInput(session=parent_session, "yourWKT", value = new_wkt)
+      # geoJson <- geojsonio::as.json(feature)
+      # geom <- st_read(geoJson)
+      # coord <- st_as_text(st_geometry(geom[1,]))
       # flog.info("Filter areas id that are within the current wkt")
       # list_areas(df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc(coord, crs = 4326), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>%pull())
-      # flog.info("First ten values of the matching areas : %s", list_areas())
-      
-      #East
-      lng1 <- st_bbox(geom)$xmin
+      flog.info("polygon_coordinates : %s", polygon_coordinates)
+      print(polygon_coordinates)
+      # [1] "POLYGON ((-34.67285 36.985, -34.67285 42.58544, -26.23535 42.58544, -26.23535 36.985, -34.67285 36.985))"      #East
+      # lng1 <- st_bbox(geom)$xmin
+      lng1 <- polygon_coordinates[[1]][[1]]
       #South
-      lat1 <- st_bbox(geom)$ymin
+      # lat1 <- st_bbox(geom)$ymin
+      lat1 <- polygon_coordinates[[1]][[2]]
       #West
-      lng2 <- st_bbox(geom)$xmax
+      # lng2 <- st_bbox(geom)$xmax
+      lng2 <- polygon_coordinates[[3]][[1]]
       #North
-      lat2 <- st_bbox(geom)$ymax
-      
+      # lat2 <- st_bbox(geom)$ymax
+      lat2 <- polygon_coordinates[[2]][[2]]
+      # browser()
+
       my_wkt = paste0("POLYGON ((",lng1," ",lat2, ",", lng2, " ",lat2,",", lng2," ", lat1,",", lng1," ", lat1,",", lng1," ", lat2,"))" )
+      wkt(my_wkt)
+      my_wkt_sf <- st_as_sfc(new_wkt, crs = 4326)
+      
       flog.info("My WKT %s",my_wkt)
-  
       flog.info("SF Pop up WKT %s",paste("North ", lat2, "South ", lat1, "West ", lng2, "East ", lng1))
       
       # mymap_proxy = leafletProxy("mymap") %>% clearPopups()
       flog.info("Map proxy %s",paste(lat1, lng1, lat2, lng2,sep="|"))
-      mymap_proxy = leafletProxy(
+      leafletProxy(
         # Taking the mapId from the parent module
         mapId = map_id,
         # Evaluating the mapId inside the parent module
@@ -245,12 +258,12 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
         session = parent_session
       ) %>% 
         # clearShapes() %>%
-        addPopups(lng2,lat1,coord) %>% 
-        addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")  %>% 
+        addPopups(lng2,lat1,my_wkt) %>% 
+        # addPolygons(data = my_wkt_sf,color="red",fillColor = "transparent", group="draw") %>%
+        addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")  %>%
         setMaxBounds(lat1, lng1, lat2, lng2)
-      
-      
-      # textOutput("wkt")
+      # textOutput("updatedWKT")
+    # })
   })
   flog.info("End of proxy map module")
 }
