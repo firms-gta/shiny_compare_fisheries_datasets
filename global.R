@@ -4,17 +4,11 @@ source(here::here('install.R'))
 flog.info("All libraries loaded successfully.")
 
 # Initialize reactive values and default WKT for mapping
-# bbox <- 'POLYGON ((-180 -60, 180 -60, 180 70, -180 70, -180 -60))'
-bbox <- 'POLYGON ((10.01953 -28.76766, 10.01953 5.266008, 66.09375 5.266008, 66.09375 -28.76766, 10.01953 -28.76766))'
-# bbox <- 'POLYGON((-162.96875 63.234792371131554,174.53125 63.234792371131554,174.53125 -54.160919386682565,-162.96875 -54.160919386682565,-162.96875 63.234792371131554))'
-new_wkt <- bbox
-wkt <- reactiveVal(bbox)
+wkt <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
-query_all_datasets <- reactiveVal()
-list_areas  <- reactiveVal()
-# data_map <- reactiveVal()
 flog.info("Reactive values initialized successfully.")
 initial_data <- reactiveVal()
+
 
 mode="gpkg"
 mode="postgres"
@@ -94,24 +88,17 @@ load_data <- function() {
 }
 flog.info("Data succesfully loaded")
 df_sf <- load_data()
-rm(loaded_data)
 
-# flog.info(df_sf)
 
-# flog.info("Store the list of distinct area_id in the dataset loaded")
-# list_area_id <- df_sf %>% as.data.frame() %>% filter(!is.na(gridtype)) %>% dplyr::group_by(codesource_area,gridtype) %>% dplyr::summarise(ogc_fid = first(ogc_fid))
-# df_distinct_geom <- df_sf  %>% filter(!is.na(gridtype)) %>% dplyr::select(ogc_fid,codesource_area,gridtype,geom) %>% 
-#   dplyr::right_join(list_area_id,by=c("ogc_fid","codesource_area","gridtype")) %>% filter(!is.na(geom))  %>% 
-#   st_as_sf(wkt="geom", crs = 4326) # %>% filter(!st_is_empty(.)) # %>% dplyr::select(codesource_area)
-
+# flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
 df_distinct_geom <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area,gridtype,geom) %>% filter(!is.na(gridtype))  %>% filter(!is.na(geom)) %>% 
   dplyr::summarise(ogc_fid = first(ogc_fid)) %>% ungroup() %>% st_as_sf(wkt="geom",crs=4326) 
 class(df_distinct_geom)
 
 default_wkt <- st_as_text(st_as_sfc(st_bbox(df_distinct_geom)))
-# wkt(default_wkt)
-# target_area <-  dbGetQuery(con,"SELECT DISTINCT(ST_Area(geom)) AS area FROM public.shinycatch ORDER BY area DESC;")
-# target_area <-    tibble(wkb=unique(df_sf$geom)) %>% st_read()
+wkt(default_wkt)
+new_wkt <- default_wkt
+
 
 if(!exists("df_sf")){
   flog.info("Try  if a default file for filters is pre-calculated")
@@ -131,7 +118,7 @@ if(!file_exists("filters_combinations.parquet")){
 
 
 flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
-target_wkt <- bbox
+target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
 wkt(target_wkt)
 # target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
 target_dataset <- unique(df_sf$dataset)
@@ -189,6 +176,7 @@ flog.info("Modules loaded")
 
 initial_data(df_sf)
 rm(df_sf)
+
 flog.info("########################## End GLOBAL")
 flog.info("########################## START UI")
 source(here::here("ui.R"))

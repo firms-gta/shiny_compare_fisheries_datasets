@@ -11,59 +11,40 @@ map_leafletServer <- function(id,sql_query) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+    
     data_map <- reactive({
       req(sql_query())
       this_df <- sql_query()
       flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(this_df))
       flog.info("Sum of values per dataset and per area for mapping : %s", nrow(this_df))
-      current_selection <- st_as_sfc(wkt(), crs = 4326)
-      flog.info("WKT current_selection : %s", current_selection)
       
-      data_map <- this_df %>% # filter(!is.na(gridtype)) %>% st_as_sf(wkt="geom",crs=4326) %>% 
-      # dplyr::filter(st_contains(current_selection, sparse = FALSE)) %>%
-      dplyr::group_by(dataset,codesource_area,gridtype) %>% 
+      data_map <- this_df %>% dplyr::group_by(dataset,codesource_area,gridtype,geom) %>% 
         dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup() 
-        # left_join(df_distinct_geom,by="codesource_area")
       
-      # data_map <- df_distinct_geom %>% left_join(list_cwp)
-      # data_map <- df_distinct_geom  %>% merge(list_cwp) %>% filter(!st_is_empty(.))
-      # list_cwp  %>% left_join(df_distinct_geom)  %>% filter(!st_is_empty(.))
       flog.info("Data map head : %s", head(data_map))
-      flog.info("Data map number of rows data nrow: %s", nrow(data_map))
+      flog.info("Number of rows of map data : %s", nrow(data_map))
+      
       data_map
     }) 
     
     output$map <- renderLeaflet({
       flog.info("Testing truthiness of the dataframe with req()")
-      # req(data_map())
       req(data_map())
-      df <- data_map() 
-      current_selection <- st_as_sfc(wkt(), crs = 4326)
-      # flog.info("Check current value of WKT  : %s", wkt)
-      spatial_footprint_1 <- df  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% dplyr::filter(st_contains(current_selection, sparse = FALSE))  %>% st_combine() #%>% st_convex_hull()
-      spatial_footprint_5 <- df  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% dplyr::filter(st_contains(current_selection, sparse = FALSE))  %>% st_combine() #%>% st_convex_hull()
-      remaining_polygons <- df  %>%  dplyr::filter(st_contains(current_selection, sparse = FALSE))
+      df <- data_map() %>% st_as_sf(wkt="geom",crs=4326)
+      
+      wkt<- wkt()
+      current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+      flog.info("Check current value of WKT  : %s", wkt)
+      
+      spatial_footprint_1 <- df  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% st_combine() #%>% st_convex_hull(
+      flog.info("Calculate spatial_footprint_5 with WKT  : %s", wkt)
+      spatial_footprint_5 <- df  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
+      flog.info("Calculate spatial_footprint_1 with WKT  : %s", wkt)
+      remaining_polygons <- df   %>% qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = current_selection) %>% sf::st_as_sf() %>% st_combine() #%>% st_convex_hull(
       all_polygons <- df_distinct_geom %>% st_combine() 
       
-      # df_distinct_geom  %>% dplyr::filter(gridtype == '5deg_x_5deg')  %>% st_within(.,st_as_sfc(bbox, crs = 4326), sparse = FALSE)
-      
-      # flog.info("Filtering with new WKT  : %s", wkt)
-      # bbx <- st_as_sfc(wkt(), crs = 4326)
-      
-
-      flog.info("Data map head again: %s", head(df))
-      
-      flog.info("Class of map data object : %s", class(df))
-      flog.info("Column names of map data: %s", as.character(colnames(df)))
-      flog.info("Number of rows of map data : %s", nrow(df))
-      
-      
       convex_hull <- st_convex_hull(df)
-      # bbox <- st_bbox(convex_hull) %>% as.vector()  
-      # req(wkt())
-      # wkt <- wkt()    
-      # bbox <-  st_bbox(st_as_sfc(wkt() , crs = 4326)) %>% as.vector()
-      bbx <- st_bbox(remaining_polygons) |> as.numeric()
+      bbx <- st_bbox(remaining_polygons) %>% as.numeric()
       
       centroid <-  convex_hull %>% st_centroid()
       lat_centroid <- st_coordinates(centroid, crs = 4326)[2]
@@ -95,9 +76,9 @@ map_leafletServer <- function(id,sql_query) {
         fitBounds(lat1=bbx[1], lng1=bbx[2], lat2=bbx[3], lng2=bbx[4]) %>%
         # clearBounds() %>%
         # Base groups
-        # addProviderTiles("CartoDB")  %>% 
+        addProviderTiles("CartoDB")  %>%
         addMouseCoordinates() %>%
-        # addProviderTiles("Esri.OceanBasemap")   %>% 
+        addProviderTiles("Esri.OceanBasemap")   %>%
         addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection") %>%
         addPolygons(data = spatial_footprint_1,color="grey",fillColor = "transparent", group="footprint1") %>%
         addPolygons(data = spatial_footprint_5,color="grey",fillColor = "transparent", group="footprint5") %>%
@@ -121,8 +102,6 @@ map_leafletServer <- function(id,sql_query) {
                       # color = ~pal(value)
           )  
 
-        
-        
       }
       # Layers control
       map <- map   %>% #  addPolygons(data = bbx) # %>%  addPolygons(data = convex_hull) %>%
@@ -258,10 +237,11 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
         session = parent_session
       ) %>% 
         # clearShapes() %>%
-        addPopups(lng2,lat1,my_wkt) %>% 
+        addPopups(lng2,lat1,paste0("Click Submit button if you want to extract data in this polygon:", my_wkt)) %>% 
         # addPolygons(data = my_wkt_sf,color="red",fillColor = "transparent", group="draw") %>%
         addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")  %>%
         setMaxBounds(lat1, lng1, lat2, lng2)
+      
       # textOutput("updatedWKT")
     # })
   })

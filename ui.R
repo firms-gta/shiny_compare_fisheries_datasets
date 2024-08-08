@@ -18,6 +18,7 @@ ui <- fluidPage(
                       div(class="outer",
                           tags$head(includeCSS("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/styles.css")),
                           map_leafletUI("map_global"),
+                          leafletOutput("map",width="100%", height="100%"),
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 150,  left = "3%", width = "21%", height = "auto",
                                         selectInput(
@@ -76,11 +77,10 @@ ui <- fluidPage(
                                           selected= default_fishing_fleet,
                                           width = "99%"
                                         ),
-                                        # textInput(inputId ="yourWKT",label ="Draw or paste a new WKT"),
-                                        # textInput("yourWKT","Paste you WKT",value=new_wkt),
+                                        # textInput("yourWKT","Draw or paste a new WKT",value=new_wkt),
                                         # textInput("yourWKT","Paste you WKT",value=textOutput("updatedWKT")),
-                                        verbatimTextOutput("updatedWKT"),
                                         map_leafletUI("other"),
+                                        verbatimTextOutput("updatedWKT"),
                                         actionButton(inputId ="resetWkt", label = "Reset WKT (no spatial filter)"),
                                         
                                         actionButton(inputId = "submit",label = "Submit"),
