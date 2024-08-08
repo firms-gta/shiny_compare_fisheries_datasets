@@ -45,13 +45,12 @@ server <- function(input, output, session) {
   # ignoreNULL = FALSE)
   
   observeEvent(input$resetWkt, {
-    wkt(new_wkt)
+    wkt(default_wkt)
   })
   
   flog.info("Apply current filters to the main datasets when click on submit")
   sql_query <- eventReactive(input$submit, {
     # sql_query <- reactive({
-    # req(initial_data())
     main_data <- initial_data()
     req(wkt())
     wkt <- wkt()    
