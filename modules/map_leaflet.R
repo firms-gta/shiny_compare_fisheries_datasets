@@ -1,8 +1,10 @@
 map_leafletUI <- function(id) {
   ns <- NS(id)
   tagList(
-  leafletOutput(ns("map"),width="100%", height="100%"),
-  map_proxy_UI(ns("other"))
+      leafletOutput(ns("map"),width="100%", height="100%"),
+      map_proxy_UI(ns("other")),
+      dataTableOutput(ns("DT_query_data_map")),
+      dataTableOutput(ns("DT_data_footprint"))
   )
 }
 
@@ -34,7 +36,13 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
     #   data_map
     # }) 
     
-
+    flog.info("Data Table of the map")
+    output$DT_query_data_map <- renderDT({
+      sql_query()
+    })
+    output$DT_data_footprint <- renderDT({
+      sql_query_footprint()
+    })
     
     output$map <- renderLeaflet({
       flog.info("Testing truthiness of the dataframe with req()")
@@ -44,6 +52,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       
       req(sql_query())
       this_df <- sql_query()
+
       flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(this_df))
       flog.info("Sum of values per dataset and per area for mapping : %s", nrow(this_df))
       
@@ -197,7 +206,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
         feature=feature,
         parent_session = session
       )  
-      updateTextInput(session,ns("yourWKT"), value = wkt())
+      # updateTextInput(session,ns("yourWKT"), value = wkt())
   })
     })
   flog.info("End of global map module")
@@ -207,7 +216,8 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
 map_proxy_UI <- function(id) {
   ns <- NS(id)
   tagList(
-    textInput(inputId = ns("yourWKT"),label ="Draw or paste a new WKT", value=new_wkt)
+    textInput(inputId = ns("yourmoduleWKT"),label ="Draw or paste a new WKT", value=new_wkt),
+    verbatimTextOutput("moduleverbatimWKT", placeholder = TRUE)
   )
 }
 
@@ -300,6 +310,10 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
       
       wkt(new_wkt)
       # textOutput("updatedWKT")
+      # output$moduleupdatedWKT <- renderText({input$yourWKT})
+      output$moduleverbatimWKT <- renderText({ input$yourmoduleWKT })
+      updateTextInput(session,ns("yourWKT"), value = wkt())
+      
     # })
   })
   flog.info("End of proxy map module")

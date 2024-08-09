@@ -18,7 +18,6 @@ ui <- fluidPage(
                       div(class="outer",
                           tags$head(includeCSS("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/styles.css")),
                           map_leafletUI("map_global"),
-                          leafletOutput("map",width="100%", height="100%"),
                           absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 150,  left = "3%", width = "21%", height = "auto",
                                         selectInput(
@@ -96,14 +95,11 @@ ui <- fluidPage(
                                           inputId = "switched",
                                           label = "Switch unit for pie chart"
                                         ),
-                                        plotlyOutput("pie_gridtype_catch", width="100%"),
-                                        tags$br(),
-                                        plotlyOutput("barplot_datasets", width="100%"),
-                                        tags$br(),
-                                        plotlyOutput("pie_ratio_catch")
+                                        pieBarChartsUI(id = "pie_bar_charts")
                           ),
                           absolutePanel(id = "controls", class = "panel panel-default", bottom =  "2%", left = "25%", width = "50%", fixed=TRUE, draggable = FALSE, height = "auto",
-                                        plotlyOutput("plotly_time_series_all_datasets")
+                                        timeSeriesUI(id = "time_series"),
+                                        timeSeriesGearUI(id= "time_series_gear")
                                         # fluidRow(
                                         #   column(10,dygraphOutput("dygraph_all_datasets",height="400")),
                                         #   column(2,textOutput("legendDivID"))
@@ -115,19 +111,18 @@ ui <- fluidPage(
                           )
                       )
              ),
-             tabPanel(
-               title = "Plot indicator 2",
-               # map_leafletUI("map_global"),
-               plotlyOutput("plot2")
-             ),
-             tabPanel(
-               title = "Streamgraph indicator 2",
-               streamgraphOutput("plot2_streamgraph")
-             ),
+             # tabPanel(
+             #   title = "Time series per gear type",
+             #   timeSeriesGearUI(id= "time_series_gear")
+             # ),
              navbarMenu("Browse Data Tables",
                         tabPanel(
                           title = "Browse map data",
-                          DT::dataTableOutput("DT_query_data_map")
+                          map_leafletUI("DT_data_footprint")
+                        ),
+                        tabPanel(
+                          title = "Browse data map",
+                          map_leafletUI("DT_query_data_map")
                         ),
                         tabPanel(
                           title = "Browse time series data",
@@ -136,10 +131,6 @@ ui <- fluidPage(
                         tabPanel(
                           title = "Browse data bar plots",
                           DT::dataTableOutput("DT_data_barplot_all_datasets")
-                        ),
-                        tabPanel(
-                          title = "Browse footprint",
-                          DT::dataTableOutput("DT_data_footprint")
                         )
              ),
              # tabPanel(
