@@ -9,7 +9,6 @@ switch_unit <- reactiveVal(TRUE)
 flog.info("Reactive values initialized successfully.")
 initial_data <- reactiveVal()
 
-
 mode="gpkg"
 mode="postgres"
 mode="RDS"
@@ -119,6 +118,7 @@ if(!file_exists("filters_combinations.parquet")){
 
 flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
 target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
+# target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
 wkt(target_wkt)
 # target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
 target_dataset <- unique(df_sf$dataset)

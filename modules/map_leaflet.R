@@ -6,13 +6,42 @@ map_leafletUI <- function(id) {
   )
 }
 
-map_leafletServer <- function(id,sql_query) {
+map_leafletServer <- function(id,sql_query,sql_query_footprint) {
   flog.info("Starting global map module")
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+    # query_footprint <- reactive({
+    #   flog.info("################################ OLA #########################################################") 
+    #   flog.info("Spatial query for all filters without WKT" )
+    #   flog.info("################################ OLA #########################################################") 
+    #   req(sql_query_footprint())
+    #   query_footprint <- sql_query_footprint() %>% st_combine()
+    # }) 
     
-    data_map <- reactive({
+    # data_map <- reactive({
+    #   req(sql_query())
+    #   this_df <- sql_query()
+    #   flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(this_df))
+    #   flog.info("Sum of values per dataset and per area for mapping : %s", nrow(this_df))
+    #   
+    #   data_map <- this_df %>% dplyr::group_by(dataset,codesource_area,gridtype,geom) %>% 
+    #     dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup() 
+    #   
+    #   flog.info("Data map head : %s", head(data_map))
+    #   flog.info("Number of rows of map data : %s", nrow(data_map))
+    #   
+    #   data_map
+    # }) 
+    
+
+    
+    output$map <- renderLeaflet({
+      flog.info("Testing truthiness of the dataframe with req()")
+      
+      req(sql_query_footprint())
+      query_footprint <- sql_query_footprint() %>% st_combine()
+      
       req(sql_query())
       this_df <- sql_query()
       flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(this_df))
@@ -24,23 +53,17 @@ map_leafletServer <- function(id,sql_query) {
       flog.info("Data map head : %s", head(data_map))
       flog.info("Number of rows of map data : %s", nrow(data_map))
       
-      data_map
-    }) 
-    
-    output$map <- renderLeaflet({
-      flog.info("Testing truthiness of the dataframe with req()")
-      req(data_map())
-      df <- data_map() %>% st_as_sf(wkt="geom",crs=4326)
+      df <- data_map %>% st_as_sf(wkt="geom",crs=4326)
       
       wkt<- wkt()
       current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
       flog.info("Check current value of WKT  : %s", wkt)
       
       remaining_polygons <- df %>% st_combine() #%>% st_convex_hull(
+      flog.info("Updating spatial_footprint_1 to fit the new WKT  : %s", wkt)
       spatial_footprint_1 <- df  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% st_combine() #%>% st_convex_hull(
-      flog.info("Calculate spatial_footprint_5 with WKT  : %s", wkt)
+      flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", wkt)
       spatial_footprint_5 <- df  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
-      flog.info("Calculate spatial_footprint_1 with WKT  : %s", wkt)
       all_polygons <- df_distinct_geom %>% st_combine() 
       
       convex_hull <- st_convex_hull(df)
@@ -66,24 +89,24 @@ map_leafletServer <- function(id,sql_query) {
       
       # https://r-spatial.github.io/sf/articles/sf5.html
       flog.info("Creating base map with data overview")
+      # zoom to limits? https://rdrr.io/cran/leaflet/man/mapOptions.html
       map <- leaflet(
-        options=leafletOptions(doubleClickZoom = T, dragging=T,scrollWheelZoom=T
-                               # zoom to limits? https://rdrr.io/cran/leaflet/man/mapOptions.html
-        )
+        options=leafletOptions(doubleClickZoom = T, dragging=T,scrollWheelZoom=T, minZoom = 3, maxZoom = 10)
       ) %>% 
         clearShapes() %>%
-        setView(lng = lon_centroid, lat =lat_centroid, zoom = 5) %>%
+        setView(lng = lon_centroid, lat =lat_centroid, zoom = 4) %>%
         # setMaxBounds(bbox[1], bbox[2], bbox[3], bbox[4], zoom = 3) %>%  
         # fitBounds(lat1=bbx[1], lng1=bbx[2], lat2=bbx[3], lng2=bbx[4]) %>%
         # clearBounds() %>%
         # Base groups
         addMouseCoordinates() %>%
-        addProviderTiles("CartoDB","background")  %>%
-        addProviderTiles("Esri.OceanBasemap","background")   %>%
+        addProviderTiles("CartoDB", "background")   %>%
+        addProviderTiles("Esri.OceanBasemap", "background")   %>%
         addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection") %>%
         addPolygons(data = spatial_footprint_1,color="grey",fillColor = "transparent", group="footprint1") %>%
         addPolygons(data = spatial_footprint_5,color="grey",fillColor = "transparent", group="footprint5") %>%
-        addPolygons(data = remaining_polygons,color="red",fillColor = "transparent", group="remaining")  %>%
+        addPolygons(data = query_footprint,color="red",fillColor = "transparent", group="data_for_filters")  %>%
+        # addPolygons(data = remaining_polygons,color="red",fillColor = "transparent", group="remaining")  %>%
         addPolygons(data = all_polygons,fillColor = "transparent", group="all")
       
       flog.info("Adding new layers for each dataset in the selected WKT")
@@ -94,9 +117,10 @@ map_leafletServer <- function(id,sql_query) {
         map <- map  %>% 
           addPolygons(data = this_layer,
                       label = ~measurement_value,
-                      popup = ~paste0("Captures pour cette espece: ", round(measurement_value), " tonnes(t) et des brouettes"),
+                      popup = ~paste0("Captures pour cette espece: ", round(measurement_value), " tonnes(t)"),
                       # fillColor = ~pal_fun(value),
                       fillColor = ~qpal(measurement_value),
+                      stroke = FALSE,
                       fill = TRUE,
                       fillOpacity = 0.8,
                       smoothFactor = 0.5,
@@ -117,14 +141,22 @@ map_leafletServer <- function(id,sql_query) {
         addLayersControl(
           position = "topleft", 
           baseGroups = c("draw","background"),
-          overlayGroups = c(datasets,"footprint1","footprint5","remaining","current_selection","all"),
+          overlayGroups = c(datasets,"footprint1","footprint5","data_for_filters","current_selection","all"),
           options = layersControlOptions(collapsed = FALSE)
         )  %>% 
         leaflet::addLegend("bottomleft", pal = qpal, values = df$measurement_value,
                            title = "Total catch per cell for selected criteria",
                            labFormat = labelFormat(prefix = "MT "),
                            opacity = 1
-        )  %>%  addMiniMap(zoomLevelFixed = 1) 
+        )  %>%  addMiniMap(zoomLevelFixed = 1) %>%
+        addScaleBar(
+          position = "topright",
+          options = scaleBarOptions(
+            maxWidth = 10,
+            metric = TRUE,
+            imperial = FALSE
+          )
+        )
 
       # %>% addMeasure(
       #     position = "bottomleft",
@@ -221,7 +253,6 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
       #North
       # lat2 <- st_bbox(geom)$ymax
       lat2 <- polygon_coordinates[[2]][[2]]
-      # browser()
 
       new_wkt = paste0("POLYGON ((",lng1," ",lat2, ",", lng2, " ",lat2,",", lng2," ", lat1,",", lng1," ", lat1,",", lng1," ", lat2,"))" )
       current_selection <- st_sf(st_as_sfc(new_wkt, crs = 4326))
@@ -235,6 +266,7 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
       
       # mymap_proxy = leafletProxy("mymap") %>% clearPopups()
       flog.info("Map proxy %s",paste(lat1, lng1, lat2, lng2,sep="|"))
+      textPopup <- paste0("<b>Click Submit button if you want to extract data in this polygon</b>:", new_wkt)
       leafletProxy(
         # Taking the mapId from the parent module
         mapId = map_id,
@@ -246,7 +278,23 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
         fitBounds(lat1, lng1, lat2, lng2) %>%
         # setMaxBounds(lat1, lng1, lat2, lng2)
         # clearShapes() %>%
-        addPopups(lng2,lat1,paste0("Click Submit button if you want to extract data in this polygon:", new_wkt)) %>% 
+        addPopups(lng = lng2,lat = lat1, popup =  textPopup
+                  # ,
+                  # popupOptions = popupOptions(  minWidth = 300
+                  #                             # # noHide = TRUE, 
+                  #                             # # direction = "bottom",
+                  #                             # textsize = "24px",
+                  #                             # style = list(
+                  #                             #   "color" = "red",
+                  #                             #   "font-family" = "serif",
+                  #                             #   "font-style" = "italic",
+                  #                             #   "box-shadow" = "3px 3px rgba(0,0,0,0.25)",
+                  #                             #   "font-size" = "12px",
+                  #                             #   "border-color" = "rgba(0,0,0,0.5)"
+                  #                             # )
+                  #   )
+                    )  %>% 
+ 
         # addPolygons(data = current_selection,color="red",fillColor = "transparent", group="draw") %>%
         addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
       

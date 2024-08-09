@@ -77,10 +77,12 @@ ui <- fluidPage(
                                           selected= default_fishing_fleet,
                                           width = "99%"
                                         ),
-                                        # textInput("yourWKT","Draw or paste a new WKT",value=new_wkt),
-                                        # textInput("yourWKT","Paste you WKT",value=textOutput("updatedWKT")),
                                         map_leafletUI("other"),
-                                        verbatimTextOutput("updatedWKT"),
+                                        textInput("yourWKT","Draw or paste a new WKT"),
+                                        # textInput("yourWKT","Paste you WKT",value=textOutput("updatedWKT")),
+                                        verbatimTextOutput("updatedWKT", placeholder = TRUE),
+                                        verbatimTextOutput("verbatimWKT"),
+                                        
                                         actionButton(inputId ="resetWkt", label = "Reset WKT (no spatial filter)"),
                                         
                                         actionButton(inputId = "submit",label = "Submit"),
@@ -134,6 +136,10 @@ ui <- fluidPage(
                         tabPanel(
                           title = "Browse data bar plots",
                           DT::dataTableOutput("DT_data_barplot_all_datasets")
+                        ),
+                        tabPanel(
+                          title = "Browse footprint",
+                          DT::dataTableOutput("DT_data_footprint")
                         )
              ),
              # tabPanel(
