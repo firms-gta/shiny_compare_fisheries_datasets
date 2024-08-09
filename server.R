@@ -172,7 +172,21 @@ server <- function(input, output, session) {
   flog.info("Extra module to detail what gears are the most important in the time series of catches")
   timeSeriesGearServer(id= "time_series_gear",sql_query)
   
-  
+  # nav_bar_menu_rmd <- c(
+  #   "rmd/Authors.Rmd", 
+  #   "rmd/Fundings.Rmd", 
+  #   "rmd/sidebar_explenations.Rmd", 
+  #   "rmd/General_disclaimer.Rmd", 
+  #   "rmd/Running_the_app.Rmd"
+  # )
+  # render_rmd_files <- function(rmd_files, output_dir = "www") {
+  #   # Render all Rmd files to HTML if necessary
+  #   html_files <- lapply(rmd_files, render_rmd_to_html, output_dir = output_dir)
+  #   return(unlist(html_files))
+  # }
+  # nav_bar_menu_html <- render_rmd_files(nav_bar_menu_rmd)
+  # aboutServer("about", rmd_paths=nav_bar_menu_html)
+    
   onStop(function() {
     # dbDisconnect(con)
   })

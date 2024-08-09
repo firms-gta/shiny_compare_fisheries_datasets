@@ -165,7 +165,7 @@ source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtl
 flog.info("External R scripts sourced successfully.")
 flog.info("Loading modules.")
 load_ui_modules <- function() {
-  ui_files <- c("modules/map_leaflet.R","modules/timeSeries.R","modules/pie_bar_charts.R","modules/timeSeries_per_geartype.R")
+  ui_files <- c("modules/map_leaflet.R","modules/timeSeries.R","modules/pie_bar_charts.R","modules/timeSeries_per_geartype.R","modules/about.R")
   lapply(ui_files, function(file) {
     source(here::here(file))
     flog.info(paste("Loaded UI module:", file))

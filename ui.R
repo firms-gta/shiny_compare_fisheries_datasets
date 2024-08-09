@@ -151,6 +151,7 @@ ui <- fluidPage(
                           textOutput("query_all_datasets")
                         )
              ),
+             # aboutUI("about"),
              tabPanel("About",
                       fluidRow(
                         column(6,
