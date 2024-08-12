@@ -16,9 +16,9 @@ ui <- fluidPage(
              # map_leafletUI("id_1"),
              tabPanel("Datasets overview",
                       div(class="outer",
-                          tags$head(includeCSS("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/styles.css")),
+                          tags$head(includeCSS("./styles.css")),
                           map_leafletUI("map_global"),
-                          absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
+                          absolutePanel(id = "filters", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 150,  left = "3%", width = "21%", height = "auto",
                                         selectInput(
                                           inputId = "dataset",
@@ -26,7 +26,7 @@ ui <- fluidPage(
                                           choices = target_dataset,
                                           multiple = TRUE,
                                           selected= default_dataset,
-                                          width = "99%"
+                                          width = "98%"
                                         ),
                                         selectInput(
                                           inputId = "unit",
@@ -34,15 +34,15 @@ ui <- fluidPage(
                                           choices = target_measurement_unit,
                                           multiple = TRUE,
                                           selected= default_unit,
-                                          width = "99%"
+                                          width = "98%"
                                         ),
                                         selectInput(
                                           inputId = "gridtype",
-                                          label = "Gridtype",
+                                          label = "Grid size",
                                           choices = target_gridtype,
                                           multiple = TRUE,
                                           selected= default_gridtype,
-                                          width = "99%"
+                                          width = "98%"
                                         ),
                                         selectInput(
                                           inputId = "species",
@@ -50,7 +50,7 @@ ui <- fluidPage(
                                           choices = target_species,
                                           multiple = TRUE,
                                           selected= default_species,
-                                          width = "99%"
+                                          width = "98%"
                                         ),
                                         selectInput(
                                           inputId = "year",
@@ -58,7 +58,7 @@ ui <- fluidPage(
                                           choices = target_year,
                                           multiple = TRUE,
                                           selected= default_year,
-                                          width = "99%"
+                                          width = "98%"
                                         ),
                                         selectInput(
                                           inputId = "gear_type",
@@ -66,38 +66,44 @@ ui <- fluidPage(
                                           choices = target_gear_type,
                                           multiple = TRUE,
                                           selected= default_gear_type,
-                                          width = "99%"
+                                          width = "98%"
                                         ),
                                         selectInput(
                                           inputId = "fishing_fleet",
-                                          label = "fishing_fleet",
+                                          label = "Fishing fleet",
                                           choices = target_flag,
                                           multiple = TRUE,
                                           selected= default_fishing_fleet,
-                                          width = "99%"
+                                          width = "98%"
                                         ),
                                         map_leafletUI("other"),
-                                        textInput("yourWKT","Draw or paste a new WKT"),
+                                        textInput("yourWKT","Draw or paste a new WKT",width="98%"),
                                         # textInput("yourWKT","Paste you WKT",value=textOutput("updatedWKT")),
                                         verbatimTextOutput("updatedWKT", placeholder = TRUE),
                                         verbatimTextOutput("verbatimWKT"),
                                         
-                                        actionButton(inputId ="resetWkt", label = "Reset WKT (no spatial filter)"),
+                                        actionButton(inputId ="resetWkt", label = "Reset WKT (no spatial filter)", icon("map"), 
+                                                     style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large;
+                                                                                                                           font-weight: bold;"),
                                         
-                                        actionButton(inputId = "submit",label = "Submit"),
+                                        actionButton(inputId = "submit",label = "Apply filters !", icon("paper-plane"), 
+                                                     style="color: #fff; background-color: #d63638; border-color: #2e6da4;font-size: xx-large;
+                                                     font-weight: bold;"),
                                         # actionButton(inputId="applytWkt", label="Select features within this WKT"),
                                         tags$br()
                           ),
-                          absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
+                          absolutePanel(id = "plots", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 150, left = "auto", right="1%", width = "23%", height = "auto",
                                         tags$br(),
                                         actionButton(
                                           inputId = "switched",
-                                          label = "Switch unit for pie chart"
+                                          label = "Switch unit for pie chart (number or tons)",
+                                          icon("chart"), 
+                                          style="color: #fff; background-color: #008a20; border-color: #2e6da4; font-size: xx-large;font-weight: bold;"
                                         ),
                                         pieBarChartsUI(id = "pie_bar_charts")
                           ),
-                          absolutePanel(id = "controls", class = "panel panel-default", bottom =  "2%", left = "25%", width = "50%", fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "plots", class = "panel panel-default", bottom =  "2%", left = "25%", width = "50%", fixed=TRUE, draggable = FALSE, height = "auto",
                                         timeSeriesUI(id = "time_series"),
                                         timeSeriesGearUI(id= "time_series_gear")
                                         # fluidRow(
@@ -115,24 +121,24 @@ ui <- fluidPage(
              #   title = "Time series per gear type",
              #   timeSeriesGearUI(id= "time_series_gear")
              # ),
-             navbarMenu("Browse Data Tables",
-                        tabPanel(
-                          title = "Browse map data",
-                          map_leafletUI("DT_data_footprint")
-                        ),
-                        tabPanel(
-                          title = "Browse data map",
-                          map_leafletUI("DT_query_data_map")
-                        ),
-                        tabPanel(
-                          title = "Browse time series data",
-                          DT::dataTableOutput("DT_data_all_datasets")
-                        ),
-                        tabPanel(
-                          title = "Browse data bar plots",
-                          DT::dataTableOutput("DT_data_barplot_all_datasets")
-                        )
-             ),
+             # navbarMenu("Browse Data Tables",
+             #            tabPanel(
+             #              title = "Browse map data",
+             #              map_leafletUI("DT_data_footprint")
+             #            ),
+             #            tabPanel(
+             #              title = "Browse data map",
+             #              map_leafletUI("DT_query_data_map")
+             #            ),
+             #            tabPanel(
+             #              title = "Browse time series data",
+             #              DT::dataTableOutput("DT_data_all_datasets")
+             #            ),
+             #            tabPanel(
+             #              title = "Browse data bar plots",
+             #              DT::dataTableOutput("DT_data_barplot_all_datasets")
+             #            )
+             # ),
              # tabPanel(
              #   title = "Your filters",
              #   textOutput("selected_var")
@@ -140,15 +146,25 @@ ui <- fluidPage(
              navbarMenu("Browse underlying filters",
                         tabPanel(
                           title = "The current WKT",
-                          textOutput("wkt")
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          textOutput("current_WKT")
                         ),
                         tabPanel(
                           title = "SQL query: query_metadata",
-                          textOutput("query_metadata")
-                        ),
-                        tabPanel(
-                          title = "Lits of areas id",
-                          textOutput("query_all_datasets")
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          tags$br(),
+                          textOutput("current_filters")
                         )
              ),
              # aboutUI("about"),

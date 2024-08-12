@@ -11,14 +11,10 @@ server <- function(input, output, session) {
   #                     selected = wkt())
   # })
   
-  # observeEvent(input$resetWkt, {
-  #   wkt(default_wkt)
-  #   updateTextInput(session,ns("yourWKT"), value = wkt())
-  # })
-  
   observeEvent(input$resetWkt, {
     wkt(default_wkt)
     # updateTextInput(session,"yourWKT", value = wkt())
+    #   updateTextInput(session,ns("yourWKT"), value = wkt())
   })
   
   
@@ -40,15 +36,6 @@ server <- function(input, output, session) {
   # )
   flog.info("##########################################################")
   flog.info("set the main parameterized query (options for geom might be st_collect(geom) or  ST_ConvexHull(st_collect(geom)) as convexhull )")
-  
-  # list_areas <-  eventReactive(input$mymap_draw_new_feature, {
-  #   # feature <- input$mymap_draw_new_feature
-  #   # geoJson <- geojsonio::as.json(feature)
-  #   # geom <- st_read(geoJson) # wkt(st_as_text(st_geometry(geom[1,])))
-  #   current_selection <- st_as_sfc(wkt, crs = 4326)
-  #   df_distinct_geom  %>%  dplyr::filter(st_within(st_as_sfc(wkt()), sparse = FALSE)) %>% st_drop_geometry() %>%  dplyr::select(codesource_area) %>% pull()
-  # },
-  # ignoreNULL = FALSE)
   
   flog.info("Apply current filters to the main datasets when click on submit")
   sql_query_all <- eventReactive(input$submit, {
@@ -140,15 +127,18 @@ server <- function(input, output, session) {
     wkt()
   })
   
-  output$sql_query <- renderText({ 
+  output$current_filters <- renderText({ 
     # paste("Your SQL Query is : \n", sql_query())
-    paste("You have selected the following filters:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", wkt())
+    species_list <- input$species     
+    # within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%  rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
+    year_list <- input$year
+    fishing_fleet_list <- input$fishing_fleet
+    paste("You have selected the following filters:\n", class(species_list))
   })
   
-  
-  output$query_all_datasets <- renderText({ 
+  output$current_WKT <- renderText({ 
     # paste("Your SQL Query is : \n", query_all_datasets())
-    paste("\n \n \n \n \n", "Here is the list of id areas within the current WKT : \n", list_areas())
+    paste("\n \n \n \n \n", "Here is the current WKT : \n", wkt())
     # list_areas()
     
   })
@@ -190,6 +180,5 @@ server <- function(input, output, session) {
   onStop(function() {
     # dbDisconnect(con)
   })
-  
   
 }

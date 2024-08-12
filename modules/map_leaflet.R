@@ -44,11 +44,14 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       sql_query_footprint()
     })
     
+    req(sql_query_footprint())
+    current_fooprint <- sql_query_footprint()
+    query_footprint <- sql_query_footprint %>% st_combine()
+    
     output$map <- renderLeaflet({
       flog.info("Testing truthiness of the dataframe with req()")
       
-      req(sql_query_footprint())
-      query_footprint <- sql_query_footprint() %>% st_combine()
+
       
       req(sql_query())
       this_df <- sql_query()
@@ -151,7 +154,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
           position = "topleft", 
           baseGroups = c("draw","background"),
           overlayGroups = c(datasets,"footprint1","footprint5","data_for_filters","current_selection","all"),
-          options = layersControlOptions(collapsed = FALSE)
+          options = layersControlOptions(collapsed = TRUE)
         )  %>% 
         leaflet::addLegend("bottomleft", pal = qpal, values = df$measurement_value,
                            title = "Total catch per cell for selected criteria",
@@ -197,40 +200,8 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       feature <- input$map_draw_new_feature
       # print(feature)
       flog.info("New wkt : %s", feature)
-      
-      # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
-      
-      map_proxy_server(
-        id="other",
-        map_id = "map", 
-        feature=feature,
-        parent_session = session
-      )  
-      # updateTextInput(session,ns("yourWKT"), value = wkt())
-  })
-    })
-  flog.info("End of global map module")
-}
-
-
-map_proxy_UI <- function(id) {
-  ns <- NS(id)
-  tagList(
-    textInput(inputId = ns("yourmoduleWKT"),label ="Draw or paste a new WKT", value=new_wkt),
-    verbatimTextOutput("moduleverbatimWKT", placeholder = TRUE)
-  )
-}
-
-map_proxy_server <- function(id, map_id,feature, parent_session){
-  moduleServer(id, function(input, output, session) {
-    # ns <- parent_session$ns
-    ns <- NS(id)
-    map <- map_id
-    flog.info("Within Proxy module !!!!!!!!!!!!!!!!!!!!!!")
-    # observe({
-      
-    #https://cobalt-casco.github.io/r-shiny-geospatial/07-spatial-input-selection.html
-    # output$yourWKT <- renderText({
+      #https://cobalt-casco.github.io/r-shiny-geospatial/07-spatial-input-selection.html
+      # output$yourWKT <- renderText({
       #use the draw_stop event to detect when users finished drawing
       # req(input$map_draw_new_feature)
       # req(input$map_draw_stop)
@@ -263,9 +234,55 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
       #North
       # lat2 <- st_bbox(geom)$ymax
       lat2 <- polygon_coordinates[[2]][[2]]
-
+      
       new_wkt = paste0("POLYGON ((",lng1," ",lat2, ",", lng2, " ",lat2,",", lng2," ", lat1,",", lng1," ", lat1,",", lng1," ", lat2,"))" )
       current_selection <- st_sf(st_as_sfc(new_wkt, crs = 4326))
+      # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
+      disjoint_WKT <- current_fooprint %>% 
+        qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = st_sf(current_selection)) %>% 
+        sf::st_as_sf()
+      # st_disjoint(current_selection,current_fooprint)
+      if(nrow(disjoint_WKT)>0){
+        flog.info("New wkt OK")
+        map_proxy_server(
+          id="other",
+          map_id = "map", 
+          feature=feature,
+          parent_session = session
+        )  
+      }else{
+        flog.info("New wkt not OK")
+        showModal(modalDialog(
+          title = "Warning",
+          "No data in this area, plase draw another one !",
+          easyClose = TRUE,
+          footer = NULL
+        ))
+      }
+
+      # updateTextInput(session,ns("yourWKT"), value = wkt())
+  })
+    })
+  flog.info("End of global map module")
+}
+
+
+map_proxy_UI <- function(id) {
+  ns <- NS(id)
+  tagList(
+    textInput(inputId = ns("yourmoduleWKT"),label ="Draw or paste a new WKT", value=new_wkt),
+    verbatimTextOutput("moduleverbatimWKT", placeholder = TRUE)
+  )
+}
+
+map_proxy_server <- function(id, map_id,feature, parent_session){
+  moduleServer(id, function(input, output, session) {
+    # ns <- parent_session$ns
+    ns <- NS(id)
+    map <- map_id
+    flog.info("Within Proxy module !!!!!!!!!!!!!!!!!!!!!!")
+    # observe({
+      
       centroid <-  current_selection %>% st_centroid()
       lat_centroid <- st_coordinates(centroid, crs = 4326)[2]
       lon_centroid <- st_coordinates(centroid, crs = 4326)[1]
