@@ -1,0 +1,81 @@
+input[type="number"] {
+  max-width: 80%;
+}
+
+div.outer {
+  color: black;
+  font-weight: bold;
+  font-size: x-large;
+  position: fixed;
+  top: 56px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+/* Customize fonts */
+body, label, input, button, select { 
+  color: black;
+  font-size: xx-large;
+  font-weight: bold;
+  font-family: 'Helvetica Neue', Helvetica;
+}
+
+h1, h2, h3, h4 { font-weight: 400; }
+
+#filters {
+  /* Appearance */
+  border: 10px solid #3A506B;
+  border-radius: 10px;
+  padding: 0 10px 10px 10px;
+  cursor: move;
+  /* Fade out while not hovering */
+  opacity: 0.85;
+  zoom: 0.9;
+  transition: opacity 500ms 1s;
+  background-color:#9ec2e6;
+}
+
+#filters:hover {
+  /* Fade in while hovering */
+  opacity: 0.75;
+  transition-delay: 0;
+}
+
+
+#plots {
+  /* Appearance */
+  border: 5px solid #3A506B;
+  border-radius: 30px;
+  background-color: #dcdcde;
+  padding: 0 10px 10px 10px;
+  cursor: move;
+  /* Fade out while not hovering */
+  opacity: 0.85;
+  zoom: 0.9;
+  transition: opacity 500ms 1s;
+
+}
+#plots:hover {
+  /* Fade in while hovering */
+  opacity: 0.75;
+  transition-delay: 0;
+}
+
+#logo {
+  /* Appearance */
+  background-color: transparent;
+  cursor: move;
+  /* Fade out while not hovering */
+  opacity: 0.25;
+  zoom: 0.9;
+  transition: opacity 500ms 1s;
+}
+
+#logo:hover {
+  /* Fade in while hovering */
+  opacity: 0.95;
+  transition-delay: 0;
+}
