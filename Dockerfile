@@ -34,6 +34,7 @@ RUN apt install -y \
     libjq-dev \
     qgis \
     cmake
+    
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean
     
