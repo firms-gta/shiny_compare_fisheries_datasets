@@ -81,8 +81,8 @@ load_data <- function(mode="parquet") {
     con <- dbConnect(RPostgreSQL::PostgreSQL(), host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password)
     # loaded_data <- st_read(con, query="SELECT * FROM public.shinycatch ;")
     query = paste0("SELECT ogc_fid,dataset,year,month,species,fishing_fleet,gear_type, measurement_value,measurement_unit,count,gridtype,fishing_mode, codesource_area, geom_id,ST_AsText(ST_GeometryN(geom, 1)) AS geom 
-                              FROM public.shinycatch 
-                              WHERE ST_Within(geom, ST_GeomFromText('",bbox,"', 4326)) ;)")
+                              FROM public.shinycatch ;")
+                              # WHERE ST_Within(geom, ST_GeomFromText('",bbox,"', 4326)) ;)")
     loaded_data <- dbGetQuery(con,query )
     # saveRDS(loaded_data, "shinycatch.RDS")
     #save and read the data frame by using parquet and feather data formats
@@ -145,18 +145,18 @@ target_flag <-  unique(filters_combinations$fishing_fleet)
 flog.info("Set filters values to be seflected by default")
 
 # default_species <- c('YFT','SKJ','BET','SBF','ALB')
-default_species <- c('YFT','SKJ')
+default_species <- target_species[1]
 # default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-1)
 default_year <- c(seq((max(target_year)-10):max(target_year))+max(target_year)-11)
 # default_gear <- c('01.1','01.2')
 default_gear_type <- unique(target_gear_type)
-default_dataset <- c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
+default_dataset <- target_dataset[1]
 # default_dataset <- unique(target_dataset$dataset)
 default_unit <- c('t','no')
 # default_unit <- unique(target_unit$unit)
 default_gridtype <- c("1deg_x_1deg","5deg_x_5deg")
 # default_area <- unique(target_area$gridtype)
-default_fishing_fleet <- target_flag
+default_fishing_fleet <- unique(target_flag)
 flog.info("Default filter values set.")
 
 # Logging the successful execution of the script up to this point
@@ -188,3 +188,5 @@ flog.info("########################## START UI")
 source(here::here("ui.R"))
 flog.info("########################## START GLOBAL")
 source(here::here("server.R"))
+# getOption('qgisprocess.path')
+# qgis_configure()
