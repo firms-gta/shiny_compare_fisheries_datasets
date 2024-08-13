@@ -44,14 +44,19 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       sql_query_footprint()
     })
     
-    req(sql_query_footprint())
-    current_fooprint <- sql_query_footprint()
-    query_footprint <- sql_query_footprint %>% st_combine()
+    current_fooprint <- reactive({
+      flog.info("################################ OLA #########################################################")
+      flog.info("Spatial query for all filters without WKT" )
+      flog.info("################################ OLA #########################################################")
+      req(sql_query_footprint())
+      current_fooprint <- sql_query_footprint() %>% st_combine()
+    })
     
     output$map <- renderLeaflet({
       flog.info("Testing truthiness of the dataframe with req()")
+    
       
-
+      current_fooprint <- current_fooprint()
       
       req(sql_query())
       this_df <- sql_query()
@@ -105,7 +110,8 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       map <- leaflet(
         options=leafletOptions(doubleClickZoom = T, dragging=T,scrollWheelZoom=T, minZoom = 3, maxZoom = 10)
       ) %>% 
-        clearShapes() %>%
+        clearGroup("draw")%>%
+      clearShapes() %>%
         setView(lng = lon_centroid, lat =lat_centroid, zoom = 4) %>%
         # setMaxBounds(bbox[1], bbox[2], bbox[3], bbox[4], zoom = 3) %>%  
         # fitBounds(lat1=bbx[1], lng1=bbx[2], lat2=bbx[3], lng2=bbx[4]) %>%
@@ -117,7 +123,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
         addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection") %>%
         addPolygons(data = spatial_footprint_1,color="grey",fillColor = "transparent", group="footprint1") %>%
         addPolygons(data = spatial_footprint_5,color="grey",fillColor = "transparent", group="footprint5") %>%
-        addPolygons(data = query_footprint,color="red",fillColor = "transparent", group="data_for_filters")  %>%
+        addPolygons(data = current_fooprint,color="red",fillColor = "transparent", group="data_for_filters")  %>%
         # addPolygons(data = remaining_polygons,color="red",fillColor = "transparent", group="remaining")  %>%
         addPolygons(data = all_polygons,fillColor = "transparent", group="all")
       
@@ -146,6 +152,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       map <- map   %>% #  addPolygons(data = bbx) # %>%  addPolygons(data = convex_hull) %>%
         addDrawToolbar(
           targetGroup = "draw",
+          singleFeature = TRUE,
           editOptions = editToolbarOptions(
             selectedPathOptions = selectedPathOptions()
           )
@@ -193,6 +200,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
     observe({
       flog.info("Check if the user is drawing a new feature !")
       req(input$map_draw_new_feature)
+      previous_wkt <- wkt()
       flog.info("Check if the user is done drawing a new feature !")
       req(input$map_draw_stop)
       flog.info("Call map proxy module !")
@@ -236,28 +244,39 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       lat2 <- polygon_coordinates[[2]][[2]]
       
       new_wkt = paste0("POLYGON ((",lng1," ",lat2, ",", lng2, " ",lat2,",", lng2," ", lat1,",", lng1," ", lat1,",", lng1," ", lat2,"))" )
-      current_selection <- st_sf(st_as_sfc(new_wkt, crs = 4326))
+      new_selection <- st_sf(st_as_sfc(new_wkt, crs = 4326))
       # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
-      disjoint_WKT <- current_fooprint %>% 
-        qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = st_sf(current_selection)) %>% 
-        sf::st_as_sf()
+      current_fooprint <- current_fooprint()
+
+      
+      disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = st_sf(current_fooprint), PREDICATE = "disjoint", INTERSECT = new_selection)
+      disjoint <- sf::st_as_sf(disjoint_WKT)
+      nrow(disjoint)==0
+      
       # st_disjoint(current_selection,current_fooprint)
-      if(nrow(disjoint_WKT)>0){
+      if(nrow(disjoint)==1){
+        flog.info("New wkt not OK")
+        showModal(modalDialog(
+          title = "Warning",
+          "No data left in this area with current filters, plase draw another polygon !",
+          easyClose = TRUE,
+          footer = NULL
+        ))
+        new_selection <- st_sf(st_as_sfc(previous_wkt, crs = 4326))
+        map_proxy_server(
+          id="other",
+          map_id = "map", 
+          feature=new_selection,
+          parent_session = session
+        )  
+      }else if(nrow(disjoint)==0){
         flog.info("New wkt OK")
         map_proxy_server(
           id="other",
           map_id = "map", 
-          feature=feature,
+          feature=new_selection,
           parent_session = session
         )  
-      }else{
-        flog.info("New wkt not OK")
-        showModal(modalDialog(
-          title = "Warning",
-          "No data in this area, plase draw another one !",
-          easyClose = TRUE,
-          footer = NULL
-        ))
       }
 
       # updateTextInput(session,ns("yourWKT"), value = wkt())
@@ -270,7 +289,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
 map_proxy_UI <- function(id) {
   ns <- NS(id)
   tagList(
-    textInput(inputId = ns("yourmoduleWKT"),label ="Draw or paste a new WKT", value=new_wkt),
+    textInput(inputId = ns("yourmoduleWKT"),label ="Draw or paste a new WKT", value=new_wkt, width="98%"),
     verbatimTextOutput("moduleverbatimWKT", placeholder = TRUE)
   )
 }
@@ -281,19 +300,30 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
     ns <- NS(id)
     map <- map_id
     flog.info("Within Proxy module !!!!!!!!!!!!!!!!!!!!!!")
-    # observe({
+    
       
-      centroid <-  current_selection %>% st_centroid()
+      centroid <-  feature %>% st_centroid()
       lat_centroid <- st_coordinates(centroid, crs = 4326)[2]
       lon_centroid <- st_coordinates(centroid, crs = 4326)[1]
       
+      #East
+      lng1 <- st_bbox(feature)$xmin
+      #South
+      lat1 <- st_bbox(feature)$ymin
+      #West
+      lng2 <- st_bbox(feature)$xmax
+      #North
+      lat2 <- st_bbox(feature)$ymax
+      new_wkt = paste0("POLYGON ((",lng1," ",lat2, ",", lng2, " ",lat2,",", lng2," ", lat1,",", lng1," ", lat1,",", lng1," ", lat2,"))" )
       
       flog.info("My WKT %s",new_wkt)
+      # flog.info("My WKT from sf as text %s",st_as_text(feature))
       flog.info("SF Pop up WKT %s",paste("North ", lat2, "South ", lat1, "West ", lng2, "East ", lng1))
       
       # mymap_proxy = leafletProxy("mymap") %>% clearPopups()
       flog.info("Map proxy %s",paste(lat1, lng1, lat2, lng2,sep="|"))
       textPopup <- paste0("<b>Click Submit button if you want to extract data in this polygon</b>:", new_wkt)
+      # observe({
       leafletProxy(
         # Taking the mapId from the parent module
         mapId = map_id,
@@ -301,6 +331,7 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
         # instead of inside itself
         session = parent_session
       ) %>% 
+          # clearShapes() %>%
         # setView(lng = lon_centroid, lat =lat_centroid, zoom = 3) %>%
         fitBounds(lat1, lng1, lat2, lng2) %>%
         # setMaxBounds(lat1, lng1, lat2, lng2)
@@ -320,16 +351,18 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
                   #                             #   "border-color" = "rgba(0,0,0,0.5)"
                   #                             # )
                   #   )
-                    )  %>% 
- 
+                    ) %>% 
         # addPolygons(data = current_selection,color="red",fillColor = "transparent", group="draw") %>%
         addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
       
       wkt(new_wkt)
-      # textOutput("updatedWKT")
-      # output$moduleupdatedWKT <- renderText({input$yourWKT})
-      output$moduleverbatimWKT <- renderText({ input$yourmoduleWKT })
-      updateTextInput(session,ns("yourWKT"), value = wkt())
+      
+      # })
+      # output$moduleverbatimWKT <- renderText({ input$yourmoduleWKT })
+      # updateTextInput(session,ns("yourmoduleWKT"), value = wkt())
+      # output$moduleverbatimWKT <- renderText({
+      #   wkt()
+      # })
       
     # })
   })

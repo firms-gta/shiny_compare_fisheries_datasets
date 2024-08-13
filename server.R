@@ -13,6 +13,9 @@ server <- function(input, output, session) {
   
   observeEvent(input$resetWkt, {
     wkt(default_wkt)
+    output$verbatimWKT <- renderText({
+      default_wkt
+    })
     # updateTextInput(session,"yourWKT", value = wkt())
     #   updateTextInput(session,ns("yourWKT"), value = wkt())
   })

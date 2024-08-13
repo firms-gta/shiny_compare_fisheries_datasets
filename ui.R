@@ -17,6 +17,7 @@ ui <- fluidPage(
              tabPanel("Datasets overview",
                       div(class="outer",
                           tags$head(includeCSS("./styles.css")),
+                          # shinycssloaders::withSpinner(map_leafletUI("map_global")),
                           map_leafletUI("map_global"),
                           absolutePanel(id = "filters", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 150,  left = "3%", width = "21%", height = "auto",
@@ -85,7 +86,6 @@ ui <- fluidPage(
                                         actionButton(inputId ="resetWkt", label = "Reset WKT (no spatial filter)", icon("map"), 
                                                      style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large;
                                                                                                                            font-weight: bold;"),
-                                        
                                         actionButton(inputId = "submit",label = "Apply filters !", icon("paper-plane"), 
                                                      style="color: #fff; background-color: #d63638; border-color: #2e6da4;font-size: xx-large;
                                                      font-weight: bold;"),

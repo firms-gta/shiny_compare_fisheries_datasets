@@ -16,7 +16,7 @@ mode="parquet"
 # mode="postgres"
 
 flog.info("Loading data ")
-load_data <- function() {
+load_data <- function(mode="parquet") {
   loaded_data <- list()
   flog.info("Loading dataset: %s", mode)
   
@@ -52,12 +52,18 @@ load_data <- function() {
     reloaded_data = arrow::read_parquet("gta.parquet") %>% st_as_sf(wkt="geom", crs = 4326)
     # simple_df <- df_sf %>% as.data.frame
     # saveRDS(simple_df, "shinycatch.RDS")
-  }else if(mode=="parquet"){
+  }else if(mode=="feather"){
     # feather::write_feather(loaded_data,"gta.feather")
     # rm(df_feather)
     # df_feather <- feather::read_feather("gta.feather") %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_feather)
-    # arrow::write_parquet(loaded_data, "gta.parquet")
+    # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
+    # class(df_parquet)
+  }else if(mode=="parquet"){
+    if(!file.exists("gta.parquet")){
+      loaded_data <- load_data(mode="postgres")
+      arrow::write_parquet(loaded_data, "gta.parquet")
+    }
     loaded_data <- arrow::read_parquet("gta.parquet") 
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
@@ -86,7 +92,7 @@ load_data <- function() {
   return(loaded_data)
 }
 flog.info("Data succesfully loaded")
-df_sf <- load_data()
+df_sf <- load_data(mode="parquet")
 
 
 # flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
