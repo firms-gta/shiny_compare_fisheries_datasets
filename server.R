@@ -232,7 +232,7 @@ server <- function(input, output, session) {
   # aboutServer("about", rmd_paths=nav_bar_menu_html)
     
   onStop(function() {
-    dbDisconnect(con)
+    # dbDisconnect(con)
   })
   
 }
