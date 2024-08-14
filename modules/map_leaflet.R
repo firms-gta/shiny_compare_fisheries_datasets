@@ -102,7 +102,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
         # fitBounds(lat1=bbx[1], lng1=bbx[2], lat2=bbx[3], lng2=bbx[4]) %>%
         # clearBounds() %>%
         # Base groups
-        addMouseCoordinates() %>%
+        # addMouseCoordinates() %>%
         addProviderTiles("CartoDB", "background")   %>%
         addProviderTiles("Esri.OceanBasemap", "background")   %>%
         addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection") %>%
