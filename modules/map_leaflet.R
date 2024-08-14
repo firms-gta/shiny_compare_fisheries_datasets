@@ -232,9 +232,43 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       current_fooprint <- current_fooprint()
 
       
-      disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = st_sf(current_fooprint), PREDICATE = "disjoint", INTERSECT = new_selection)
-      disjoint <- sf::st_as_sf(disjoint_WKT)
-      nrow(disjoint)==0
+      # disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = st_sf(current_fooprint), PREDICATE = "disjoint", INTERSECT = new_selection)
+      # disjoint <- sf::st_as_sf(disjoint_WKT)
+      
+      
+      process_disjoint_WKT <- function(current_footprint, new_selection) {
+        
+        # Vérifier si qgisprocess est installé
+        if (requireNamespace("qgisprocess", quietly = TRUE)) {
+          
+          # Essayer de configurer qgisprocess pour voir s'il fonctionne
+          qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
+          
+          if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
+            # Utiliser qgisprocess si disponible et configuré
+            message("Utilisation de qgisprocess pour traiter les données.")
+            disjoint_WKT <- qgisprocess::qgis_run_algorithm(
+              "native:extractbylocation",
+              INPUT = st_sf(current_footprint),
+              PREDICATE = "disjoint",
+              INTERSECT = new_selection
+            ) %>% 
+              sf::st_as_sf()
+            
+            return(disjoint_WKT)
+          }
+        }
+        
+        # Si qgisprocess n'est pas disponible ou configuré, utiliser sf
+        message("qgisprocess non disponible ou non configuré. Utilisation de sf pour traiter les données.")
+        current_footprint_sf <- st_sf(current_footprint)
+        disjoint_WKT <- current_footprint_sf %>%
+          dplyr::filter(sf::st_disjoint(., new_selection, sparse = FALSE)) %>%
+          sf::st_as_sf()
+        
+        return(disjoint_WKT)
+      }
+      disjoint_WKT <- process_disjoint_WKT(current_footprint, new_selection)
       
       # st_disjoint(current_selection,current_fooprint)
       if(nrow(disjoint)==1){

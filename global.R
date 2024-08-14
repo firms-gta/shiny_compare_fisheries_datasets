@@ -1,4 +1,5 @@
 rm(list = ls()) 
+require(here)
 source(here::here('install.R'))
 # Log the successful loading of libraries
 flog.info("All libraries loaded successfully.")
@@ -167,7 +168,7 @@ flog.info("Initial setup and data retrieval completed successfully.")
 source(here::here('modules/map_leaflet.R'))
 
 # Source external R scripts for additional functionalities
-source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
+# source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
 flog.info("External R scripts sourced successfully.")
 flog.info("Loading modules.")
 load_ui_modules <- function() {

@@ -103,8 +103,49 @@ server <- function(input, output, session) {
     current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
     
     flog.info("Spatial filter : keep only data whose areas are within the current WKT : %s", wkt)
-    list_areas <- df_distinct_geom %>% dplyr::filter(!is.na(gridtype)) %>% 
-      qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = st_sf(current_selection)) %>% sf::st_as_sf()
+    # list_areas <- df_distinct_geom %>% dplyr::filter(!is.na(gridtype)) %>% 
+    #   qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = st_sf(current_selection)) %>% sf::st_as_sf()
+    # 
+    # 
+    
+    
+    process_list_areas <- function(df_distinct_geom, current_selection) {
+      
+      # Vérifier si qgisprocess est installé
+      if (requireNamespace("qgisprocess", quietly = TRUE)) {
+        
+        # Essayer de configurer qgisprocess pour voir s'il fonctionne
+        qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
+        
+        if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
+          # Utiliser qgisprocess si disponible et configuré
+          message("Utilisation de qgisprocess pour traiter les données.")
+          list_areas <- df_distinct_geom %>%
+            dplyr::filter(!is.na(gridtype)) %>%
+            qgisprocess::qgis_run_algorithm(
+              "native:extractbylocation",
+              INPUT = .,
+              PREDICATE = "are within",
+              INTERSECT = st_sf(current_selection)
+            ) %>% 
+            sf::st_as_sf()
+          
+          return(list_areas)
+        }
+      }
+      
+      # Si qgisprocess n'est pas disponible ou configuré, utiliser sf
+      message("qgisprocess non disponible ou non configuré. Utilisation de sf pour traiter les données.")
+      list_areas <- df_distinct_geom %>%
+        dplyr::filter(!is.na(gridtype)) %>%
+        dplyr::filter(sf::st_within(., st_sf(current_selection), sparse = FALSE)) %>%
+        sf::st_as_sf()
+      
+      return(list_areas)
+    }
+    list_areas <- process_list_areas(df_distinct_geom, current_selection)
+    
+    
     flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
     within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%  rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
     
@@ -173,7 +214,7 @@ server <- function(input, output, session) {
   pieBarChartsServer(id= "pie_bar_charts",sql_query)
   
   flog.info("Extra module to detail what gears are the most important in the time series of catches")
-  timeSeriesGearServer(id= "time_series_gear",sql_query)
+  # timeSeriesGearServer(id= "time_series_gear",sql_query)
   
   # nav_bar_menu_rmd <- c(
   #   "rmd/Authors.Rmd", 
@@ -191,7 +232,7 @@ server <- function(input, output, session) {
   # aboutServer("about", rmd_paths=nav_bar_menu_html)
     
   onStop(function() {
-    # dbDisconnect(con)
+    dbDisconnect(con)
   })
   
 }
