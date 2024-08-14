@@ -104,8 +104,8 @@ ui <- fluidPage(
                                         pieBarChartsUI(id = "pie_bar_charts")
                           ),
                           absolutePanel(id = "plots", class = "panel panel-default", bottom =  "2%", left = "25%", width = "50%", fixed=TRUE, draggable = FALSE, height = "auto",
-                                        # timeSeriesUI(id = "time_series_gear"),
-                                        timeSeriesGearUI(id= "time_series")
+                                        # timeSeriesGearUI(id = "time_series_gear"),
+                                        timeSeriesUI(id= "time_series")
                                         # fluidRow(
                                         #   column(10,dygraphOutput("dygraph_all_datasets",height="400")),
                                         #   column(2,textOutput("legendDivID"))
