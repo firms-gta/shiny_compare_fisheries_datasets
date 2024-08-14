@@ -8,16 +8,24 @@ server <- function(input, output, session) {
   # observeEvent(input$yourWKT,{
   #   updateSelectInput(session = session,
   #                     inputId = "yourWKT",
-  #                     selected = wkt())
+  #                     selected = main_wkt())
+  # })
+  
+  # observeEvent(updated_main_wkt$updated_main_wkt(), {
+  #   req(main_wkt())
+  #   if(updated_main_wkt$updated_main_wkt() != main_wkt()){
+  #     main_wkt(updated_main_wkt$updated_main_wkt())
+  #     submitTrigger(TRUE)
+  #   }
   # })
   
   observeEvent(input$resetWkt, {
-    wkt(default_wkt)
+    main_wkt(default_wkt)
     output$verbatimWKT <- renderText({
       default_wkt
     })
-    # updateTextInput(session,"yourWKT", value = wkt())
-    #   updateTextInput(session,ns("yourWKT"), value = wkt())
+    # updateTextInput(session,"yourWKT", value = main_wkt())
+    #   updateTextInput(session,ns("yourWKT"), value = main_wkt())
   })
   
   
@@ -83,8 +91,10 @@ server <- function(input, output, session) {
     flog.info("Applying new filters to main data") 
     flog.info("###############################################################################################") 
     
-    req(wkt())
-    wkt <- wkt()    
+    req(main_wkt())
+    wkt <- main_wkt()    
+    flog.info("Spatial filter :main WKT : %s", wkt)
+    
     
     flog.info("###############################################################################################") 
     flog.info("Applying new filters to main data 2 ") 
@@ -120,14 +130,14 @@ server <- function(input, output, session) {
   flog.info("##########################################################")
   
   output$selected_var <- renderText({ 
-    paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", wkt())
+    paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", main_wkt())
   })
   
   
   # output$updatedWKT <- renderText({input$yourWKT})
   
   output$verbatimWKT <- renderText({
-    wkt()
+    main_wkt()
   })
   
   output$current_filters <- renderText({ 
@@ -141,7 +151,7 @@ server <- function(input, output, session) {
   
   output$current_WKT <- renderText({ 
     # paste("Your SQL Query is : \n", query_all_datasets())
-    paste("\n \n \n \n \n", "Here is the current WKT : \n", wkt())
+    paste("\n \n \n \n \n", "Here is the current WKT : \n", main_wkt())
     # list_areas()
     
   })

@@ -4,7 +4,7 @@ source(here::here('install.R'))
 flog.info("All libraries loaded successfully.")
 
 # Initialize reactive values and default WKT for mapping
-wkt <- reactiveVal()
+main_wkt <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
 flog.info("Reactive values initialized successfully.")
 initial_data <- reactiveVal()
@@ -43,6 +43,7 @@ load_data <- function(mode="parquet") {
     colnames(transform_df_sf)
     class(transform_df_sf$geom)
     saveRDS(transform_df_sf, "shinycatch.RDS") 
+    # saveRDS(loaded_data, "shinycatch.RDS")
     
     #save and read the data frame by using parquet and feather data formats
     feather::write_feather(transform_df_sf,"gta.feather")
@@ -80,11 +81,9 @@ load_data <- function(mode="parquet") {
     
     con <- dbConnect(RPostgreSQL::PostgreSQL(), host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password)
     # loaded_data <- st_read(con, query="SELECT * FROM public.shinycatch ;")
-    query = paste0("SELECT ogc_fid,dataset,year,month,species,fishing_fleet,gear_type, measurement_value,measurement_unit,count,gridtype,fishing_mode, codesource_area, geom_id,ST_AsText(ST_GeometryN(geom, 1)) AS geom 
-                              FROM public.shinycatch 
-                              WHERE ST_Within(geom, ST_GeomFromText('",bbox,"', 4326)) ;)")
+    query <- paste0("SELECT ogc_fid,dataset,year,month,species,fishing_fleet,gear_type, measurement_value,measurement_unit,count,gridtype,fishing_mode, codesource_area, geom_id,ST_AsText(ST_GeometryN(geom, 1)) AS geom 
+                              FROM public.shinycatch ;")
     loaded_data <- dbGetQuery(con,query )
-    # saveRDS(loaded_data, "shinycatch.RDS")
     #save and read the data frame by using parquet and feather data formats
   }else{
     flog.info("No data loaded !!")
@@ -101,7 +100,7 @@ df_distinct_geom <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_are
 class(df_distinct_geom)
 
 default_wkt <- st_as_text(st_as_sfc(st_bbox(df_distinct_geom)))
-wkt(default_wkt)
+# main_wkt(default_wkt)
 new_wkt <- default_wkt
 
 
@@ -125,7 +124,9 @@ if(!file_exists("filters_combinations.parquet")){
 flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
 target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
 # target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
-wkt(target_wkt)
+main_wkt(target_wkt)
+# flog.info("Spatial filter :main WKT : %s", main_wkt())
+
 # target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
 target_dataset <- unique(df_sf$dataset)
 # target_species <-  dbGetQuery(con,"SELECT DISTINCT(species) FROM public.shinycatch ORDER BY species;")
@@ -166,7 +167,6 @@ flog.info("Initial setup and data retrieval completed successfully.")
 source(here::here('modules/map_leaflet.R'))
 
 # Source external R scripts for additional functionalities
-source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i1_SpeciesByOcean.R")
 source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
 flog.info("External R scripts sourced successfully.")
 flog.info("Loading modules.")

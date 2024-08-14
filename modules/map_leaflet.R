@@ -12,28 +12,12 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
   flog.info("Starting global map module")
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
     # query_footprint <- reactive({
     #   flog.info("################################ OLA #########################################################") 
     #   flog.info("Spatial query for all filters without WKT" )
     #   flog.info("################################ OLA #########################################################") 
     #   req(sql_query_footprint())
     #   query_footprint <- sql_query_footprint() %>% st_combine()
-    # }) 
-    
-    # data_map <- reactive({
-    #   req(sql_query())
-    #   this_df <- sql_query()
-    #   flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(this_df))
-    #   flog.info("Sum of values per dataset and per area for mapping : %s", nrow(this_df))
-    #   
-    #   data_map <- this_df %>% dplyr::group_by(dataset,codesource_area,gridtype,geom) %>% 
-    #     dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup() 
-    #   
-    #   flog.info("Data map head : %s", head(data_map))
-    #   flog.info("Number of rows of map data : %s", nrow(data_map))
-    #   
-    #   data_map
     # }) 
     
     flog.info("Data Table of the map")
@@ -54,7 +38,9 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
     
     output$map <- renderLeaflet({
       flog.info("Testing truthiness of the dataframe with req()")
-    
+      module_wkt <- main_wkt()
+      flog.info("New module_wkt OK %s",module_wkt)
+      
       
       current_fooprint <- current_fooprint()
       
@@ -72,14 +58,13 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       
       df <- data_map %>% st_as_sf(wkt="geom",crs=4326)
       
-      wkt<- wkt()
-      current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
-      flog.info("Check current value of WKT  : %s", wkt)
+      current_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
+      flog.info("Check current value of WKT  : %s", module_wkt)
       
       remaining_polygons <- df %>% st_combine() #%>% st_convex_hull(
-      flog.info("Updating spatial_footprint_1 to fit the new WKT  : %s", wkt)
+      flog.info("Updating spatial_footprint_1 to fit the new WKT  : %s", module_wkt)
       spatial_footprint_1 <- df  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% st_combine() #%>% st_convex_hull(
-      flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", wkt)
+      flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", module_wkt)
       spatial_footprint_5 <- df  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
       all_polygons <- df_distinct_geom %>% st_combine() 
       
@@ -196,11 +181,9 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
   # output$DT_query_data_map <- renderDT({
   #   data_map()
   # })
-    flog.info("Calling Proxy module !!!!!!!!!!!!!!!!!!!!!!")
     observe({
       flog.info("Check if the user is drawing a new feature !")
       req(input$map_draw_new_feature)
-      previous_wkt <- wkt()
       flog.info("Check if the user is done drawing a new feature !")
       req(input$map_draw_stop)
       flog.info("Call map proxy module !")
@@ -262,25 +245,23 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
           easyClose = TRUE,
           footer = NULL
         ))
-        new_selection <- st_sf(st_as_sfc(previous_wkt, crs = 4326))
-        map_proxy_server(
-          id="other",
-          map_id = "map", 
-          feature=new_selection,
-          parent_session = session
-        )  
+        new_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
+        
       }else if(nrow(disjoint)==0){
         flog.info("New wkt OK")
+        flog.info("Calling Proxy module !!!!!!!!!!!!!!!!!!!!!!")
         map_proxy_server(
           id="other",
           map_id = "map", 
           feature=new_selection,
           parent_session = session
-        )  
+        )
+        
+        
       }
-
       # updateTextInput(session,ns("yourWKT"), value = wkt())
   })
+    
     })
   flog.info("End of global map module")
 }
@@ -354,9 +335,7 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
                     ) %>% 
         # addPolygons(data = current_selection,color="red",fillColor = "transparent", group="draw") %>%
         addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
-      
-      wkt(new_wkt)
-      
+      main_wkt(new_wkt)
       # })
       # output$moduleverbatimWKT <- renderText({ input$yourmoduleWKT })
       # updateTextInput(session,ns("yourmoduleWKT"), value = wkt())
@@ -365,6 +344,9 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
       # })
       
     # })
+      
   })
   flog.info("End of proxy map module")
 }
+
+
