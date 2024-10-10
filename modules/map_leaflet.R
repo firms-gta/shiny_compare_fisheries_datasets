@@ -304,7 +304,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
 map_proxy_UI <- function(id) {
   ns <- NS(id)
   tagList(
-    textInput(inputId = ns("yourmoduleWKT"),label ="Draw or paste a new WKT", value=new_wkt, width="98%"),
+    textInput(inputId = ns("yourmoduleWKT"),label ="Module Draw or paste a new WKT", value=new_wkt, width="98%"),
     verbatimTextOutput("moduleverbatimWKT", placeholder = TRUE)
   )
 }
@@ -371,11 +371,11 @@ map_proxy_server <- function(id, map_id,feature, parent_session){
         addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
       main_wkt(new_wkt)
       # })
-      # output$moduleverbatimWKT <- renderText({ input$yourmoduleWKT })
-      # updateTextInput(session,ns("yourmoduleWKT"), value = wkt())
-      # output$moduleverbatimWKT <- renderText({
-      #   wkt()
-      # })
+      output$moduleverbatimWKT <- renderText({ input$yourmoduleWKT })
+      updateTextInput(session,ns("yourmoduleWKT"), value = wkt())
+      output$moduleverbatimWKT <- renderText({
+        wkt()
+      })
       
     # })
       

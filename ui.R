@@ -88,10 +88,10 @@ ui <- fluidPage(
                                           width = "98%"
                                         ),
                                         map_leafletUI("other"),
-                                        textInput("yourWKT","Draw or paste a new WKT",width="98%"),
+                                        textInput("yourWKT","Main draw or paste a new WKT",width="98%"),
                                         # textInput("yourWKT","Paste you WKT",value=textOutput("updatedWKT")),
                                         verbatimTextOutput("updatedWKT", placeholder = TRUE),
-                                        verbatimTextOutput("verbatimWKT"),
+                                        # verbatimTextOutput("verbatimWKT"),
                                         
                                         actionButton(inputId ="resetWkt", label = "Reset WKT (no spatial filter)", icon("map"), 
                                                      style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large;

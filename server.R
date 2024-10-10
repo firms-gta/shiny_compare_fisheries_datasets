@@ -4,12 +4,12 @@ server <- function(input, output, session) {
   change <- reactive({
     unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
   })
-  
-  # observeEvent(input$yourWKT,{
-  #   updateSelectInput(session = session,
-  #                     inputId = "yourWKT",
-  #                     selected = main_wkt())
-  # })
+
+  observeEvent(input$yourWKT,{
+    updateSelectInput(session = session,
+                      inputId = "yourWKT",
+                      selected = main_wkt())
+  })
   
   # observeEvent(updated_main_wkt$updated_main_wkt(), {
   #   req(main_wkt())
@@ -154,7 +154,7 @@ server <- function(input, output, session) {
       return(list_areas)
     }
     
-    if(wkt==default_wkt){
+    if(wkt!=default_wkt){
     list_areas <- process_list_areas(df_distinct_geom, current_selection)
     
     
