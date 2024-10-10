@@ -106,9 +106,9 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
         addProviderTiles("CartoDB", "background")   %>%
         addProviderTiles("Esri.OceanBasemap", "background")   %>%
         addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection") %>%
-        addPolygons(data = spatial_footprint_1,color="grey",fillColor = "transparent", group="footprint1") %>%
-        addPolygons(data = spatial_footprint_5,color="grey",fillColor = "transparent", group="footprint5") %>%
-        addPolygons(data = current_fooprint,color="red",fillColor = "transparent", group="data_for_filters")  %>%
+        # addPolygons(data = spatial_footprint_1,color="blue",fillColor = "transparent", group="footprint1") %>%
+        # addPolygons(data = spatial_footprint_5,color="green",fillColor = "transparent", group="footprint5") %>%
+        # addPolygons(data = current_fooprint,color="yellow",fillColor = "transparent", group="data_for_filters")  %>%
         # addPolygons(data = remaining_polygons,color="red",fillColor = "transparent", group="remaining")  %>%
         addPolygons(data = all_polygons,fillColor = "transparent", group="all")
       

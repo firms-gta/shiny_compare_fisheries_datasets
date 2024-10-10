@@ -21,60 +21,70 @@ ui <- fluidPage(
                           map_leafletUI("map_global"),
                           absolutePanel(id = "filters", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE, top = 150,  left = "3%", width = "21%", height = "auto",
-                                        selectInput(
+                                        pickerInput(
                                           inputId = "dataset",
                                           label = "Dataset",
                                           choices = target_dataset,
                                           multiple = TRUE,
                                           selected= default_dataset,
+                                          options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        selectInput(
+                                        pickerInput(
                                           inputId = "unit",
                                           label = "Unit",
                                           choices = target_measurement_unit,
                                           multiple = TRUE,
                                           selected= default_unit,
+                                          options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        selectInput(
+                                        # selectInput(
+                                        pickerInput(
                                           inputId = "gridtype",
                                           label = "Grid size",
                                           choices = target_gridtype,
                                           multiple = TRUE,
                                           selected= default_gridtype,
+                                          options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        selectInput(
+                                        pickerInput(
+                                        # selectInput(
                                           inputId = "species",
                                           label = "Species",
                                           choices = target_species,
                                           multiple = TRUE,
                                           selected= default_species,
+                                          options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        selectInput(
+                                        pickerInput(
                                           inputId = "year",
                                           label = "Year",
                                           choices = target_year,
                                           multiple = TRUE,
                                           selected= default_year,
+                                          options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        selectInput(
+                                        pickerInput(
                                           inputId = "gear_type",
                                           label = "Gear",
-                                          choices = target_gear_type,
+                                          # choices = c("All",target_gear_type),
+                                          choices =target_gear_type,
                                           multiple = TRUE,
                                           selected= default_gear_type,
+                                          options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        selectInput(
+                                        pickerInput(
                                           inputId = "fishing_fleet",
                                           label = "Fishing fleet",
                                           choices = target_flag,
                                           multiple = TRUE,
                                           selected= default_fishing_fleet,
+                                          options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
                                         map_leafletUI("other"),
@@ -98,7 +108,7 @@ ui <- fluidPage(
                                         actionButton(
                                           inputId = "switched",
                                           label = "Switch unit for pie chart (number or tons)",
-                                          icon("chart"), 
+                                          # icon("move"), 
                                           style="color: #fff; background-color: #008a20; border-color: #2e6da4; font-size: xx-large;font-weight: bold;"
                                         ),
                                         pieBarChartsUI(id = "pie_bar_charts")
@@ -121,24 +131,12 @@ ui <- fluidPage(
              #   title = "Time series per gear type",
              #   timeSeriesGearUI(id= "time_series_gear")
              # ),
-             # navbarMenu("Browse Data Tables",
-             #            tabPanel(
-             #              title = "Browse map data",
-             #              map_leafletUI("DT_data_footprint")
-             #            ),
-             #            tabPanel(
-             #              title = "Browse data map",
-             #              map_leafletUI("DT_query_data_map")
-             #            ),
-             #            tabPanel(
-             #              title = "Browse time series data",
-             #              DT::dataTableOutput("DT_data_all_datasets")
-             #            ),
-             #            tabPanel(
-             #              title = "Browse data bar plots",
-             #              DT::dataTableOutput("DT_data_barplot_all_datasets")
-             #            )
-             # ),
+             navbarMenu("Browse Data Tables",
+                        tabPanel(
+                          title = "Browse main dataset",
+                          DT::dataTableOutput("DT_main_dataset")
+                        )
+             ),
              # tabPanel(
              #   title = "Your filters",
              #   textOutput("selected_var")

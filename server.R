@@ -36,6 +36,16 @@ server <- function(input, output, session) {
   }
   )
   
+  
+  # observeEvent(input$gear_type,{
+  #   if(!'All' %in% input$gear_type) {
+  #     updateSelectInput(session,"gear_type",choices = unique(temp$gear_type),selected=unique(temp$gear_type))
+  #   }
+  # }
+  # )
+  # if All is not in selection, filter to selected continents
+
+  
   observeEvent(input$switched, {
     if(switch_unit()){switch_unit(FALSE)}else{switch_unit(TRUE)}
   })
@@ -64,8 +74,8 @@ server <- function(input, output, session) {
       measurement_unit %in% input$unit,
       gridtype %in% input$gridtype) %>%
       dplyr::group_by(codesource_area,geom, dataset, species,gear_type, year, measurement_unit, gridtype) %>% 
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>%
-      filter(!is.na(geom))
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() # %>% filter(!is.na(geom))
+      
     
   },
   ignoreNULL = FALSE)
@@ -143,13 +153,18 @@ server <- function(input, output, session) {
       
       return(list_areas)
     }
+    
+    if(wkt==default_wkt){
     list_areas <- process_list_areas(df_distinct_geom, current_selection)
     
     
     flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
     within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%  rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
     
-    sql_query <- sql_query_all  %>%  dplyr::filter(codesource_area %in% within_areas)
+    sql_query <- sql_query_all %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas)
+  }else{
+    sql_query <- sql_query_all
+  }
   
   flog.info("Main data number rows: %s", nrow(sql_query))
   # https://shiny.posit.co/r/reference/shiny/latest/modaldialog
@@ -197,6 +212,11 @@ server <- function(input, output, session) {
     
   })
   
+  
+  
+  output$DT_main_dataset <- renderDT({
+    sql_query() %>% top_n(10)
+  })
   
   flog.info("##########################################################")
   flog.info(" Modules forOutputs: maps / plots / charts")
