@@ -1,6 +1,6 @@
 ui <- fluidPage(
   # titlePanel("Global Tuna Atlas"),
-  navbarPage(title="Compare datasets",
+  navbarPage(title="Compare Global Tuna Atlas datasets",
              position = c("fixed-top"),
              fluid = TRUE,
              collapsible = TRUE,
@@ -15,12 +15,20 @@ ui <- fluidPage(
              # ),
              # map_leafletUI("id_1"),
              tabPanel("Datasets overview",
+                      modalDialog(
+                        title = "Information",
+                        # includeHTML("doc/ribbon_GH.html"),
+                        includeMarkdown("doc/popup.md"),
+                        size = "l",
+                        easyClose = TRUE,
+                        footer=modalButton("OK", icon =icon("check"))
+                      ),
                       div(class="outer",
                           tags$head(includeCSS("./styles.css")),
                           # shinycssloaders::withSpinner(map_leafletUI("map_global")),
                           map_leafletUI("map_global"),
                           absolutePanel(id = "filters", class = "panel panel-default", fixed = TRUE,
-                                        draggable = TRUE, top = 150,  left = "3%", width = "21%", height = "auto",
+                                        draggable = TRUE,top = "12%",  left = "3%", width = "21%", height = "auto",
                                         pickerInput(
                                           inputId = "dataset",
                                           label = "Dataset",
@@ -103,7 +111,7 @@ ui <- fluidPage(
                                         tags$br()
                           ),
                           absolutePanel(id = "plots", class = "panel panel-default", fixed = TRUE,
-                                        draggable = TRUE, top = 150, left = "auto", right="1%", width = "23%", height = "auto",
+                                        draggable = TRUE, top = "12%", left = "auto", right="1%", width = "23%", height = "auto",
                                         tags$br(),
                                         actionButton(
                                           inputId = "switched",
@@ -122,9 +130,10 @@ ui <- fluidPage(
                                         # )
                           ),
                           
-                          absolutePanel(id = "logo", class = "card", bottom = 15, right = 150, width = 80, fixed=TRUE, draggable = FALSE, height = "auto",
-                                        tags$a(href='https://www.ird.fr/', tags$img(src='https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg',height='178',width='216'))
-                          )
+                          absolutePanel(id = "logo", class = "logo", bottom = "2%", left = "2%", width = "auto", fixed=FALSE, draggable = TRUE, height = "auto",
+                                        tags$a(href='https://www.ird.fr/', tags$img(src='logo_IRD.svg',height='5%'))),
+                          absolutePanel(id = "logo", class = "logo", top = "1.5%", right = "2%", width = "auto", fixed=FALSE, draggable = TRUE, height = "auto",
+                                        tags$a(href='https://blue-cloud.d4science.org/', tags$img(src='logo_blue-cloud_2026.svg',height='5%')))
                       )
              ),
              # tabPanel(
@@ -143,24 +152,7 @@ ui <- fluidPage(
              # ),
              navbarMenu("Browse underlying filters",
                         tabPanel(
-                          title = "The current WKT",
-                          tags$br(),
-                          tags$br(),
-                          tags$br(),
-                          tags$br(),
-                          tags$br(),
-                          tags$br(),
-                          tags$br(),
-                          textOutput("current_WKT")
-                        ),
-                        tabPanel(
                           title = "SQL query: query_metadata",
-                          tags$br(),
-                          tags$br(),
-                          tags$br(),
-                          tags$br(),
-                          tags$br(),
-                          tags$br(),
                           tags$br(),
                           textOutput("current_filters")
                         )
@@ -168,27 +160,31 @@ ui <- fluidPage(
              # aboutUI("about"),
              tabPanel("About",
                       fluidRow(
-                        column(6,
                                includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
-                        ),
-                        column(6,
-                               img(class="logo_IRD",
-                                   src=paste0("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/logo_IRD.svg")),
-                               tags$small(
-                                 "Source: IRD",
-                                 "Julien Barde ",
-                                 "Funding : BlueCloud ",
-                                 a(href="https://www.documentation.ird.fr/hor/fdi:010012425",
-                                   "IRD Tuna Atlas (Alain Fontenau)"),
-                                 a(href="https://github.com/juldebar/IRDTunaAtlas/wiki/Indicator-I11-:-Catches-by-country",
-                                   "IRD Indicator 11"),
-                                 a(href="https://www.documentation.ird.fr/hor/fdi:010012425",
-                                   "IRD Tuna Atlas (Alain Fontenau)"),
-                                 a(href="https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers11-03/010012425.pdf",
-                                   "PDF")
-                               )
-                        )
                       )
+             ),
+             navbarMenu("About bis",
+                        tabPanel("About",
+                                 fluidRow(
+                                   column(width =2,
+                                          markdown('
+                                          [<img src="logo_VLab5.png" height="10%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+                                          
+                                          <br>
+                                          
+                                          [<img src="logo_IRD.svg" height="108">](https://www.ird.fr/)   
+                                                   ')
+                                   ),
+                                   column(width =6,
+                                          includeMarkdown("doc/about.md"),
+                                   ),
+                                   column(width =2,
+                                          markdown('
+                                          [<img src="BET_YFT_SKJ_ALB.svg" width="20%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+                                                   ')
+                                   )
+                                 )
+                        )
              )
              )
 )
