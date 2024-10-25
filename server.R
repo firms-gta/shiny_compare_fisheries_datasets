@@ -205,15 +205,6 @@ server <- function(input, output, session) {
     paste("You have selected the following filters:\n", class(species_list))
   })
   
-  output$current_WKT <- renderText({ 
-    # paste("Your SQL Query is : \n", query_all_datasets())
-    paste("\n \n \n \n \n", "Here is the current WKT : \n", main_wkt())
-    # list_areas()
-    
-  })
-  
-  
-  
   output$DT_main_dataset <- renderDT({
     sql_query() %>% top_n(10)
   })
