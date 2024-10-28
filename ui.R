@@ -157,15 +157,10 @@ ui <- fluidPage(
                           textOutput("current_filters")
                         )
              ),
-             # aboutUI("about"),
-             tabPanel("About",
-                      fluidRow(
-                               includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
-                      )
-             ),
-             navbarMenu("About bis",
-                        tabPanel("About",
+             navbarMenu("About",
+                        tabPanel("Context",
                                  fluidRow(
+                                   # includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
                                    column(width =2,
                                           markdown('
                                           [<img src="logo_VLab5.png" height="10%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
