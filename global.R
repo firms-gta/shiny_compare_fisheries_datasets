@@ -19,7 +19,7 @@ mode="parquet"
 flog.info("Loading data ")
 load_data <- function(mode="parquet") {
   loaded_data <- list()
-  flog.info("Loading dataset: %s", mode)
+  flog.info("Loading dataset: %s format", mode)
   
   if(mode=="gpkg"){
     flog.info("Loading main data from %s file",mode)
