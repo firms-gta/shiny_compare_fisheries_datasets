@@ -14,7 +14,6 @@ mode="gpkg"
 mode="postgres"
 mode="RDS"
 mode="parquet"
-# mode="postgres"
 
 flog.info("Loading data ")
 load_data <- function(mode="parquet") {
@@ -82,17 +81,19 @@ load_data <- function(mode="parquet") {
     
     con <- dbConnect(RPostgreSQL::PostgreSQL(), host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password)
     # loaded_data <- st_read(con, query="SELECT * FROM public.shinycatch ;")
-    query <- paste0("SELECT ogc_fid,dataset,year,month,species,fishing_fleet,gear_type, measurement_value,measurement_unit,count,gridtype,fishing_mode, codesource_area, geom_id,ST_AsText(ST_GeometryN(geom, 1)) AS geom 
-                              FROM public.shinycatch ;")
+    query <- paste0("SELECT ogc_fid,dataset,year,month,source_authority,species,fishing_fleet,gear_type, measurement_value,measurement_unit,count,gridtype,fishing_mode, codesource_area,ST_AsText(ST_GeometryN(geom, 1)) AS geom 
+                              FROM public.shinycatch;")
     loaded_data <- dbGetQuery(con,query )
+    qs::qsave(loaded_data,"newshinypublic.qs")
     #save and read the data frame by using parquet and feather data formats
+    loaded_data
   }else{
     flog.info("No data loaded !!")
   }
   return(loaded_data)
 }
-flog.info("Data succesfully loaded")
 df_sf <- load_data(mode="parquet")
+flog.info("Data succesfully loaded")
 
 
 # flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
