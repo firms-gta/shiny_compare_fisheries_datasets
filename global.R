@@ -158,7 +158,7 @@ default_gear_type <- unique(target_gear_type)
 default_dataset <- unique(target_dataset)
 default_unit <- c('t','no')
 # default_unit <- unique(target_unit$unit)
-default_gridtype <- c("1deg_x_1deg")
+default_gridtype <- c("1deg_x_1deg", "nominal_area")
 # default_area <- unique(target_area$gridtype)
 default_fishing_fleet <- target_flag
 flog.info("Default filter values set.")
