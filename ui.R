@@ -47,6 +47,15 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
+                                        pickerInput(
+                                          inputId = "source_authority",
+                                          label = "Source authority",
+                                          choices = target_source_authority,
+                                          multiple = TRUE,
+                                          selected= default_source_authority,
+                                          options = list(`actions-box` = TRUE),
+                                          width = "98%"
+                                        ),
                                         # selectInput(
                                         pickerInput(
                                           inputId = "gridtype",
