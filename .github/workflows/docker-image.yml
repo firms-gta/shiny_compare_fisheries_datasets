@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'R4.2.3withoutQGIS'
     tags:
       - "v*"
   pull_request:
