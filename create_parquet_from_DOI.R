@@ -1,6 +1,12 @@
 # Paths for processed files
 cl_areal_grid_path <- here::here("data/cl_areal_grid.qs")
 cl_nc_areas <- here::here("data/cl_nc_areas.qs")
+require(here)
+require(futile.logger)
+require(qs)
+require(readr)
+require(sf)
+require(tools)
 
 # Load or process cl_areal_grid
 if (file.exists(cl_areal_grid_path)) {
