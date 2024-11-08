@@ -11,28 +11,60 @@ LABEL org.opencontainers.image.source https://github.com/firms-gta/shiny_compare
 # Update and upgrade the system with option -y to tells apt-get to assume the answer to all prompts is yes.
 RUN apt update && apt upgrade -y
 
-# Install system libraries of general use with option -y to tells apt-get to assume the answer to all prompts is yes.
-RUN apt install -y \
-    #sudo \
-    #pandoc \
-    pandoc-citeproc \
-    libssl-dev \
-   #libcurl4-openssl-dev \
-    #libxml2-dev \
-    libudunits2-dev \
-    libproj-dev \
-    libgeos-dev \
-    libgdal-dev \
-    libv8-dev \
-    libsodium-dev \
-    libsecret-1-dev \
-    git \
-    libnetcdf-dev \
-    curl \
-    qgis \
-    qgis-plugin-grass \
-    libprotobuf-dev \
-RUN apt-get update && apt-get install -y \
+# RUN apt install -y \
+#    #sudo \
+#    #pandoc \
+#    pandoc-citeproc \
+#    libssl-dev \
+#   #libcurl4-openssl-dev \
+#    #libxml2-dev \
+#    libudunits2-dev \
+#    libproj-dev \
+#    libgeos-dev \
+#    libgdal-dev \
+#    libv8-dev \
+#    libsodium-dev \
+#    libsecret-1-dev \
+#    git \
+#    libnetcdf-dev \
+#    curl \
+#    qgis \
+#    qgis-plugin-grass \
+#    libprotobuf-dev \
+# RUN apt-get update && apt-get install -y \
+#    sudo \
+#    pandoc \
+#    pandoc-citeproc \
+#    libssl-dev \
+#    libcurl4-gnutls-dev \
+#    libxml2-dev \
+#    libudunits2-dev \
+#    libproj-dev \
+#    libgeos-dev \
+#    libgdal-dev \
+#    libv8-dev \
+#    libsodium-dev \
+#    libsecret-1-dev \
+#    git \
+#    libnetcdf-dev \
+#    curl \
+#    libjq-dev \
+#    cmake \
+#    protobuf-compiler \
+#    libprotobuf-dev \
+#    librdf0 \
+#    librdf0-dev \
+#    libjq-dev \
+#    libqgis-dev \
+#    libicu-dev \ 
+#    cmake \
+#    redland-utils && \
+#    apt-get clean
+    
+    
+# Install system libraries with apt-get -y
+RUN apt-get update && \
+    apt-get install -y \
     sudo \
     pandoc \
     pandoc-citeproc \
@@ -49,18 +81,19 @@ RUN apt-get update && apt-get install -y \
     git \
     libnetcdf-dev \
     curl \
+    qgis \
+    qgis-plugin-grass \
+    libprotobuf-dev \
     libjq-dev \
     cmake \
     protobuf-compiler \
-    libprotobuf-dev \
     librdf0 \
     librdf0-dev \
-    libjq-dev \
     libqgis-dev \
-    libicu-dev \ 
-    cmake \
+    libicu-dev \
     redland-utils && \
     apt-get clean
+
     
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean
