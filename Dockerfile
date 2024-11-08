@@ -32,11 +32,36 @@ RUN apt install -y \
     qgis \
     qgis-plugin-grass \
     libprotobuf-dev \
+RUN apt-get update && apt-get install -y \
+    sudo \
+    pandoc \
+    pandoc-citeproc \
+    libssl-dev \
+    libcurl4-gnutls-dev \
+    libxml2-dev \
+    libudunits2-dev \
+    libproj-dev \
+    libgeos-dev \
+    libgdal-dev \
+    libv8-dev \
+    libsodium-dev \
+    libsecret-1-dev \
+    git \
+    libnetcdf-dev \
+    curl \
+    libjq-dev \
+    cmake \
     protobuf-compiler \
+    libprotobuf-dev \
+    librdf0 \
+    librdf0-dev \
     libjq-dev \
     libqgis-dev \
     libicu-dev \ 
-    cmake
+    cmake \
+    redland-utils && \
+    apt-get clean
+    
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean
 
