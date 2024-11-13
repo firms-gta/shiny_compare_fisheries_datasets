@@ -41,18 +41,57 @@ if (file.exists(cl_nc_areas)) {
   flog.info("Processing cl_nc_areas and saving as .qs")
   shapefile_path <- here::here("data/cl_nc_areas.csv")
   cl_nc_areas <- read_csv(shapefile_path)
-  shapefile.fix <- sf::st_as_sf(shapefile.fix, wkt = "geom_wkt")
+  shapefile.fix <- sf::st_as_sf(cl_nc_areas, wkt = "geom_wkt")
   if (is.na(st_crs(shapefile.fix))) {
     flog.warn("No CRS found, setting to WGS84")
     st_crs(shapefile.fix) <- 4326
   }
-  shapefile.fix <- shapefile.fix[sf::st_is_valid(shapefile.fix),]
+  # Function to calculate a bounding box with a 20-degree range around the center
+  simplify_to_bbox <- function(geometry) {
+    # Ensure geometry is valid
+    geometry <- st_make_valid(geometry)
+    
+    # Calculate the bounding box directly
+    bbox <- st_bbox(geometry)
+    
+    # Create a 20-degree box around the centroid if you want additional padding
+    center <- st_centroid(geometry)
+    center_coords <- st_coordinates(center)
+    xmin <- center_coords[1] - 5
+    xmax <- center_coords[1] + 5
+    ymin <- center_coords[2] - 5
+    ymax <- center_coords[2] + 5
+    
+    # Create a polygon for the bbox with buffer
+    bbox_poly <- st_polygon(list(rbind(
+      c(xmin, ymin), c(xmax, ymin),
+      c(xmax, ymax), c(xmin, ymax),
+      c(xmin, ymin)
+    )))
+    
+    st_sfc(bbox_poly, crs = st_crs(geometry))  # Return as sfc object with the same CRS
+  }
+  shapefile.fix <- shapefile.fix %>%
+    st_cast("POLYGON")
+  shapefile.fix <- shapefile.fix %>%
+    rowwise() %>%
+    dplyr::mutate(geom_wkt = st_make_valid(geom_wkt)) %>%
+    ungroup()
+  shapefile.fix <- shapefile.fix %>%
+    mutate(geom_wkt = lwgeom::lwgeom_make_valid(geom_wkt))
+  
+  shapefile.fix <- shapefile.fix %>%
+    mutate(geom_wkt = st_geometry(geom_wkt)) %>%
+    rowwise() %>%
+    mutate(geom_wkt = simplify_to_bbox(geom_wkt)) %>%
+    ungroup() %>%
+    st_as_sf()
   shapefile.fix <- shapefile.fix %>% 
     dplyr::mutate(geographic_identifier = code, gridtype = "NOMINAL_AREA") %>% 
     dplyr::select(geographic_identifier, gridtype, geom_wkt) %>%
     dplyr::mutate(geographic_identifier = as.character(geographic_identifier))
   shapefile.fix <- st_as_sf(shapefile.fix)
-  qs::qsave(shapefile.fix, cl_nc_areas)
+  qs::qsave(shapefile.fix, "data/cl_nc_areas.qs")
 }
 
 
@@ -112,48 +151,24 @@ load_data <- function(DOI) {
 
 load_data(DOI)
 
-cwp_grid <- qs::qread(cl_areal_grid_path)
+cwp_grid <- qs::qread(cl_areal_grid_path)%>%
+  dplyr::mutate(geom_wkt=sf::st_as_text(sf::st_sfc(geom_wkt),EWKT = TRUE))
 global_catch_firms_level0_harmonized <- global_catch_firms_level0_harmonized %>%
   dplyr::mutate(geographic_identifier = as.character(geographic_identifier)) %>% 
   dplyr::left_join(cwp_grid)
 
-gridtype <- qs::qread("data/gridtype.qs")
+# gridtype <- qs::qread("data/gridtype.qs")
 # global_catch_tunaatlasird_level2 <- global_catch_tunaatlasird_level2 %>%
 #   dplyr::left_join(gridtype)
 
 nc_areas <- qs::qread(cl_nc_areas)%>% 
-  dplyr::mutate(geom_wkt = sf::st_simplify(geom_wkt))
+  dplyr::mutate(geom_wkt = sf::st_simplify(geom_wkt))%>%
+  mutate(geom_wkt = st_cast(geom_wkt, "MULTIPOLYGON"))%>%
+  dplyr::mutate(geom_wkt=sf::st_as_text(sf::st_sfc(geom_wkt),EWKT = TRUE))
 
-
-# Function to calculate a bounding box with a 20-degree range around the center
-simplify_to_bbox <- function(geometry) {
-  center <- st_centroid(geometry)                    # Calculate center
-  center_coords <- st_coordinates(center)            # Extract coordinates
-  xmin <- center_coords[1] - 10                      # Set bounds for 20-degree box
-  xmax <- center_coords[1] + 10
-  ymin <- center_coords[2] - 10
-  ymax <- center_coords[2] + 10
-  
-  # Create a bounding box polygon
-  bbox <- st_polygon(list(rbind(
-    c(xmin, ymin), c(xmax, ymin),
-    c(xmax, ymax), c(xmin, ymax),
-    c(xmin, ymin)
-  )))
-  
-  st_sfc(bbox, crs = st_crs(geometry))               # Return as sfc object
-}
-
-# Apply the simplification to each geometry
-nc_areas_simplified <- nc_areas %>%
-  rowwise() %>%
-  mutate(geom_wkt = st_geometry(geom_wkt)) %>%
-  mutate(geom_wkt = simplify_to_bbox(geom_wkt)) %>%
-  ungroup() %>%
-  st_as_sf()
 
 global_nominal_catch_firms_level0_harmonized <- global_nominal_catch_firms_level0_harmonized %>% 
-  dplyr::left_join(nc_areas_simplified)
+  dplyr::left_join(nc_areas)
 
 
 # # Renommer les colonnes pour `global_catch_tunaatlasird_level2`
@@ -169,6 +184,7 @@ global_nominal_catch_firms_level0_harmonized <- global_nominal_catch_firms_level
 
 # Ajouter les colonnes manquantes avec NA
 global_nominal_catch_firms_level0_harmonized$measurement <- NULL
+global_nominal_catch_firms_level0_harmonized$measurement_unit <- "t"
 global_nominal_catch_firms_level0_harmonized$measurement_type <- NULL
 global_nominal_catch_firms_level0_harmonized$measurement_status <- NULL
 
@@ -195,9 +211,8 @@ if (!file.exists(here::here("gta.parquet"))) {
   
 }
 
-binded <- st_as_sf(binded) %>% st_cast("POLYGON") %>%
+binded <-binded %>%
   as.data.frame() %>%
-  dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom_wkt),EWKT = TRUE)) %>%
   dplyr::rename(geom = geom_wkt, codesource_area = geographic_identifier) %>% 
   dplyr::mutate(ogc_fid = codesource_area)%>%
   mutate(year = as.numeric(format(time_start, "%Y"))) %>% 
