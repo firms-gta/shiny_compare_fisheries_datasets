@@ -19,7 +19,7 @@ if (!file.exists(csv_file_in_zip)) {
 
 # URL of the first ZIP file to download
 csv_url <- "https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/firms/gta/cl_nc_areas.csv"
-csv_destfile <- "cl_nc_areas.csv" # Specify expected CSV file inside
+csv_destfile <- "data/cl_nc_areas.csv" # Specify expected CSV file inside
 
 # Download the CSV file if it doesn't already exist
 if (!file.exists(csv_destfile)) {

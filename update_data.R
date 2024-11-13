@@ -4,11 +4,6 @@ DOI <- read_csv("data/DOI.csv")
 
 options(timeout = 6000) # Global timeout for downloads
 
-# Function to verify file size (if available in DOI)
-verify_file <- function(filepath, expected_size) {
-  file.info(filepath)$size == expected_size
-}
-
 extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
   dir <- getwd()
   if (!dir.exists(data_dir)) dir.create(data_dir)
@@ -34,6 +29,11 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
       
     }, error = function(e) {
       message(sprintf("Attempt %d failed for file '%s': %s", attempt, filename, e$message))
+      message("Downloading with curl")
+      system("curl -L -o global_catch_firms_level0_harmonized.csv 'https://zenodo.org/records/11460074/files/global_catch_firms_level0_harmonized.csv?download=1'")
+      message("Downloaded with curl")
+      
+      # stop("Stopped because the file cannot be downloaded entirely")
     })
     attempt <- attempt + 1
   }

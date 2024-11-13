@@ -7,6 +7,7 @@ require(qs)
 require(readr)
 require(sf)
 require(tools)
+require(dplyr)
 
 # Load or process cl_areal_grid
 if (file.exists(cl_areal_grid_path)) {
@@ -23,9 +24,9 @@ if (file.exists(cl_areal_grid_path)) {
   }
   shapefile.fix <- shapefile.fix[sf::st_is_valid(shapefile.fix),]
   shapefile.fix <- shapefile.fix %>% 
-    rename(geographic_identifier = CWP_CODE, gridtype = GRIDTYPE) %>% 
-    select(geographic_identifier, gridtype, geom_wkt) %>%
-    mutate(geographic_identifier = as.character(geographic_identifier))
+    dplyr::rename(geographic_identifier = CWP_CODE, gridtype = GRIDTYPE) %>% 
+    dplyr::select(geographic_identifier, gridtype, geom_wkt) %>%
+    dplyr::mutate(geographic_identifier = as.character(geographic_identifier))
   shapefile.fix <- st_as_sf(shapefile.fix)
   qs::qsave(shapefile.fix, cl_areal_grid_path)
   shapefile.fix$geom_wkt <- NULL
@@ -34,12 +35,12 @@ if (file.exists(cl_areal_grid_path)) {
 
 # Load or process cl_areal_grid
 if (file.exists(cl_nc_areas)) {
-  flog.info("Loading processed cl_areal_grid from .qs")
+  flog.info("Loading processed cl_nc_areas from .qs")
   shapefile.fix <- qs::qread(cl_nc_areas)
 } else {
-  flog.info("Processing cl_areal_grid and saving as .qs")
+  flog.info("Processing cl_nc_areas and saving as .qs")
   shapefile_path <- here::here("data/cl_nc_areas.csv")
-  shapefile.fix <- read.csv(shapefile_path)
+  cl_nc_areas <- read_csv(shapefile_path)
   shapefile.fix <- sf::st_as_sf(shapefile.fix, wkt = "geom_wkt")
   if (is.na(st_crs(shapefile.fix))) {
     flog.warn("No CRS found, setting to WGS84")
@@ -47,9 +48,9 @@ if (file.exists(cl_nc_areas)) {
   }
   shapefile.fix <- shapefile.fix[sf::st_is_valid(shapefile.fix),]
   shapefile.fix <- shapefile.fix %>% 
-    rename(geographic_identifier = code, gridtype = "NOMINAL_AREA") %>% 
-    select(geographic_identifier, gridtype, geom_wkt) %>%
-    mutate(geographic_identifier = as.character(geographic_identifier))
+    dplyr::mutate(geographic_identifier = code, gridtype = "NOMINAL_AREA") %>% 
+    dplyr::select(geographic_identifier, gridtype, geom_wkt) %>%
+    dplyr::mutate(geographic_identifier = as.character(geographic_identifier))
   shapefile.fix <- st_as_sf(shapefile.fix)
   qs::qsave(shapefile.fix, cl_nc_areas)
 }
@@ -68,7 +69,6 @@ load_data <- function(DOI) {
     qs_file_path <- file.path('data', paste0(base_filename, '.qs'))
     csv_file_path <- file.path('data', paste0(base_filename, '.csv'))
     rds_file_path <- file.path('data', paste0(base_filename, '.rds'))
-    
     # Check if .qs file exists
     if (file.exists(qs_file_path)) {
       # Load from .qs if it exists
@@ -112,20 +112,120 @@ load_data <- function(DOI) {
 
 load_data(DOI)
 
-cwp_grid <- qs::read(cl_areal_grid_path)
-global_catch_firms_level0_harmonized <- global_catch_firms_level0_harmonized %>% dplyr::left_join(cwp_grid)
+cwp_grid <- qs::qread(cl_areal_grid_path)
+global_catch_firms_level0_harmonized <- global_catch_firms_level0_harmonized %>%
+  dplyr::mutate(geographic_identifier = as.character(geographic_identifier)) %>% 
+  dplyr::left_join(cwp_grid)
 
-gridtype <- qs::read("data/gridtype.qs")
-global_catch_tunaatlasird_level2 <- global_catch_tunaatlasird_level2 %>% dplyr::left_join(gridtype)
+gridtype <- qs::qread("data/gridtype.qs")
+# global_catch_tunaatlasird_level2 <- global_catch_tunaatlasird_level2 %>%
+#   dplyr::left_join(gridtype)
 
-nc_areas <- qs::read(cl_nc_areas)
+nc_areas <- qs::qread(cl_nc_areas)%>% 
+  dplyr::mutate(geom_wkt = sf::st_simplify(geom_wkt))
+
+
+# Function to calculate a bounding box with a 20-degree range around the center
+simplify_to_bbox <- function(geometry) {
+  center <- st_centroid(geometry)                    # Calculate center
+  center_coords <- st_coordinates(center)            # Extract coordinates
+  xmin <- center_coords[1] - 10                      # Set bounds for 20-degree box
+  xmax <- center_coords[1] + 10
+  ymin <- center_coords[2] - 10
+  ymax <- center_coords[2] + 10
+  
+  # Create a bounding box polygon
+  bbox <- st_polygon(list(rbind(
+    c(xmin, ymin), c(xmax, ymin),
+    c(xmax, ymax), c(xmin, ymax),
+    c(xmin, ymin)
+  )))
+  
+  st_sfc(bbox, crs = st_crs(geometry))               # Return as sfc object
+}
+
+# Apply the simplification to each geometry
+nc_areas_simplified <- nc_areas %>%
+  rowwise() %>%
+  mutate(geom_wkt = st_geometry(geom_wkt)) %>%
+  mutate(geom_wkt = simplify_to_bbox(geom_wkt)) %>%
+  ungroup() %>%
+  st_as_sf()
 
 global_nominal_catch_firms_level0_harmonized <- global_nominal_catch_firms_level0_harmonized %>% 
-  dplyr::left_join(nc_areas)
+  dplyr::left_join(nc_areas_simplified)
 
-if(!file.exists(here::here("gta.parquet"))){
-object <- do.call(rbind, lapply(DOI$Filename, function(x) {
-  tools::file_path_sans_ext(x)
-}))
+
+# # Renommer les colonnes pour `global_catch_tunaatlasird_level2`
+# global_catch_tunaatlasird_level2 <- global_catch_tunaatlasird_level2 %>%
+#   dplyr::rename(
+#     geom_wkt = geom
+#   ) %>% dplyr::select(-GRIDTYPE)
+
+# # Ajouter les colonnes manquantes avec NA
+# global_catch_tunaatlasird_level2$measurement <- NULL
+# global_catch_tunaatlasird_level2$measurement_type <- NULL
+# global_catch_tunaatlasird_level2$measurement_status <- NULL
+
+# Ajouter les colonnes manquantes avec NA
+global_nominal_catch_firms_level0_harmonized$measurement <- NULL
+global_nominal_catch_firms_level0_harmonized$measurement_type <- NULL
+global_nominal_catch_firms_level0_harmonized$measurement_status <- NULL
+
+# Ajouter les colonnes manquantes avec NA
+global_catch_firms_level0_harmonized$measurement <- NULL
+global_catch_firms_level0_harmonized$measurement_type <- NULL
+global_catch_firms_level0_harmonized$measurement_status <- NULL
+
+# global_catch_tunaatlasird_level2$Gear <- NULL
+# global_catch_tunaatlasird_level2$geographic_identifier_nom <- NULL
+# global_catch_tunaatlasird_level2$species_group <- NULL
+
+if (!file.exists(here::here("gta.parquet"))) {
+  
+  binded <- do.call(rbind, lapply(DOI$Filename, function(x) {
+    # Récupérer le nom sans extension
+    dataset_name <- tools::file_path_sans_ext(x)
+    
+    data <- get(dataset_name)
+    data$dataset <- dataset_name
+    
+    return(data)
+  }))
+  
 }
-arrow::write_parquet(object, "gta.parquet")
+
+binded <- st_as_sf(binded) %>% st_cast("POLYGON") %>%
+  as.data.frame() %>%
+  dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom_wkt),EWKT = TRUE)) %>%
+  dplyr::rename(geom = geom_wkt, codesource_area = geographic_identifier) %>% 
+  dplyr::mutate(ogc_fid = codesource_area)%>%
+  mutate(year = as.numeric(format(time_start, "%Y"))) %>% 
+  mutate(month =  as.numeric(format(time_start, "%m"))) %>% 
+  mutate(count = 1) %>% 
+  dplyr::ungroup() %>% 
+  dplyr::mutate(geom = gsub("^SRID=4326;", "", geom))
+
+binded <- as.data.frame(binded)
+attr(binded, "sf_column") <- NULL
+attr(binded, "agr") <- NULL
+binded <- binded %>% as.tibble()
+
+# binded <- binded %>%
+#   mutate(
+#     geom = st_as_text(geom),               # Convert geometry to WKT character
+#     ogc_fid = as.numeric(ogc_fid),          # Ensure ogc_fid is numeric
+#     year = as.integer(year),                # Ensure year is integer
+#     month = as.integer(month),              # Ensure month is integer
+#     measurement_value = as.numeric(measurement_value), # Ensure measurement_value is numeric
+#     count = as.numeric(count)               # Ensure count is numeric
+#   ) %>%
+#   st_drop_geometry() 
+
+qs::qsave(binded, here::here("all.qs"))
+arrow::write_parquet(binded, here::here("gta.parquet"))
+# reloaded_data = arrow::read_parquet("gta.parquet") %>% st_as_sf(wkt="geom", crs = 4326)
+
+# Write to Parquet with WKB geometry
+# arrow::write_parquet(object_parquet, "gta.parquet")
+# arrow::write_parquet(object, "gta.parquet")
