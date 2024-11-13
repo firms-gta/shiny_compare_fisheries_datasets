@@ -91,7 +91,7 @@ if (file.exists(cl_nc_areas)) {
     dplyr::select(geographic_identifier, gridtype, geom_wkt) %>%
     dplyr::mutate(geographic_identifier = as.character(geographic_identifier))
   shapefile.fix <- st_as_sf(shapefile.fix)
-  qs::qsave(shapefile.fix, "data/cl_nc_areas.qs")
+  qs::qsave(shapefile.fix, here::here("data/cl_nc_areas.qs"))
 }
 
 
@@ -161,9 +161,9 @@ global_catch_firms_level0_harmonized <- global_catch_firms_level0_harmonized %>%
 # global_catch_tunaatlasird_level2 <- global_catch_tunaatlasird_level2 %>%
 #   dplyr::left_join(gridtype)
 
-nc_areas <- qs::qread(cl_nc_areas)%>% 
+nc_areas <- qs::qread(here::here("data/cl_nc_areas.qs"))%>% 
   dplyr::mutate(geom_wkt = sf::st_simplify(geom_wkt))%>%
-  mutate(geom_wkt = st_cast(geom_wkt, "MULTIPOLYGON"))%>%
+  dplyr::mutate(geom_wkt = st_cast(geom_wkt, "MULTIPOLYGON"))%>%
   dplyr::mutate(geom_wkt=sf::st_as_text(sf::st_sfc(geom_wkt),EWKT = TRUE))
 
 
