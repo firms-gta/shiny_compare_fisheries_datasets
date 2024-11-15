@@ -10,7 +10,7 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
   setwd(data_dir)
   
   success <- FALSE
-  attempts <- 3
+  attempts <- 1
   attempt <- 1
   
   while (!success && attempt <= attempts) {
@@ -29,13 +29,14 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
       
     }, error = function(e) {
       message(sprintf("Attempt %d failed for file '%s': %s", attempt, filename, e$message))
-      message("Downloading with curl")
-      system("curl -L -o global_catch_firms_level0_harmonized.csv 'https://zenodo.org/records/11460074/files/global_catch_firms_level0_harmonized.csv?download=1'")
-      message("Downloaded with curl")
+
       
       # stop("Stopped because the file cannot be downloaded entirely")
     })
-    attempt <- attempt + 1
+    # attempt <- attempt + 1
+    message("Downloading with curl")
+    system("curl -L -o global_catch_firms_level0_harmonized.csv 'https://zenodo.org/records/11460074/files/global_catch_firms_level0_harmonized.csv?download=1'")
+    message("Downloaded with curl")
   }
   
   setwd(dir)
