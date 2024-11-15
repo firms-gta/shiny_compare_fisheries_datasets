@@ -8,6 +8,7 @@ require(readr)
 require(sf)
 require(tools)
 require(dplyr)
+require(tibble)
 
 # Load or process cl_areal_grid
 if (file.exists(cl_areal_grid_path)) {
@@ -208,23 +209,24 @@ if (!file.exists(here::here("gta.parquet"))) {
     
     return(data)
   }))
+  binded <-binded %>%
+    as.data.frame() %>%
+    dplyr::rename(geom = geom_wkt, codesource_area = geographic_identifier) %>% 
+    dplyr::mutate(ogc_fid = codesource_area)%>%
+    mutate(year = as.numeric(format(time_start, "%Y"))) %>% 
+    mutate(month =  as.numeric(format(time_start, "%m"))) %>% 
+    mutate(count = 1) %>% 
+    dplyr::ungroup() %>% 
+    dplyr::mutate(geom = gsub("^SRID=4326;", "", geom))
   
+  binded <- as.data.frame(binded)
+  attr(binded, "sf_column") <- NULL
+  attr(binded, "agr") <- NULL
+  binded <- binded %>% tibble::as.tibble()
+  qs::qsave(binded, here::here("all.qs"))
+  arrow::write_parquet(binded, here::here("gta.parquet"))
 }
 
-binded <-binded %>%
-  as.data.frame() %>%
-  dplyr::rename(geom = geom_wkt, codesource_area = geographic_identifier) %>% 
-  dplyr::mutate(ogc_fid = codesource_area)%>%
-  mutate(year = as.numeric(format(time_start, "%Y"))) %>% 
-  mutate(month =  as.numeric(format(time_start, "%m"))) %>% 
-  mutate(count = 1) %>% 
-  dplyr::ungroup() %>% 
-  dplyr::mutate(geom = gsub("^SRID=4326;", "", geom))
-
-binded <- as.data.frame(binded)
-attr(binded, "sf_column") <- NULL
-attr(binded, "agr") <- NULL
-binded <- binded %>% as.tibble()
 
 # binded <- binded %>%
 #   mutate(
@@ -237,8 +239,7 @@ binded <- binded %>% as.tibble()
 #   ) %>%
 #   st_drop_geometry() 
 
-qs::qsave(binded, here::here("all.qs"))
-arrow::write_parquet(binded, here::here("gta.parquet"))
+
 # reloaded_data = arrow::read_parquet("gta.parquet") %>% st_as_sf(wkt="geom", crs = 4326)
 
 # Write to Parquet with WKB geometry
