@@ -6,14 +6,15 @@ on:
       - 'main'
       - 'R4.2.3withoutQGIS'
     tags:
-      - "v*"
-  pull_request:
-    branches:
-      - 'main'
-      - 'R4.2.3withoutQGIS'
+      - "v*"  # Trigger on version tags
+  workflow_dispatch:  # Allow manual trigger for flexibility
+    inputs:
+      base_branch:
+        description: "Branch to base the Docker image on (e.g., main, R4.2.3withoutQGIS)"
+        required: true
+        default: "main"
 
 env:
-  CACHE_IMAGE: ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
   DOCKER_BUILDKIT: 1
   RENV_PATHS_ROOT: /root/.cache/R/renv
 
@@ -23,8 +24,20 @@ jobs:
     timeout-minutes: 140
 
     steps:
+      - name: Determine Base Branch
+        id: base_branch
+        run: |
+          # Determine base branch
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "branch=${{ github.event.inputs.base_branch }}" >> $GITHUB_ENV
+          else
+            echo "branch=$(echo ${{ github.ref_name }} | grep -oP '^.*(?=/v)' || echo main)" >> $GITHUB_ENV
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ref: ${{ env.branch }}  # Dynamically use the selected branch
 
       - name: Calculate renv.lock hash
         id: renv_lock
@@ -47,10 +60,10 @@ jobs:
           labels: |
             org.opencontainers.image.url=${{ github.repository }}
             org.opencontainers.image.source=${{ github.repository }}
-            org.opencontainers.image.title=CompareTunaatlasDatasets
-            org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization and comparison
+            org.opencontainers.image.title=GlobalTunaAtlasExplorer
+            org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization
             org.opencontainers.image.vendor=IRD
-            org.opencontainers.image.author=Julien Barde <julien.barde@ird.fr>
+            org.opencontainers.image.author=Bastien Grasset <bastien.grasset@ird.fr>
 
       - name: Login to image repository
         uses: docker/login-action@v2
@@ -64,36 +77,22 @@ jobs:
         with:
           driver-opts: image=moby/buildkit:master,network=host
 
-      - name: Verify Docker images
-        run: docker images
-
-      - name: Inspect Docker cache
-        run: docker buildx du
-
       - name: Build Docker image
         run: |
-          BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9_.-]/_/g') # Sanitize branch name
+          BRANCH_NAME=${{ env.branch }}
           docker buildx build \
             --progress=plain \
-            --cache-from type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME} \
-            --cache-to type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME},mode=max \
+            --cache-from type=registry,ref=ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache:${BRANCH_NAME} \
+            --cache-to type=registry,ref=ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache:${BRANCH_NAME},mode=max \
             --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
             --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
             --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
             --tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} \
-            --output type=docker,dest=/tmp/docker-image.tar \
+            --tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${{ github.ref_name }} \
             .
 
-      - name: Load Docker image
+      - name: Push Docker image
         if: github.ref_type == 'tag'
         run: |
-          docker load -i /tmp/docker-image.tar
-
-      - name: Conditional push Docker image
-        if: github.ref_type == 'tag'
-        run: |
-          TAG_NAME=$(basename ${GITHUB_REF})
-          BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9_.-]/_/g') # Sanitize branch name
-          docker tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${TAG_NAME}
-          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME}
-          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${TAG_NAME}
+          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${{ env.branch }}
+          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${{ github.ref_name }}
