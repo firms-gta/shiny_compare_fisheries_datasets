@@ -1,16 +1,12 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches:
-      - 'main'
-      - 'R4.2.3withoutQGIS'
-    tags:
-      - "v*"
-  pull_request:
-    branches:
-      - 'main'
-      - 'R4.2.3withoutQGIS'
+  workflow_dispatch:
+    inputs:
+      base_branch:
+        description: "Branch to base the Docker image on (e.g., main, R4.2.3withoutQGIS)"
+        required: true
+        default: "main"
 
 env:
   CACHE_IMAGE: ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
