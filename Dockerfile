@@ -61,7 +61,6 @@ RUN apt update && apt upgrade -y
 #    redland-utils && \
 #    apt-get clean
     
-    
 # Install system libraries with apt-get -y
 RUN apt-get update && \
     apt-get install -y \
@@ -91,8 +90,11 @@ RUN apt-get update && \
     librdf0-dev \
     libqgis-dev \
     libharfbuzz-dev \
+    libfribidi-dev \
+    libfreetype6-dev \
+    libpng-dev \
     redland-utils && \
-    apt-get clean
+    apt-get clean 
 
     
 ## update system libraries
