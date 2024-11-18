@@ -1,17 +1,7 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches:
-      - 'main'
-      - 'R4.2.3withoutQGIS'
-    tags:
-      - "v*"  # Trigger on version tags
-  pull_request:
-    branches:
-      - 'main'
-      - 'R4.2.3withoutQGIS'
-  workflow_dispatch:  # Allow manual trigger for flexibility
+  workflow_dispatch:
     inputs:
       base_branch:
         description: "Branch to base the Docker image on (e.g., main, R4.2.3withoutQGIS)"
