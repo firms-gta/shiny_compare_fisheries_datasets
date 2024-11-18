@@ -90,12 +90,8 @@ RUN apt-get update && \
     librdf0 \
     librdf0-dev \
     libqgis-dev \
-    libicu-dev \
-    redland-utils \
-    libharfbuzz-dev \        # packages for textshaping
-    libfribidi-dev \         
-    libfreetype6-dev \       # packages FreeType
-    libpng-dev && \          # packages PNG
+    libharfbuzz-dev \
+    redland-utils && \
     apt-get clean
 
     
