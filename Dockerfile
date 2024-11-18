@@ -163,9 +163,6 @@ COPY . .
 # Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
 RUN Rscript ./create_parquet_from_DOI.R 
 
-# Create directories for configuration
-RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
-
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
 
