@@ -99,7 +99,7 @@ if (file.exists(cl_nc_areas)) {
 DOI <- read_csv('data/DOI.csv')
 source(here::here("update_data.R"))
 load_data <- function(DOI) {
-  
+  loaded_data <- list()
   for (filename in DOI$Filename) {
     flog.info("Loading dataset: %s", filename)
     
