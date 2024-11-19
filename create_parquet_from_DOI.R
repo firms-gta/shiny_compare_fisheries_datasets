@@ -203,11 +203,28 @@ if (!file.exists(here::here("gta.parquet"))) {
     # Récupérer le nom sans extension
     dataset_name <- tools::file_path_sans_ext(x)
     
+    # Charger le dataset
     data <- get(dataset_name)
+    
+    # Ajouter une colonne identifiant le dataset
     data$dataset <- dataset_name
     
+    # Harmoniser les colonnes avec celles existantes
+    all_columns <- unique(unlist(lapply(DOI$Filename, function(f) {
+      dataset <- get(tools::file_path_sans_ext(f))
+      colnames(dataset)
+    })))
+    
+    # Ajouter les colonnes manquantes avec NA
+    missing_columns <- setdiff(all_columns, colnames(data))
+    for (col in missing_columns) {
+      data[[col]] <- NA
+    }
+    
+    # Retourner le dataframe harmonisé
     return(data)
   }))
+  
   binded <-binded %>%
     as.data.frame() %>%
     dplyr::rename(geom = geom_wkt, codesource_area = geographic_identifier) %>% 
