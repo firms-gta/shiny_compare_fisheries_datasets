@@ -19,6 +19,7 @@ flog.info("Loading data ")
 load_data <- function(mode="parquet") {
   loaded_data <- list()
   flog.info("Loading dataset: %s format", mode)
+  stop <- 1
   
   if(mode=="gpkg"){
     flog.info("Loading main data from %s file",mode)
@@ -61,6 +62,7 @@ load_data <- function(mode="parquet") {
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
   }else if(mode=="parquet"){
+    if(stop > 1){
     if(!file.exists("gta.parquet")){
       loaded_data <- load_data(mode="postgres")
       arrow::write_parquet(loaded_data, "gta.parquet")
@@ -68,22 +70,66 @@ load_data <- function(mode="parquet") {
     loaded_data <- arrow::read_parquet("gta.parquet") 
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
+    } else {
+      stop("Stop")
+    }
   }else if(mode=="postgres"){
     # Database connection setup
     flog.info("Loading main data from %s database",mode)
-    try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
-    flog.info("Loading main data file")
-    db_host <- Sys.getenv("DB_HOST")
-    db_port <- as.integer(Sys.getenv("DB_PORT"))
-    db_name <- Sys.getenv("DB_NAME")
-    db_user <- Sys.getenv("DB_USER_READONLY")
-    db_password <- Sys.getenv("DB_PASSWORD")
-    
-    con <- dbConnect(RPostgreSQL::PostgreSQL(), host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password)
-    # loaded_data <- st_read(con, query="SELECT * FROM public.shinycatch ;")
-    query <- paste0("SELECT ogc_fid,dataset,year,month,source_authority,species,fishing_fleet,gear_type, measurement_value,measurement_unit,count,gridtype,fishing_mode, codesource_area,ST_AsText(ST_GeometryN(geom, 1)) AS geom 
-                              FROM public.shinycatch;")
-    loaded_data <- dbGetQuery(con,query )
+    tryCatch({
+      # Load environment variables
+      dotenv::load_dot_env("connection_tunaatlas_inv.txt")
+      flog.info("Environment variables loaded successfully.")
+      
+      # Retrieve database credentials
+      db_host <- Sys.getenv("DB_HOST")
+      db_port <- as.integer(Sys.getenv("DB_PORT"))
+      db_name <- Sys.getenv("DB_NAME")
+      db_user <- Sys.getenv("DB_USER_READONLY")
+      db_password <- Sys.getenv("DB_PASSWORD")
+      
+      flog.info("Attempting to connect to the database...")
+      
+      # Connect to the database
+      con <- dbConnect(
+        RPostgreSQL::PostgreSQL(),
+        host = db_host,
+        port = db_port,
+        dbname = db_name,
+        user = db_user,
+        password = db_password
+      )
+      
+      flog.info("Connected to the database successfully.")
+      
+      # Query the database
+      query <- paste0(
+        "SELECT ogc_fid, dataset, year, month, source_authority, species, fishing_fleet, gear_type, ",
+        "measurement_value, measurement_unit, count, gridtype, fishing_mode, codesource_area, ",
+        "ST_AsText(ST_GeometryN(geom, 1)) AS geom FROM public.shinycatch;"
+      )
+      flog.info("Executing query...")
+      loaded_data <- dbGetQuery(con, query)
+      flog.info("Query executed successfully. Data loaded.")
+      
+      # Do something with the loaded data
+      # print(head(loaded_data))
+      
+      # Close the connection after use
+      dbDisconnect(con)
+      flog.info("Database connection closed.")
+      
+    }, error = function(e) {
+      # Handle errors if the connection or query fails
+      flog.error("An error occurred: %s", e$message)
+      stop <- stop + 1
+      # Fallback: alternative logic when connection fails
+      flog.info("Falling back to an alternative data loading method...")
+      # Example alternative action: load a local backup file
+        source(here::here("create_parquet_from_DOI.R"))
+        loaded_data <- load_data(mode="parquet")
+        flog.info("Backup data loaded successfully from 'create_parquet_from_DOI.R'.")
+    })
     qs::qsave(loaded_data,"newshinypublic.qs")
     #save and read the data frame by using parquet and feather data formats
     loaded_data
