@@ -99,7 +99,6 @@ if (file.exists(cl_nc_areas)) {
 DOI <- read_csv('data/DOI.csv')
 source(here::here("update_data.R"))
 load_data <- function(DOI) {
-  loaded_data <- list()
   
   for (filename in DOI$Filename) {
     flog.info("Loading dataset: %s", filename)
@@ -112,7 +111,7 @@ load_data <- function(DOI) {
     # Check if .qs file exists
     if (file.exists(qs_file_path)) {
       # Load from .qs if it exists
-      loaded_data[[base_filename]] <- qs::qread(qs_file_path)
+      data <- qs::qread(qs_file_path)
       flog.info("Loaded %s from .qs", filename)
       
     } else {
@@ -142,11 +141,11 @@ load_data <- function(DOI) {
       flog.info("Saved %s as .qs", filename)
       
       # Add to the loaded_data list and assign to global environment
-      loaded_data[[base_filename]] <- data
+      # loaded_data[[base_filename]] <- data
     }
     
     # Assign the loaded data to the global environment
-    assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
+    # assign(base_filename, as.data.frame(loaded_data[[base_filename]]), envir = .GlobalEnv)
   }
 }
 
