@@ -62,7 +62,7 @@ load_data <- function(mode="parquet") {
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
   }else if(mode=="parquet"){
-    if(stop > 1){
+    if(stop == 1){
     if(!file.exists("gta.parquet")){
       loaded_data <- load_data(mode="postgres")
       arrow::write_parquet(loaded_data, "gta.parquet")
@@ -126,6 +126,7 @@ load_data <- function(mode="parquet") {
       # Fallback: alternative logic when connection fails
       flog.info("Falling back to an alternative data loading method...")
       # Example alternative action: load a local backup file
+        source(here::here("download_CWP_shapefiles.R"))
         source(here::here("create_parquet_from_DOI.R"))
         loaded_data <- load_data(mode="parquet")
         flog.info("Backup data loaded successfully from 'create_parquet_from_DOI.R'.")
