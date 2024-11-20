@@ -9,7 +9,7 @@ require(sf)
 require(tools)
 require(dplyr)
 require(tibble)
-
+`%notin%` <- Negate(`%in%`)
 # Load or process cl_areal_grid
 if (file.exists(cl_areal_grid_path)) {
   flog.info("Loading processed cl_areal_grid from .qs")
@@ -28,6 +28,7 @@ if (file.exists(cl_areal_grid_path)) {
     dplyr::rename(geographic_identifier = CWP_CODE, gridtype = GRIDTYPE) %>% 
     dplyr::select(geographic_identifier, gridtype, geom_wkt) %>%
     dplyr::mutate(geographic_identifier = as.character(geographic_identifier))
+  
   shapefile.fix <- st_as_sf(shapefile.fix)
   qs::qsave(shapefile.fix, cl_areal_grid_path)
   shapefile.fix$geom_wkt <- NULL
@@ -135,7 +136,18 @@ load_data <- function(DOI) {
         warning(paste('File not found:', csv_file_path, 'or', rds_file_path))
         next
       }
+      if("GRIDTYPE" %in% colnames(data)){
+        flog.info("Renaming gridtype")
+        
+        data <- data %>% dplyr::rename(gridtype = GRIDTYPE)
+      }
+      flog.info("Joining geometry")
       
+        data <- data %>%
+          dplyr::mutate(geographic_identifier = as.character(geographic_identifier)) %>% 
+          dplyr::left_join(areas)
+      flog.info("Geometry joined")
+        
       # Save the loaded data to .qs for faster future access
       qs::qsave(data, qs_file_path)
       flog.info("Saved %s as .qs", filename)
@@ -149,53 +161,28 @@ load_data <- function(DOI) {
   }
 }
 
-load_data(DOI)
-
-cwp_grid <- qs::qread(cl_areal_grid_path)%>%
-  dplyr::mutate(geom_wkt=sf::st_as_text(sf::st_sfc(geom_wkt),EWKT = TRUE))
-global_catch_firms_level0_harmonized <- global_catch_firms_level0_harmonized %>%
-  dplyr::mutate(geographic_identifier = as.character(geographic_identifier)) %>% 
-  dplyr::left_join(cwp_grid)
-
-# gridtype <- qs::qread("data/gridtype.qs")
-# global_catch_tunaatlasird_level2 <- global_catch_tunaatlasird_level2 %>%
-#   dplyr::left_join(gridtype)
+if(!file.exists(here::here("data/areas.qs"))){
+  flog.info("Areas not existing, creating the binded dataset with georeferneced and nominal geometry")
+cwp_grid <- qs::qread(cl_areal_grid_path)
 
 nc_areas <- qs::qread(here::here("data/cl_nc_areas.qs"))%>% 
   dplyr::mutate(geom_wkt = sf::st_simplify(geom_wkt))%>%
-  dplyr::mutate(geom_wkt = st_cast(geom_wkt, "MULTIPOLYGON"))%>%
+  dplyr::mutate(geom_wkt = st_cast(geom_wkt, "MULTIPOLYGON"))
+
+areas <- rbind(nc_areas, cwp_grid)%>%
   dplyr::mutate(geom_wkt=sf::st_as_text(sf::st_sfc(geom_wkt),EWKT = TRUE))
+qs::qsave(areas, here::here("data/areas.qs"))
+} else {
+  flog.info("Areas existing, reading the binded dataset with georeferneced and nominal geometry")
+  
+  areas <- qs::qread(here::here("data/areas.qs"))
+}
+
+load_data(DOI)
 
 
-global_nominal_catch_firms_level0_harmonized <- global_nominal_catch_firms_level0_harmonized %>% 
-  dplyr::left_join(nc_areas)
 
 
-# # Renommer les colonnes pour `global_catch_tunaatlasird_level2`
-# global_catch_tunaatlasird_level2 <- global_catch_tunaatlasird_level2 %>%
-#   dplyr::rename(
-#     geom_wkt = geom
-#   ) %>% dplyr::select(-GRIDTYPE)
-
-# # Ajouter les colonnes manquantes avec NA
-# global_catch_tunaatlasird_level2$measurement <- NULL
-# global_catch_tunaatlasird_level2$measurement_type <- NULL
-# global_catch_tunaatlasird_level2$measurement_status <- NULL
-
-# Ajouter les colonnes manquantes avec NA
-global_nominal_catch_firms_level0_harmonized$measurement <- NULL
-global_nominal_catch_firms_level0_harmonized$measurement_unit <- "t"
-global_nominal_catch_firms_level0_harmonized$measurement_type <- NULL
-global_nominal_catch_firms_level0_harmonized$measurement_status <- NULL
-
-# Ajouter les colonnes manquantes avec NA
-global_catch_firms_level0_harmonized$measurement <- NULL
-global_catch_firms_level0_harmonized$measurement_type <- NULL
-global_catch_firms_level0_harmonized$measurement_status <- NULL
-
-# global_catch_tunaatlasird_level2$Gear <- NULL
-# global_catch_tunaatlasird_level2$geographic_identifier_nom <- NULL
-# global_catch_tunaatlasird_level2$species_group <- NULL
 
 if (!file.exists(here::here("gta.parquet"))) {
   
@@ -205,7 +192,7 @@ if (!file.exists(here::here("gta.parquet"))) {
     
     # Charger le dataset
     data <- get(dataset_name)
-    
+
     # Ajouter une colonne identifiant le dataset
     data$dataset <- dataset_name
     
@@ -220,7 +207,7 @@ if (!file.exists(here::here("gta.parquet"))) {
     for (col in missing_columns) {
       data[[col]] <- NA
     }
-    
+
     # Retourner le dataframe harmonisé
     return(data)
   }))
@@ -230,7 +217,18 @@ if (!file.exists(here::here("gta.parquet"))) {
     dplyr::rename(geom = geom_wkt, codesource_area = geographic_identifier) %>% 
     dplyr::mutate(ogc_fid = codesource_area)%>%
     mutate(year = as.numeric(format(time_start, "%Y"))) %>% 
-    mutate(month =  as.numeric(format(time_start, "%m"))) %>% 
+    mutate(month =  as.numeric(format(time_start, "%m")))  %>% 
+    dplyr::mutate(
+      # Conversion des measurement_unit
+      measurement_unit = dplyr::case_when(
+        measurement_unit == "Tons" ~ "t",
+        measurement_unit == "TRUE" ~ "t", 
+        measurement_unit == TRUE ~ "t", 
+        measurement_unit == "Number of fish" ~ "no",
+        TRUE ~ measurement_unit
+      )
+    ) %>% 
+    
     mutate(count = 1) %>% 
     dplyr::ungroup() %>% 
     dplyr::mutate(geom = gsub("^SRID=4326;", "", geom))

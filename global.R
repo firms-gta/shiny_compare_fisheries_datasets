@@ -14,6 +14,7 @@ mode="gpkg"
 mode="postgres"
 mode="RDS"
 mode="parquet"
+mode="DOI"
 
 flog.info("Loading data ")
 load_data <- function(mode="parquet") {
@@ -62,7 +63,6 @@ load_data <- function(mode="parquet") {
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
   }else if(mode=="parquet"){
-    if(stop == 1){
     if(!file.exists("gta.parquet")){
       loaded_data <- load_data(mode="postgres")
       arrow::write_parquet(loaded_data, "gta.parquet")
@@ -70,10 +70,11 @@ load_data <- function(mode="parquet") {
     loaded_data <- arrow::read_parquet("gta.parquet") 
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
-    } else {
-      stop("Stop")
-    }
-  }else if(mode=="postgres"){
+  } else if (mode == "DOI"){ 
+    source(here::here("download_CWP_shapefiles.R"))
+    source(here::here("create_parquet_from_DOI.R"))
+    loaded_data <- load_data(mode="parquet") 
+    } else if(mode=="postgres"){
     # Database connection setup
     flog.info("Loading main data from %s database",mode)
     tryCatch({
@@ -121,15 +122,8 @@ load_data <- function(mode="parquet") {
       
     }, error = function(e) {
       # Handle errors if the connection or query fails
-      flog.error("An error occurred: %s", e$message)
-      stop <- stop + 1
-      # Fallback: alternative logic when connection fails
-      flog.info("Falling back to an alternative data loading method...")
-      # Example alternative action: load a local backup file
-        source(here::here("download_CWP_shapefiles.R"))
-        source(here::here("create_parquet_from_DOI.R"))
-        loaded_data <- load_data(mode="parquet")
-        flog.info("Backup data loaded successfully from 'create_parquet_from_DOI.R'.")
+      flog.error("An error occurred: %s, trying to load from DOI", e$message)
+      loaded_data <- load_data(mode="DOI") 
     })
     qs::qsave(loaded_data,"newshinypublic.qs")
     #save and read the data frame by using parquet and feather data formats
