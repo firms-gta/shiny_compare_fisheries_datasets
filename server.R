@@ -64,19 +64,19 @@ server <- function(input, output, session) {
     # sql_query <- reactive({
     main_data <- initial_data()
 
-    sql_query_all <- main_data  %>%  dplyr::filter(
+    sql_query_all <- main_data  %>%  
+      dplyr::filter(
       # codesource_area %in% within_areas,
       dataset %in% input$dataset,
       species %in% input$species,
+      source_authority %in% input$source_authority,
       gear_type %in% input$gear_type,
       year %in% input$year,
       fishing_fleet %in% input$fishing_fleet,
       measurement_unit %in% input$unit,
       gridtype %in% input$gridtype) %>%
-      dplyr::group_by(codesource_area,geom, dataset, species,gear_type, year, measurement_unit, gridtype) %>% 
+      dplyr::group_by(codesource_area,geom, dataset, species,gear_type, year, measurement_unit, gridtype,source_authority) %>% 
       dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() # %>% filter(!is.na(geom))
-      
-    
   },
   ignoreNULL = FALSE)
 
@@ -175,7 +175,7 @@ server <- function(input, output, session) {
       easyClose = TRUE,
       footer = NULL
     ))else{
-      sql_query
+      sql_query 
     }
   })
   
