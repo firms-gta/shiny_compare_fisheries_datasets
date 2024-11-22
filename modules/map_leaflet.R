@@ -141,10 +141,16 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
           editOptions = editToolbarOptions(
             selectedPathOptions = selectedPathOptions()
           )
-        )     %>% 
+        ) %>% addWMSTiles(
+          "https://geo.vliz.be/geoserver/MarineRegions/wms?SERVICE=WMS&VERSION=1.3.0",
+          layers = "eez",
+          options = WMSTileOptions(format = "image/png", transparent = TRUE),
+          group ="EEZ",
+          attribution = "Marine Regions WMS"
+        )    %>% 
         addLayersControl(
           position = "topleft", 
-          baseGroups = c("draw","background"),
+          baseGroups = c("draw","background","EEZ"),
           overlayGroups = c(datasets,"footprint1","footprint5","data_for_filters","current_selection","all"),
           options = layersControlOptions(collapsed = TRUE)
         )  %>% 
