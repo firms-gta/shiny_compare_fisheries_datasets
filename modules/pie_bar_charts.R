@@ -17,15 +17,15 @@ pieBarChartsServer <- function(id,sql_query) {
     flog.info("Starting pieBarChartsServer")
     
     data_pie_gridtype_catch <- reactive({
-      sql_query()  %>% dplyr::group_by(dataset, gridtype, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
+      sql_query() %>% as.data.frame()  %>% dplyr::group_by(dataset, gridtype, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
     })
     
     data_barplot_all_datasets <- reactive({
-      sql_query()  %>%  dplyr::group_by(dataset, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
+      sql_query() %>% as.data.frame()  %>%  dplyr::group_by(dataset, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
     })
     
     data_pie_all_datasets <- reactive({
-      data_pie_all_datasets <- sql_query()  %>% dplyr::group_by(dataset) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
+      sql_query() %>% as.data.frame()  %>% dplyr::group_by(dataset) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
     })
     
     flog.info("Data Table of the bar plots")
