@@ -95,7 +95,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "fishing_fleet",
                                           label = "Fishing fleet",
                                           choices = target_flag,

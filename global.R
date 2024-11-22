@@ -227,7 +227,7 @@ if(mode!="DOI"){
     dplyr::summarise(ogc_fid = first(ogc_fid)) %>% ungroup() %>% st_as_sf(wkt="geom",crs=4326) 
 }else{
   # setwd("data")
-  # # saveRDS(df_distinct_geom, "gta_geom.RDS")
+  # saveRDS(df_distinct_geom, "gta_geom.RDS")
   df_distinct_geom_spatial <- readRDS("data/gta_geom.RDS") %>% dplyr::mutate('codesource_area'=codesource_area) 
   nrow(df_distinct_geom_spatial)
   # measurement_value	geographic_identifier	geometry
@@ -268,7 +268,7 @@ if(!file_exists("filters_combinations.parquet")){
   # arrow::write_parquet(filters_combinations, "filters_combinations.parquet")
 }else{
   flog.info("Try  if a default file for filters is pre-calculated")
-  # filters_combinations <- arrow::read_parquet("filters_combinations.parquet") 
+  # filters_combinations <- arrow::read_parquet("filters_combinations.parquet")
 }
 
 
