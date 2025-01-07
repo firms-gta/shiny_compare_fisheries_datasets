@@ -4,20 +4,28 @@ server <- function(input, output, session) {
   change <- reactive({
     unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
   })
+
+  observeEvent(input$yourWKT,{
+    updateSelectInput(session = session,
+                      inputId = "yourWKT",
+                      selected = main_wkt())
+  })
   
-  # observeEvent(input$yourWKT,{
-  #   updateSelectInput(session = session,
-  #                     inputId = "yourWKT",
-  #                     selected = wkt())
+  # observeEvent(updated_main_wkt$updated_main_wkt(), {
+  #   req(main_wkt())
+  #   if(updated_main_wkt$updated_main_wkt() != main_wkt()){
+  #     main_wkt(updated_main_wkt$updated_main_wkt())
+  #     submitTrigger(TRUE)
+  #   }
   # })
   
   observeEvent(input$resetWkt, {
-    wkt(default_wkt)
+    main_wkt(default_wkt)
     output$verbatimWKT <- renderText({
       default_wkt
     })
-    # updateTextInput(session,"yourWKT", value = wkt())
-    #   updateTextInput(session,ns("yourWKT"), value = wkt())
+    # updateTextInput(session,"yourWKT", value = main_wkt())
+    #   updateTextInput(session,ns("yourWKT"), value = main_wkt())
   })
   
   
@@ -27,6 +35,16 @@ server <- function(input, output, session) {
     updateSelectInput(session,"gear_type",choices = unique(temp$gear_type),selected=unique(temp$gear_type))
   }
   )
+  
+  
+  # observeEvent(input$gear_type,{
+  #   if(!'All' %in% input$gear_type) {
+  #     updateSelectInput(session,"gear_type",choices = unique(temp$gear_type),selected=unique(temp$gear_type))
+  #   }
+  # }
+  # )
+  # if All is not in selection, filter to selected continents
+
   
   observeEvent(input$switched, {
     if(switch_unit()){switch_unit(FALSE)}else{switch_unit(TRUE)}
@@ -50,14 +68,15 @@ server <- function(input, output, session) {
       # codesource_area %in% within_areas,
       dataset %in% input$dataset,
       species %in% input$species,
+      source_authority %in% input$source_authority,
       gear_type %in% input$gear_type,
       year %in% input$year,
       fishing_fleet %in% input$fishing_fleet,
       measurement_unit %in% input$unit,
       gridtype %in% input$gridtype) %>%
-      dplyr::group_by(codesource_area,geom, dataset, species,gear_type, year, measurement_unit, gridtype) %>% 
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>%
-      filter(!is.na(geom))
+      dplyr::group_by(codesource_area,geom, dataset, species,gear_type, year, measurement_unit, gridtype, source_authority) %>% 
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() # %>% filter(!is.na(geom))
+      
     
   },
   ignoreNULL = FALSE)
@@ -83,8 +102,10 @@ server <- function(input, output, session) {
     flog.info("Applying new filters to main data") 
     flog.info("###############################################################################################") 
     
-    req(wkt())
-    wkt <- wkt()    
+    req(main_wkt())
+    wkt <- main_wkt()    
+    flog.info("Spatial filter :main WKT : %s", wkt)
+    
     
     flog.info("###############################################################################################") 
     flog.info("Applying new filters to main data 2 ") 
@@ -93,6 +114,11 @@ server <- function(input, output, session) {
     current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
     
     flog.info("Spatial filter : keep only data whose areas are within the current WKT : %s", wkt)
+    # list_areas <- df_distinct_geom %>% dplyr::filter(!is.na(gridtype)) %>% 
+    #   qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = st_sf(current_selection)) %>% sf::st_as_sf()
+    # 
+    # 
+    
     
     process_list_areas <- function(df_distinct_geom, current_selection) {
       
@@ -128,7 +154,6 @@ server <- function(input, output, session) {
       
       return(list_areas)
     }
-    list_areas <- process_list_areas(df_distinct_geom, current_selection)
     # list_areas <- df_distinct_geom %>%
     #   dplyr::filter(!is.na(gridtype))
     
@@ -140,11 +165,17 @@ server <- function(input, output, session) {
     #   qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = st_sf(current_selection)) %>% sf::st_as_sf()
     
     
+    if(wkt!=default_wkt){
+    list_areas <- process_list_areas(df_distinct_geom, current_selection)
+    
     
     flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
     within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%  rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
     
-    sql_query <- sql_query_all  %>%  dplyr::filter(codesource_area %in% within_areas)
+    sql_query <- sql_query_all %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas)
+  }else{
+    sql_query <- sql_query_all
+  }
   
   flog.info("Main data number rows: %s", nrow(sql_query))
   # https://shiny.posit.co/r/reference/shiny/latest/modaldialog
@@ -166,14 +197,14 @@ server <- function(input, output, session) {
   flog.info("##########################################################")
   
   output$selected_var <- renderText({ 
-    paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", wkt())
+    paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", main_wkt())
   })
   
   
   # output$updatedWKT <- renderText({input$yourWKT})
   
   output$verbatimWKT <- renderText({
-    wkt()
+    main_wkt()
   })
   
   output$current_filters <- renderText({ 
@@ -185,13 +216,9 @@ server <- function(input, output, session) {
     paste("You have selected the following filters:\n", class(species_list))
   })
   
-  output$current_WKT <- renderText({ 
-    # paste("Your SQL Query is : \n", query_all_datasets())
-    paste("\n \n \n \n \n", "Here is the current WKT : \n", wkt())
-    # list_areas()
-    
+  output$DT_main_dataset <- renderDT({
+    sql_query() %>% top_n(10)
   })
-  
   
   flog.info("##########################################################")
   flog.info(" Modules forOutputs: maps / plots / charts")
@@ -209,7 +236,7 @@ server <- function(input, output, session) {
   pieBarChartsServer(id= "pie_bar_charts",sql_query)
   
   flog.info("Extra module to detail what gears are the most important in the time series of catches")
-  timeSeriesGearServer(id= "time_series_gear",sql_query)
+  # timeSeriesGearServer(id= "time_series_gear",sql_query)
   
   # nav_bar_menu_rmd <- c(
   #   "rmd/Authors.Rmd", 

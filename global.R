@@ -1,10 +1,11 @@
-rm(list = ls()) 
+# rm(list = ls()) 
+require(here)
 source(here::here('install.R'))
 # Log the successful loading of libraries
 flog.info("All libraries loaded successfully.")
 
 # Initialize reactive values and default WKT for mapping
-wkt <- reactiveVal()
+main_wkt <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
 flog.info("Reactive values initialized successfully.")
 initial_data <- reactiveVal()
@@ -13,12 +14,13 @@ mode="gpkg"
 mode="postgres"
 mode="RDS"
 mode="parquet"
-# mode="postgres"
+mode="DOI"
 
 flog.info("Loading data ")
 load_data <- function(mode="parquet") {
   loaded_data <- list()
-  flog.info("Loading dataset: %s", mode)
+  flog.info("Loading dataset: %s format", mode)
+  stop <- 1
   
   if(mode=="gpkg"){
     flog.info("Loading main data from %s file",mode)
@@ -43,6 +45,7 @@ load_data <- function(mode="parquet") {
     colnames(transform_df_sf)
     class(transform_df_sf$geom)
     saveRDS(transform_df_sf, "shinycatch.RDS") 
+    # saveRDS(loaded_data, "shinycatch.RDS")
     
     #save and read the data frame by using parquet and feather data formats
     feather::write_feather(transform_df_sf,"gta.feather")
@@ -67,32 +70,71 @@ load_data <- function(mode="parquet") {
     loaded_data <- arrow::read_parquet("gta.parquet") 
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
-  }else if(mode=="postgres"){
+  } else if (mode == "DOI"){ 
+    source(here::here("download_CWP_shapefiles.R"))
+    source(here::here("create_parquet_from_DOI.R"))
+    loaded_data <- load_data(mode="parquet") 
+    } else if(mode=="postgres"){
     # Database connection setup
     flog.info("Loading main data from %s database",mode)
-    try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
-    flog.info("Loading main data file")
-    db_host <- Sys.getenv("DB_HOST")
-    db_port <- as.integer(Sys.getenv("DB_PORT"))
-    db_name <- Sys.getenv("DB_NAME")
-    db_user <- Sys.getenv("DB_USER_READONLY")
-    db_password <- Sys.getenv("DB_PASSWORD")
-    
-    con <- dbConnect(RPostgreSQL::PostgreSQL(), host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password)
-    # loaded_data <- st_read(con, query="SELECT * FROM public.shinycatch ;")
-    query = paste0("SELECT ogc_fid,dataset,year,month,species,fishing_fleet,gear_type, measurement_value,measurement_unit,count,gridtype,fishing_mode, codesource_area, geom_id,ST_AsText(ST_GeometryN(geom, 1)) AS geom 
-                              FROM public.shinycatch ;")
-                              # WHERE ST_Within(geom, ST_GeomFromText('",bbox,"', 4326)) ;)")
-    loaded_data <- dbGetQuery(con,query )
-    # saveRDS(loaded_data, "shinycatch.RDS")
+    tryCatch({
+      # Load environment variables
+      dotenv::load_dot_env("connection_tunaatlas_inv.txt")
+      flog.info("Environment variables loaded successfully.")
+      
+      # Retrieve database credentials
+      db_host <- Sys.getenv("DB_HOST")
+      db_port <- as.integer(Sys.getenv("DB_PORT"))
+      db_name <- Sys.getenv("DB_NAME")
+      db_user <- Sys.getenv("DB_USER_READONLY")
+      db_password <- Sys.getenv("DB_PASSWORD")
+      
+      flog.info("Attempting to connect to the database...")
+      
+      # Connect to the database
+      con <- dbConnect(
+        RPostgreSQL::PostgreSQL(),
+        host = db_host,
+        port = db_port,
+        dbname = db_name,
+        user = db_user,
+        password = db_password
+      )
+      
+      flog.info("Connected to the database successfully.")
+      
+      # Query the database
+      query <- paste0(
+        "SELECT ogc_fid, dataset, year, month, source_authority, species, fishing_fleet, gear_type, ",
+        "measurement_value, measurement_unit, count, gridtype, fishing_mode, codesource_area, ",
+        "ST_AsText(ST_GeometryN(geom, 1)) AS geom FROM public.shinycatch;"
+      )
+      flog.info("Executing query...")
+      loaded_data <- dbGetQuery(con, query)
+      flog.info("Query executed successfully. Data loaded.")
+      
+      # Do something with the loaded data
+      # print(head(loaded_data))
+      
+      # Close the connection after use
+      dbDisconnect(con)
+      flog.info("Database connection closed.")
+      
+    }, error = function(e) {
+      # Handle errors if the connection or query fails
+      flog.error("An error occurred: %s, trying to load from DOI", e$message)
+      loaded_data <- load_data(mode="DOI") 
+    })
+    qs::qsave(loaded_data,"newshinypublic.qs")
     #save and read the data frame by using parquet and feather data formats
+    loaded_data
   }else{
     flog.info("No data loaded !!")
   }
   return(loaded_data)
 }
-flog.info("Data succesfully loaded")
 df_sf <- load_data(mode="parquet")
+flog.info("Data succesfully loaded")
 
 
 # flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
@@ -101,7 +143,7 @@ df_distinct_geom <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_are
 class(df_distinct_geom)
 
 default_wkt <- st_as_text(st_as_sfc(st_bbox(df_distinct_geom)))
-wkt(default_wkt)
+# main_wkt(default_wkt)
 new_wkt <- default_wkt
 
 
@@ -125,7 +167,9 @@ if(!file_exists("filters_combinations.parquet")){
 flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
 target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
 # target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
-wkt(target_wkt)
+main_wkt(target_wkt)
+# flog.info("Spatial filter :main WKT : %s", main_wkt())
+
 # target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
 target_dataset <- unique(df_sf$dataset)
 # target_species <-  dbGetQuery(con,"SELECT DISTINCT(species) FROM public.shinycatch ORDER BY species;")
@@ -137,6 +181,7 @@ target_gear_type <-  unique(filters_combinations$gear_type)
 # target_ocean <- st_read(pool, "SELECT DISTINCT(ocean) as ocean FROM public.shinycatch ORDER BY ocean;")
 # target_unit <-  dbGetQuery(con,"SELECT DISTINCT(measurement_unit) AS unit FROM public.shinycatch ORDER BY unit;")
 target_measurement_unit <-  unique(df_sf$measurement_unit)
+target_source_authority <-  unique(df_sf$source_authority)
 target_gridtype <-   unique(df_sf$gridtype) 
 # df_sf %>% group_by(geom_id)
 target_flag <-  unique(filters_combinations$fishing_fleet)
@@ -153,8 +198,9 @@ default_gear_type <- unique(target_gear_type)
 default_dataset <- target_dataset[1]
 # default_dataset <- unique(target_dataset$dataset)
 default_unit <- c('t','no')
+default_source_authority <- unique(target_source_authority)
 # default_unit <- unique(target_unit$unit)
-default_gridtype <- c("1deg_x_1deg","5deg_x_5deg")
+default_gridtype <- c("1deg_x_1deg", "NOMINAL_AREA")
 # default_area <- unique(target_area$gridtype)
 default_fishing_fleet <- unique(target_flag)
 flog.info("Default filter values set.")
@@ -166,8 +212,7 @@ flog.info("Initial setup and data retrieval completed successfully.")
 source(here::here('modules/map_leaflet.R'))
 
 # Source external R scripts for additional functionalities
-source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i1_SpeciesByOcean.R")
-source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
+# source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
 flog.info("External R scripts sourced successfully.")
 flog.info("Loading modules.")
 load_ui_modules <- function() {
