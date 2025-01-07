@@ -1,4 +1,5 @@
 rm(list = ls())
+dir <- getwd()
 require(parallel)
 require(here)
 require(zen4R)
