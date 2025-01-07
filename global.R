@@ -1,6 +1,4 @@
 rm(list = ls())
-setwd("~/Bureau/CODE/shiny_compare_tunaatlas_datasests/")
-dir <- getwd()
 require(parallel)
 require(here)
 require(zen4R)
