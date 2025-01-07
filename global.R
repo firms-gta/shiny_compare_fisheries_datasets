@@ -1,5 +1,5 @@
 rm(list = ls())
-# setwd("~/Bureau/CODE/shiny_compare_tunaatlas_datasests/")
+setwd("~/Bureau/CODE/shiny_compare_tunaatlas_datasests/")
 dir <- getwd()
 require(parallel)
 require(here)
@@ -29,16 +29,13 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
   attempt <- 1
   record_id <- gsub(".*\\.", "",doi)
   
-  
   while (!success && attempt <= attempts) {
     tryCatch({
       # export DCMI metadata from Zenodo ??
       zen4R::export_zenodo(doi = doi, filename = paste0("metadata_",record_id), format = "DublinCore")
       # Download the specific file
-      zen4R::download_zenodo(doi = resource, files = file, path = dirname(path), sandbox = if(!is.null(software)) software$sandbox else FALSE)
-      
-      zen4R::download_zenodo(doi = doi, files = filename,parallel_handler = parLapply, cl = makeCluster(12))
-      # Check if the file was downloaded
+      # zen4R::download_zenodo(doi = resource, files = file, path = dirname(path), sandbox = if(!is.null(software)) software$sandbox else FALSE)
+      zen4R::download_zenodo(doi = doi, files = filename, parallel_handler = parLapply, cl = makeCluster(12))
       
       # Check if the file was downloaded
       if (file.exists(filename)) {
@@ -71,80 +68,88 @@ mode="DOI"
 # mode="postgres"
 
 flog.info("Loading data ")
-load_data <- function(mode="parquet") {
+load_data <- function(mode="DOI"){
   loaded_data <- list()
   flog.info("Loading dataset: %s format", mode)
   if(mode=="DOI"){
-  setwd("data")
+    setwd("data")
     if(!file.exists("gta_dois.parquet")){
-      
-      # # Use the function with lapply for each DOI
-  df_dois <-lapply(1:nrow(DOI), function(i) {
-    
-    this_doi <- DOI$DOI[i]
-    record_id <- gsub(".*\\.", "",DOI$DOI[i])
-    this_rec <- zenodo$getRecordById(record_id)
-    # this_rec <- zenodo$getRecordByConceptDOI(this_doi)
-    # this_rec <- zenodo$getRecordById("10037645")
-    DOI$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
-    DOI$title[i] <- gsub("urn:","",this_rec$metadata$title)
-    write_csv(x = DOI,file = "DOIs_enriched.csv")
-    
-    flog.info("Loading dataset: %s Zenodo record", record_id)
-    
-    filepath <- paste0("data/", DOI$Filename[i])
-    filename <- gsub("\\..*", "",DOI$Filename[i])
-    file_mime=gsub(".*\\.", "",DOI$Filename[i])
-    newname <- paste0(filename,"_",record_id,".csv")
-    
-    if (!file.exists(newname) && file_mime =="zip") {
-      flog.info("######################### CSV => ZIP DONT EXIST")
-      
-      extract_zenodo_metadata(doi = DOI$DOI[i], filename=DOI$Filename[i],data_dir = ".")
-      unzip(zipfile = DOI$Filename[i],files = c(paste0(filename,".csv")), exdir=".",overwrite = TRUE)
-      file.rename(from = paste0(filename,".csv"),to = newname)
-      
-    }else if (!file.exists(newname) && file_mime =="csv") {
-      flog.info("######################### CSV DONT EXIST")
-      
-      extract_zenodo_metadata(doi = DOI$DOI[i], filename=gsub(" ","%20", DOI$Filename[i]),data_dir = ".")
-      file.rename(from = DOI$Filename[i],to = newname)
+      # Use the function with lapply for each DOI
+      df_dois <-lapply(1:nrow(DOI), function(i) {
+        this_doi <- DOI$DOI[i]
+        record_id <- gsub(".*\\.", "",DOI$DOI[i])
+        this_rec <- zenodo$getRecordById(record_id)
+        # this_rec <- zenodo$getRecordByConceptDOI(this_doi)
+        # this_rec <- zenodo$getRecordById("10037645")
+        DOI$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
+        DOI$title[i] <- gsub("urn:","",this_rec$metadata$title)
+        write_csv(x = DOI,file = "DOIs_enriched.csv")
+        flog.info("Loading dataset: %s Zenodo record", record_id)
+        filepath <- paste0("data/", DOI$Filename[i])
+        filename <- gsub("\\..*", "",DOI$Filename[i])
+        file_mime=gsub(".*\\.", "",DOI$Filename[i])
+        newname <- paste0(filename,"_",record_id,".",file_mime)
+        if (!file.exists(newname) && file_mime =="zip") {
+          flog.info("######################### CSV => ZIP DONT EXIST")
+          extract_zenodo_metadata(doi = DOI$DOI[i], filename=DOI$Filename[i],data_dir = ".")
+          unzip(zipfile = DOI$Filename[i],files = c(paste0(filename,".csv")), exdir=".",overwrite = TRUE)
+          file.rename(from = paste0(filename,".csv"),to = newname)
+          } else if (!file.exists(newname) && file_mime =="csv") {
+            flog.info("######################### CSV FILE DONT EXIST")
+            extract_zenodo_metadata(doi = DOI$DOI[i], filename=gsub(" ","%20", DOI$Filename[i]),data_dir = ".")
+            file.rename(from = DOI$Filename[i],to = newname)
+          }else if (!file.exists(newname) && file_mime =="qs") {
+            flog.info("######################### QS FILE DONT EXIST")
+            extract_zenodo_metadata(doi = DOI$DOI[i], filename=gsub(" ","%20", DOI$Filename[i]),data_dir = ".")
+            file.rename(from = DOI$Filename[i],to = newname)
+            
+          }
+        flog.info("Dataset  %s downloaded successfully from Zenodo.", newname)
+        
+        this_df <- switch (file_mime,
+                           "csv" =  read.csv(newname),
+                           "zip" =  read.csv(newname),
+                           "qs" =  qread(newname) %>% dplyr::as_data_frame()
+        )
+        print(colnames(this_df))
+        print(class(this_df))
+        
+        # if(any(grepl("geom_wkt",colnames(this_df)))){
+        #   flog.info("Removing geom_wkt column")
+        #   this_df <- this_df %>% dplyr::as_data_frame()
+        # }
+        if(any(grepl("flag",colnames(this_df)))){
+          flog.info("Renaming Flag column")
+          this_df <- this_df %>% 
+            dplyr::rename(fishing_fleet=flag,gear_type=gear,fishing_mode=schooltype_label,measurement_unit=catchunit,measurement_value=value)
+        }
+        if(any(grepl("fishingfleet",colnames(this_df)))){
+          flog.info("Renaming fishingfleet / gear / schooltype / unit / value columns")
+          this_df <- this_df %>% 
+            dplyr::rename(fishing_fleet=fishingfleet,gear_type=gear,fishing_mode=schooltype,measurement_unit=unit,measurement_value=value)
+          }          
+        this_df <- this_df %>% 
+          dplyr::select(c("source_authority","fishing_fleet","time_start","time_end","geographic_identifier","gear_type","species","fishing_mode","measurement_unit","measurement_value"))  %>%
+          mutate(dataset=gsub(file_mime,"",filename), year=year(time_start))  %>%
+          mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Tons', 't')) %>% 
+          mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
+          mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
+          mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))
+        # print(colnames(this_df))
+        # this_df
+        })
+      loaded_data <- do.call(rbind, df_dois)
+      flog.info("Head dataset df_doi: %s", head(loaded_data))
+      # colnames(loaded_data)
+      # class(loaded_data)
+      flog.info("Write all binded dataframes into a parquet file")
+      arrow::write_parquet(loaded_data, "gta_dois.parquet")
     }
-    flog.info("All data downloaded successfully from Zenodo.")
-    
-      
-    this_df <- read.csv(newname) 
-  print(colnames(this_df))
-    if(any(grepl("flag",colnames(this_df)))){
-      this_df <- this_df %>% 
-        dplyr::rename(fishing_fleet=flag,gear_type=gear,fishing_mode=schooltype_label,measurement_unit=catchunit,measurement_value=value)
-    }
-    if(any(grepl("fishingfleet",colnames(this_df)))){
-      this_df <- this_df %>% 
-        dplyr::rename(fishing_fleet=fishingfleet,gear_type=gear,fishing_mode=schooltype,measurement_unit=unit,measurement_value=value)
-    }          
-    this_df <- this_df %>% 
-      dplyr::select(c("source_authority","fishing_fleet","time_start","time_end","geographic_identifier","gear_type","species","fishing_mode","measurement_unit","measurement_value"))  %>%
-      mutate(dataset=gsub(".csv","",filename), year=year(time_start))  %>%
-      mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Tons', 't')) %>% 
-      mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
-    mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
-    mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))
-    
-    })
-  loaded_data <- do.call(rbind, df_dois)
-  flog.info("Head dataset df_doi: %s", head(loaded_data))
-  
-  colnames(loaded_data)
-  class(loaded_data)
-  
-  arrow::write_parquet(loaded_data, "gta_dois.parquet")
-  
-    }
+    #read all DOIs data from parquet file
     loaded_data <- arrow::read_parquet("gta_dois.parquet")
-}else if(mode=="gpkg"){
-    flog.info("Loading main data from %s file",mode)
-    gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
+    }else if(mode=="gpkg"){
+      flog.info("Loading main data from %s file",mode)
+      gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
     # st_write(loaded_data,gpkg_file,layer = "public.shinycatch",delete_dsn = TRUE)
     con <- dbConnect(RSQLite::SQLite(), dbname = gpkg_file)
     # result <- dbSendQuery(con, "ALTER TABLElihinycatch RENAME to public.shinycatch;")
@@ -185,9 +190,9 @@ load_data <- function(mode="parquet") {
   }else if(mode=="parquet"){
     if(!file.exists("gta.parquet")){
       loaded_data <- load_data(mode="postgres")
-      arrow::write_parquet(loaded_data, "gta.parquet")
-    }
-loaded_data <- arrow::read_parquet("gta.parquet")
+      arrow::write_parquet(loaded_data, "gta.parquet")    
+      }
+    loaded_data <- arrow::read_parquet("gta.parquet")
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
   }else if(mode=="postgres"){
@@ -223,10 +228,10 @@ class(df_sf)
 
 if(mode!="DOI"){
   flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
-  df_distinct_geom <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area,gridtype,geom) %>% filter(!is.na(gridtype))  %>% filter(!is.na(geom)) %>%
+  df_distinct_geom <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area,gridtype,geom) %>%
+    filter(!is.na(gridtype)) %>% filter(!is.na(geom)) %>%
     dplyr::summarise(ogc_fid = first(ogc_fid)) %>% ungroup() %>% st_as_sf(wkt="geom",crs=4326) 
 }else{
-  # setwd("data")
   # saveRDS(df_distinct_geom, "gta_geom.RDS")
   df_distinct_geom_spatial <- readRDS("data/gta_geom.RDS") %>% dplyr::mutate('codesource_area'=codesource_area) 
   nrow(df_distinct_geom_spatial)
@@ -237,11 +242,11 @@ if(mode!="DOI"){
     dplyr::rename('codesource_area'=code)   %>% 
     dplyr::mutate(geom=st_buffer(st_centroid(st_boundary(geom)),dist=1000000),'gridtype'="nominal",'ogc_fid'= 1)  %>% 
     dplyr::select(codesource_area,gridtype,geom,ogc_fid)
-  nrow(df_distinct_geom_nominal)
+  # nrow(df_distinct_geom_nominal)
   
   df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)
-  nrow(df_distinct_geom)
-  class(df_distinct_geom)
+  # nrow(df_distinct_geom)
+  # class(df_distinct_geom)
   
   # df_distinct_geom_nominal <- read.csv("data/cl_nc_areas.csv") %>% sf::st_as_sf(wkt="geom_wkt",crs=4326)   %>% 
   #   dplyr::mutate('geom'=st_bbox(),'codesource_area'=geographic_identifier)
@@ -251,9 +256,9 @@ if(mode!="DOI"){
     dplyr::mutate('codesource_area'=geographic_identifier) %>% st_as_sf()
 }
 
-head(df_sf)
-colnames(df_sf)
-class(df_sf)
+# head(df_sf)
+# colnames(df_sf)
+# class(df_sf)
 # plot(df_sf)
 
 default_wkt <- st_as_text(st_as_sfc(st_bbox(df_distinct_geom)))
