@@ -101,7 +101,19 @@ load_data <- function(mode="DOI"){
             flog.info("######################### QS FILE DONT EXIST")
             extract_zenodo_metadata(doi = DOI$DOI[i], filename=gsub(" ","%20", DOI$Filename[i]),data_dir = ".")
             file.rename(from = DOI$Filename[i],to = newname)
-            
+            flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
+            if(!file.exists("gta_geom.RDS")){
+              df_distinct_geom <- qread(newname) %>%  mutate(ogc_fid=row_number(geographic_identifier)) %>% dplyr::as_data_frame() %>% 
+                dplyr::select(ogc_fid, geographic_identifier,geom_wkt,GRIDTYPE) %>% mutate(codesource_area=geographic_identifier,gridtype=GRIDTYPE) %>% 
+                dplyr::group_by(codesource_area,gridtype,geom_wkt) %>% dplyr::summarise(ogc_fid = first(ogc_fid)) %>%
+                filter(!is.na(gridtype)) %>% filter(!is.na(geom_wkt)) %>%
+                 ungroup() %>% st_as_sf(crs=4326)
+              saveRDS(df_distinct_geom, "gta_geom.RDS")   
+            }
+
+            class(df_distinct_geom)
+            colnames(df_distinct_geom)
+            head(df_distinct_geom)
           }
         flog.info("Dataset  %s downloaded successfully from Zenodo.", newname)
         
@@ -110,6 +122,7 @@ load_data <- function(mode="DOI"){
                            "zip" =  read.csv(newname),
                            "qs" =  qread(newname) %>% dplyr::as_data_frame()
         )
+        
         print(colnames(this_df))
         print(class(this_df))
         
