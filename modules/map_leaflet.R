@@ -64,8 +64,17 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       remaining_polygons <- df %>% st_combine() #%>% st_convex_hull(
       flog.info("Updating spatial_footprint_1 to fit the new WKT  : %s", module_wkt)
       spatial_footprint_1 <- df  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% st_combine() #%>% st_convex_hull(
-      flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", module_wkt)
-      spatial_footprint_5 <- df  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
+      flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", wkt)
+      spatial_footprint_5 <- df  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine()
+      spatial_footprint_5_converted <- purrr::map(spatial_footprint_5, function(geom) {
+        if (sf::st_is(geom, "GEOMETRYCOLLECTION")) {
+          return(sf::st_collection_extract(geom, "POLYGON"))
+        } else {
+          return(geom)
+        }
+      })
+      spatial_footprint_5_converted <- sf::st_sfc(spatial_footprint_5_converted, crs = sf::st_crs(spatial_footprint_5))
+      
       all_polygons <- df_distinct_geom %>% st_combine() 
       
       convex_hull <- st_convex_hull(df)
@@ -106,9 +115,9 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
         addProviderTiles("CartoDB", "background")   %>%
         addProviderTiles("Esri.OceanBasemap", "background")   %>%
         addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection") %>%
-        # addPolygons(data = spatial_footprint_1,color="blue",fillColor = "transparent", group="footprint1") %>%
-        # addPolygons(data = spatial_footprint_5,color="green",fillColor = "transparent", group="footprint5") %>%
-        # addPolygons(data = current_fooprint,color="yellow",fillColor = "transparent", group="data_for_filters")  %>%
+        addPolygons(data = spatial_footprint_1,color="grey",fillColor = "transparent", group="footprint1") %>%
+        addPolygons(data = spatial_footprint_5_converted,color="grey",fillColor = "transparent", group="footprint5") %>%
+        addPolygons(data = current_fooprint,color="red",fillColor = "transparent", group="data_for_filters")  %>%
         # addPolygons(data = remaining_polygons,color="red",fillColor = "transparent", group="remaining")  %>%
         addPolygons(data = all_polygons,fillColor = "transparent", group="all")
       
@@ -231,8 +240,45 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
       current_fooprint <- current_fooprint()
 
+      current_footprint_sf <- st_sf(current_footprint)
       
-      disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = st_sf(current_fooprint), PREDICATE = "disjoint", INTERSECT = new_selection)
+      process_disjoint_WKT <- function(current_footprint, new_selection) {
+        
+        # Vérifier si qgisprocess est installé
+        if (requireNamespace("qgisprocess", quietly = TRUE)) {
+          
+          # Essayer de configurer qgisprocess pour voir s'il fonctionne
+          qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
+          
+          if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
+            # Utiliser qgisprocess si disponible et configuré
+            message("Utilisation de qgisprocess pour traiter les données.")
+            disjoint_WKT <- qgisprocess::qgis_run_algorithm(
+              "native:extractbylocation",
+              INPUT = st_sf(current_footprint),
+              PREDICATE = "disjoint",
+              INTERSECT = new_selection
+            ) %>% 
+              sf::st_as_sf()
+            
+            return(disjoint_WKT)
+          }
+        }
+        
+        # Si qgisprocess n'est pas disponible ou configuré, utiliser sf
+        message("qgisprocess non disponible ou non configuré. Utilisation de sf pour traiter les données.")
+        current_footprint_sf <- st_sf(current_footprint)
+        disjoint_WKT <- current_footprint_sf %>%
+          dplyr::filter(sf::st_disjoint(., new_selection, sparse = FALSE)) %>%
+          sf::st_as_sf()
+        
+        return(disjoint_WKT)
+      }
+      disjoint_WKT <- process_disjoint_WKT(current_footprint, new_selection)
+      # disjoint_WKT <- current_footprint_sf %>%
+      #   dplyr::filter(sf::st_disjoint(., new_selection, sparse = FALSE)) %>%
+      #   sf::st_as_sf()
+      # disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = st_sf(current_fooprint), PREDICATE = "disjoint", INTERSECT = new_selection)
       disjoint <- sf::st_as_sf(disjoint_WKT)
       
       

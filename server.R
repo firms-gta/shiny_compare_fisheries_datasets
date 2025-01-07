@@ -154,6 +154,16 @@ server <- function(input, output, session) {
       
       return(list_areas)
     }
+    # list_areas <- df_distinct_geom %>%
+    #   dplyr::filter(!is.na(gridtype))
+    
+    # Transformer les objets sf en utilisant st_intersects ou st_within
+    # list_areas <- list_areas %>%
+    #   dplyr::filter(sf::st_within(., current_selection, sparse = FALSE)) %>%
+    #   sf::st_as_sf()
+    # list_areas <- df_distinct_geom %>% dplyr::filter(!is.na(gridtype)) %>% 
+    #   qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = st_sf(current_selection)) %>% sf::st_as_sf()
+    
     
     if(wkt!=default_wkt){
     list_areas <- process_list_areas(df_distinct_geom, current_selection)

@@ -190,20 +190,19 @@ target_flag <-  unique(filters_combinations$fishing_fleet)
 flog.info("Set filters values to be seflected by default")
 
 # default_species <- c('YFT','SKJ','BET','SBF','ALB')
-default_species <- c('YFT')
-# default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-2)
-default_year <- c(seq(1950:2021)+1949)
-# default_year <- c(seq((max(target_year)-10):max(target_year))+max(target_year)-11)
+default_species <- target_species[1]
+# default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-1)
+default_year <- c(seq((max(target_year)-10):max(target_year))+max(target_year)-11)
 # default_gear <- c('01.1','01.2')
 default_gear_type <- unique(target_gear_type)
-# default_dataset <- c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
-default_dataset <- unique(target_dataset)
+default_dataset <- target_dataset[1]
+# default_dataset <- unique(target_dataset$dataset)
 default_unit <- c('t','no')
 default_source_authority <- unique(target_source_authority)
 # default_unit <- unique(target_unit$unit)
 default_gridtype <- c("1deg_x_1deg", "NOMINAL_AREA")
 # default_area <- unique(target_area$gridtype)
-default_fishing_fleet <- target_flag
+default_fishing_fleet <- unique(target_flag)
 flog.info("Default filter values set.")
 
 # Logging the successful execution of the script up to this point
@@ -234,3 +233,5 @@ flog.info("########################## START UI")
 source(here::here("ui.R"))
 flog.info("########################## START GLOBAL")
 source(here::here("server.R"))
+# getOption('qgisprocess.path')
+# qgis_configure()
