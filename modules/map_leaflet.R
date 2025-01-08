@@ -3,8 +3,8 @@ map_leafletUI <- function(id) {
   tagList(
       leafletOutput(ns("map"),width="100%", height="100%"),
       map_proxy_UI(ns("other")),
-      dataTableOutput(ns("DT_query_data_map")),
-      dataTableOutput(ns("DT_data_footprint"))
+      DT::DTOutput(ns("DT_query_data_map")),
+      DT::DTOutput(ns("DT_data_footprint"))
   )
 }
 

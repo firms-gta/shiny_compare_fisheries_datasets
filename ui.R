@@ -152,7 +152,7 @@ ui <- fluidPage(
              navbarMenu("Browse Data Tables",
                         tabPanel(
                           title = "Browse main dataset",
-                          DT::dataTableOutput("DT_main_dataset")
+                          DT::DTOutput("DT_main_dataset")
                         )
              ),
              # tabPanel(

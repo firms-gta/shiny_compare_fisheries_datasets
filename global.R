@@ -3,8 +3,8 @@ dir <- getwd()
 require(parallel)
 require(here)
 require(zen4R)
+flog.info("Loading libraries")
 source(here::here('install.R'))
-# Log the successful loading of libraries
 flog.info("All libraries loaded successfully.")
 
 DOI <- readr::read_csv("data/DOI.csv") %>% dplyr::mutate(identifier="",title="")
@@ -53,10 +53,11 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
 }
 
 # Initialize reactive values and default WKT for mapping
+flog.info("Initialize reactive values")
 main_wkt <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
-flog.info("Reactive values initialized successfully.")
 initial_data <- reactiveVal()
+flog.info("Reactive values initialized successfully.")
 
 mode="DOI"
 mode="gpkg"
@@ -104,16 +105,12 @@ load_data <- function(mode="DOI"){
             flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
             if(!file.exists("gta_geom.RDS")){
               df_distinct_geom <- qread(newname) %>%  mutate(ogc_fid=row_number(geographic_identifier)) %>% dplyr::as_data_frame() %>% 
-                dplyr::select(ogc_fid, geographic_identifier,geom_wkt,GRIDTYPE) %>% mutate(codesource_area=geographic_identifier,gridtype=GRIDTYPE) %>% 
-                dplyr::group_by(codesource_area,gridtype,geom_wkt) %>% dplyr::summarise(ogc_fid = first(ogc_fid)) %>%
-                filter(!is.na(gridtype)) %>% filter(!is.na(geom_wkt)) %>%
+                dplyr::select(ogc_fid, geographic_identifier,geom_wkt,GRIDTYPE) %>% mutate(codesource_area=geographic_identifier,gridtype=GRIDTYPE,geom=geom_wkt) %>% 
+                dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(ogc_fid = first(ogc_fid)) %>%
+                filter(!is.na(gridtype)) %>% filter(!is.na(geom)) %>%
                  ungroup() %>% st_as_sf(crs=4326)
               saveRDS(df_distinct_geom, "gta_geom.RDS")   
             }
-
-            class(df_distinct_geom)
-            colnames(df_distinct_geom)
-            head(df_distinct_geom)
           }
         flog.info("Dataset  %s downloaded successfully from Zenodo.", newname)
         
@@ -122,14 +119,8 @@ load_data <- function(mode="DOI"){
                            "zip" =  read.csv(newname),
                            "qs" =  qread(newname) %>% dplyr::as_data_frame()
         )
+        # print(colnames(this_df))
         
-        print(colnames(this_df))
-        print(class(this_df))
-        
-        # if(any(grepl("geom_wkt",colnames(this_df)))){
-        #   flog.info("Removing geom_wkt column")
-        #   this_df <- this_df %>% dplyr::as_data_frame()
-        # }
         if(any(grepl("flag",colnames(this_df)))){
           flog.info("Renaming Flag column")
           this_df <- this_df %>% 
@@ -147,13 +138,8 @@ load_data <- function(mode="DOI"){
           mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
           mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
           mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))
-        # print(colnames(this_df))
-        # this_df
         })
       loaded_data <- do.call(rbind, df_dois)
-      flog.info("Head dataset df_doi: %s", head(loaded_data))
-      # colnames(loaded_data)
-      # class(loaded_data)
       flog.info("Write all binded dataframes into a parquet file")
       arrow::write_parquet(loaded_data, "gta_dois.parquet")
     }
@@ -182,7 +168,6 @@ load_data <- function(mode="DOI"){
     colnames(transform_df_sf)
     class(transform_df_sf$geom)
     saveRDS(transform_df_sf, "shinycatch.RDS")
-    # saveRDS(loaded_data, "shinycatch.RDS")
 
     #save and read the data frame by using parquet and feather data formats
     feather::write_feather(transform_df_sf,"gta.feather")
@@ -190,8 +175,6 @@ load_data <- function(mode="DOI"){
 
     arrow::write_parquet(transform_df_sf, "gta.parquet")
     reloaded_data = arrow::read_parquet("gta.parquet") %>% st_as_sf(wkt="geom", crs = 4326)
-    # simple_df <- df_sf %>% as.data.frame
-    # saveRDS(simple_df, "shinycatch.RDS")
   }else if(mode=="feather"){
     # feather::write_feather(loaded_data,"gta.feather")
     # rm(df_feather)
@@ -238,6 +221,7 @@ setwd(dir)
 colnames(df_sf)
 class(df_sf)
 
+flog.info("Load spatial data")
 if(mode!="DOI"){
   flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
   df_distinct_geom <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area,gridtype,geom) %>%
@@ -267,11 +251,6 @@ if(mode!="DOI"){
   df_sf <- df_sf  %>%  dplyr::left_join(df_distinct_geom, by=c('geographic_identifier'='codesource_area')) %>%
     dplyr::mutate('codesource_area'=geographic_identifier) %>% st_as_sf()
 }
-
-# head(df_sf)
-# colnames(df_sf)
-# class(df_sf)
-# plot(df_sf)
 
 default_wkt <- st_as_text(st_as_sfc(st_bbox(df_distinct_geom)))
 # main_wkt(default_wkt)
