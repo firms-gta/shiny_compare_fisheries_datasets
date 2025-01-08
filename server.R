@@ -1,5 +1,44 @@
 server <- function(input, output, session) {
   
+  ########################################################## Function for spatial filters ########################################################## 
+  
+  
+  process_list_areas <- function(df_distinct_geom, current_selection) {
+    
+    # Vérifier si qgisprocess est installé
+    if (requireNamespace("qgisprocess", quietly = TRUE)) {
+      
+      # Essayer de configurer qgisprocess pour voir s'il fonctionne
+      qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
+      
+      if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
+        # Utiliser qgisprocess si disponible et configuré
+        message("Utilisation de qgisprocess pour traiter les données.")
+        list_areas <- df_distinct_geom %>%
+          dplyr::filter(!is.na(gridtype)) %>%
+          qgisprocess::qgis_run_algorithm(
+            "native:extractbylocation",
+            INPUT = .,
+            PREDICATE = "are within",
+            INTERSECT = st_sf(current_selection)
+          ) %>% 
+          sf::st_as_sf()
+        
+        return(list_areas)
+      }
+    }
+    
+    # Si qgisprocess n'est pas disponible ou configuré, utiliser sf
+    message("qgisprocess non disponible ou non configuré. Utilisation de sf pour traiter les données.")
+    list_areas <- df_distinct_geom %>%
+      dplyr::filter(!is.na(gridtype)) %>%
+      dplyr::filter(sf::st_within(., st_sf(current_selection), sparse = FALSE)) %>%
+      sf::st_as_sf()
+    
+    return(list_areas)
+  }
+  
+
   ########################################################## Dynamic filters ########################################################## 
   change <- reactive({
     unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
@@ -63,21 +102,32 @@ server <- function(input, output, session) {
     
     # sql_query <- reactive({
     main_data <- initial_data()
+    
+    req(main_wkt())
+    wkt <- main_wkt()
+    current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+    
+    current_df_distinct_geom <- df_distinct_geom %>%  dplyr::filter(gridtype %in% input$gridtype)
+    list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
+    flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
+    within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
+      rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
+    
 
     sql_query_all <- main_data  %>%  
       dplyr::filter(
-      # codesource_area %in% within_areas,
-      dataset %in% input$dataset,
-      species %in% input$species,
-      source_authority %in% input$source_authority,
-      gear_type %in% input$gear_type,
-      year %in% input$year,
-      fishing_fleet %in% input$fishing_fleet,
-      measurement_unit %in% input$unit,
-      gridtype %in% input$gridtype) %>%
-      dplyr::group_by(codesource_area,geom, dataset, species,gear_type, year, measurement_unit, gridtype,source_authority) %>% 
+        codesource_area %in% within_areas,
+        dataset %in% input$dataset,
+        species %in% input$species,
+        source_authority %in% input$source_authority,
+        gear_type %in% input$gear_type,
+        year %in% input$year,
+        fishing_fleet %in% input$fishing_fleet,
+        measurement_unit %in% input$unit
+        ) %>% 
+      dplyr::group_by(codesource_area, dataset, species, gear_type, year, measurement_unit, source_authority) %>% 
       dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() # %>% filter(!is.na(geom))
-  },
+    },
   ignoreNULL = FALSE)
 
   sql_query_footprint <- reactive({
@@ -88,9 +138,9 @@ server <- function(input, output, session) {
     flog.info("spatial footprints for current filters number of row is: %s", nrow(sql_query_footprint)) 
     flog.info("###############################################################################################") 
     
-    sql_query_footprint <-  sql_query_all() %>% dplyr::group_by(codesource_area,geom) %>% 
+    sql_query_footprint <-  sql_query_all() %>% dplyr::group_by(codesource_area) %>% 
       dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>% dplyr::filter(!is.na(geom)) %>% 
-      st_as_sf(wkt="geom", crs = 4326) #%>% st_combine()
+       dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>% dplyr::mutate(geom=st_as_text(st_sfc(geom),EWKT = TRUE))
     
   })
   
@@ -103,8 +153,7 @@ server <- function(input, output, session) {
     
     req(main_wkt())
     wkt <- main_wkt()    
-    flog.info("Spatial filter :main WKT : %s", wkt)
-    
+    flog.info("Spatial filter: main WKT : %s", wkt)
     
     flog.info("###############################################################################################") 
     flog.info("Applying new filters to main data 2 ") 
@@ -113,59 +162,20 @@ server <- function(input, output, session) {
     current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
     
     flog.info("Spatial filter : keep only data whose areas are within the current WKT : %s", wkt)
-    # list_areas <- df_distinct_geom %>% dplyr::filter(!is.na(gridtype)) %>% 
-    #   qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = st_sf(current_selection)) %>% sf::st_as_sf()
-    # 
-    # 
-    
-    
-    process_list_areas <- function(df_distinct_geom, current_selection) {
-      
-      # Vérifier si qgisprocess est installé
-      if (requireNamespace("qgisprocess", quietly = TRUE)) {
-        
-        # Essayer de configurer qgisprocess pour voir s'il fonctionne
-        qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
-        
-        if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
-          # Utiliser qgisprocess si disponible et configuré
-          message("Utilisation de qgisprocess pour traiter les données.")
-          list_areas <- df_distinct_geom %>%
-            dplyr::filter(!is.na(gridtype)) %>%
-            qgisprocess::qgis_run_algorithm(
-              "native:extractbylocation",
-              INPUT = .,
-              PREDICATE = "are within",
-              INTERSECT = st_sf(current_selection)
-            ) %>% 
-            sf::st_as_sf()
-          
-          return(list_areas)
-        }
-      }
-      
-      # Si qgisprocess n'est pas disponible ou configuré, utiliser sf
-      message("qgisprocess non disponible ou non configuré. Utilisation de sf pour traiter les données.")
-      list_areas <- df_distinct_geom %>%
-        dplyr::filter(!is.na(gridtype)) %>%
-        dplyr::filter(sf::st_within(., st_sf(current_selection), sparse = FALSE)) %>%
-        sf::st_as_sf()
-      
-      return(list_areas)
-    }
     
     if(wkt!=default_wkt){
     list_areas <- process_list_areas(df_distinct_geom, current_selection)
     
-    
     flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
-    within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%  rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
+    within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>% 
+      rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
     
-    sql_query <- sql_query_all %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas)
+    sql_query <- sql_query_all %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas) 
   }else{
     sql_query <- sql_query_all
   }
-  
+    sql_query <- sql_query_all  %>% dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>% dplyr::mutate(geom=st_as_text(st_sfc(geom),EWKT = TRUE))
+    
   flog.info("Main data number rows: %s", nrow(sql_query))
   # https://shiny.posit.co/r/reference/shiny/latest/modaldialog
   if(nrow(sql_query)==0)
