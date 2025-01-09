@@ -60,7 +60,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       flog.info("Number of rows of map data : %s", nrow(data_map))
       
       df <- data_map %>% st_as_sf(wkt="geom_wkt",crs=4326)
-      current_fooprint <- df %>% st_combine()
+      this_footprint <- df %>% st_combine()
       
       current_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
       flog.info("Check current value of WKT  : %s", module_wkt)
@@ -240,8 +240,8 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       new_selection <- st_sf(st_as_sfc(new_wkt, crs = 4326))
       # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
 
-      
-      disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = st_sf(current_fooprint), PREDICATE = "disjoint", INTERSECT = new_selection)
+      current_fooprint <- current_fooprint() %>% st_as_sf(wkt="geom_wkt", crs = 4326) %>% st_combine()
+      disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = current_fooprint, PREDICATE = "disjoint", INTERSECT = new_selection)
       disjoint <- sf::st_as_sf(disjoint_WKT)
       
       
