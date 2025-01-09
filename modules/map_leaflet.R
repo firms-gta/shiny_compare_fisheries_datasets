@@ -60,6 +60,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       flog.info("Number of rows of map data : %s", nrow(data_map))
       
       df <- data_map %>% st_as_sf(wkt="geom_wkt",crs=4326)
+      current_fooprint <- df %>% st_combine()
       
       current_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
       flog.info("Check current value of WKT  : %s", module_wkt)
