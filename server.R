@@ -10,6 +10,7 @@ server <- function(input, output, session) {
       
       # Essayer de configurer qgisprocess pour voir s'il fonctionne
       qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
+      flog.info("QGIS Yes")
       
       if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
         # Utiliser qgisprocess si disponible et configuré
@@ -30,6 +31,7 @@ server <- function(input, output, session) {
     
     # Si qgisprocess n'est pas disponible ou configuré, utiliser sf
     message("qgisprocess non disponible ou non configuré. Utilisation de sf pour traiter les données.")
+    flog.info("QGIS instead")
     list_areas <- df_distinct_geom %>%
       dplyr::filter(!is.na(gridtype)) %>%
       dplyr::filter(sf::st_within(., st_sf(current_selection), sparse = FALSE)) %>%
@@ -107,14 +109,13 @@ server <- function(input, output, session) {
     wkt <- main_wkt()
     current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
     
-    current_df_distinct_geom <- df_distinct_geom %>%  dplyr::filter(gridtype %in% input$gridtype)
+    current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
     list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
     flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
     within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
       rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
-    
 
-    sql_query_all <- main_data  %>%  
+    sql_query_all <- main_data  %>% filter(!is.na(geom_wkt)) %>%  
       dplyr::filter(
         codesource_area %in% within_areas,
         dataset %in% input$dataset,
@@ -124,9 +125,10 @@ server <- function(input, output, session) {
         year %in% input$year,
         fishing_fleet %in% input$fishing_fleet,
         measurement_unit %in% input$unit
-        ) %>% 
-      dplyr::group_by(codesource_area, dataset, species, gear_type, year, measurement_unit, source_authority) %>% 
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() # %>% filter(!is.na(geom))
+      ) %>% 
+      dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, year, measurement_unit) %>% 
+      # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>% 
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() 
     },
   ignoreNULL = FALSE)
 
@@ -134,13 +136,14 @@ server <- function(input, output, session) {
     # flog.info("Create spatial footprints for current filters")
     # req(sql_query_all())
     # sql_query_all <- sql_query_all()
+
+    sql_query_footprint <-  sql_query_all() %>% dplyr::group_by(codesource_area,gridtype,geom_wkt) %>% 
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
+           # dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>% dplyr::mutate(geom=st_as_text(st_sfc(geom_wkt),EWKT = TRUE))
+    
     flog.info("###############################################################################################") 
     flog.info("spatial footprints for current filters number of row is: %s", nrow(sql_query_footprint)) 
     flog.info("###############################################################################################") 
-    
-    sql_query_footprint <-  sql_query_all() %>% dplyr::group_by(codesource_area) %>% 
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>% dplyr::filter(!is.na(geom)) %>% 
-       dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>% dplyr::mutate(geom=st_as_text(st_sfc(geom),EWKT = TRUE))
     
   })
   
@@ -150,31 +153,34 @@ server <- function(input, output, session) {
     flog.info("###############################################################################################") 
     flog.info("Applying new filters to main data") 
     flog.info("###############################################################################################") 
+  #   
+  #   req(main_wkt())
+  #   wkt <- main_wkt()    
+  #   flog.info("Spatial filter: main WKT : %s", wkt)
+  #   
+  #   flog.info("###############################################################################################") 
+  #   flog.info("Applying new filters to main data 2 ") 
+  #   flog.info("###############################################################################################") 
+  #   
+  #   current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+  #   
+  #   flog.info("Spatial filter : keep only data whose areas are within the current WKT : %s", wkt)
+  #   
+  #   if(wkt!=default_wkt){
+  #   list_areas <- process_list_areas(df_distinct_geom, current_selection)
+  #   
+  #   flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
+  #   within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>% 
+  #     rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
+  #   
+  #   sql_query <- sql_query_all %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas) 
+  # }else{
+  #   sql_query <- sql_query_all
+  # }
+    # sql_query <- sql_query_all  %>% dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>% 
+    #   dplyr::mutate(geom=st_as_text(st_sfc(geom_wkt),EWKT = TRUE))
     
-    req(main_wkt())
-    wkt <- main_wkt()    
-    flog.info("Spatial filter: main WKT : %s", wkt)
-    
-    flog.info("###############################################################################################") 
-    flog.info("Applying new filters to main data 2 ") 
-    flog.info("###############################################################################################") 
-    
-    current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
-    
-    flog.info("Spatial filter : keep only data whose areas are within the current WKT : %s", wkt)
-    
-    if(wkt!=default_wkt){
-    list_areas <- process_list_areas(df_distinct_geom, current_selection)
-    
-    flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
-    within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>% 
-      rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
-    
-    sql_query <- sql_query_all %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas) 
-  }else{
-    sql_query <- sql_query_all
-  }
-    sql_query <- sql_query_all  %>% dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>% dplyr::mutate(geom=st_as_text(st_sfc(geom),EWKT = TRUE))
+    sql_query <- sql_query_all 
     
   flog.info("Main data number rows: %s", nrow(sql_query))
   # https://shiny.posit.co/r/reference/shiny/latest/modaldialog

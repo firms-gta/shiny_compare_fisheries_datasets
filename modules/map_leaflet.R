@@ -22,41 +22,44 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
     
     flog.info("Data Table of the map")
     output$DT_query_data_map <- renderDT({
-      sql_query()
+      # sql_query()
     })
     output$DT_data_footprint <- renderDT({
-      sql_query_footprint()
+      # sql_query_footprint()
     })
     
+    flog.info("Set current_fooprint" )
     current_fooprint <- reactive({
       flog.info("################################ OLA #########################################################")
       flog.info("Spatial query for all filters without WKT" )
       flog.info("################################ OLA #########################################################")
       req(sql_query_footprint())
-      current_fooprint <- sql_query_footprint() %>% st_combine()
+      current_fooprint <- sql_query_footprint() 
     })
     
+    flog.info("Set map" )
     output$map <- renderLeaflet({
       flog.info("Testing truthiness of the dataframe with req()")
       module_wkt <- main_wkt()
       flog.info("New module_wkt OK %s",module_wkt)
       
-      
-      current_fooprint <- current_fooprint()
+      flog.info("Spatialize footprint" )
+      current_fooprint <- current_fooprint() 
+      # current_fooprint <- current_fooprint %>% st_as_sf(wkt="geom_wkt", crs = 4326) %>% st_combine()
       
       req(sql_query())
-      this_df <- sql_query()
+      this_df <- sql_query() 
 
       flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(this_df))
       flog.info("Sum of values per dataset and per area for mapping : %s", nrow(this_df))
       
-      data_map <- this_df %>% dplyr::group_by(dataset,codesource_area,gridtype,geom) %>% 
+      data_map <- this_df %>% dplyr::group_by(dataset,codesource_area,gridtype,geom_wkt) %>% 
         dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup() 
       
       flog.info("Data map head : %s", head(data_map))
       flog.info("Number of rows of map data : %s", nrow(data_map))
       
-      df <- data_map %>% st_as_sf(wkt="geom",crs=4326)
+      df <- data_map %>% st_as_sf(wkt="geom_wkt",crs=4326)
       
       current_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
       flog.info("Check current value of WKT  : %s", module_wkt)
@@ -235,7 +238,6 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       new_wkt = paste0("POLYGON ((",lng1," ",lat2, ",", lng2, " ",lat2,",", lng2," ", lat1,",", lng1," ", lat1,",", lng1," ", lat2,"))" )
       new_selection <- st_sf(st_as_sfc(new_wkt, crs = 4326))
       # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
-      current_fooprint <- current_fooprint()
 
       
       disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = st_sf(current_fooprint), PREDICATE = "disjoint", INTERSECT = new_selection)
