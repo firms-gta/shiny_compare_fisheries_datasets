@@ -10,7 +10,7 @@ server <- function(input, output, session) {
       
       # Essayer de configurer qgisprocess pour voir s'il fonctionne
       qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
-      flog.info("QGIS Yes")
+      flog.info("QGIS is used to select remaing data within the default or newly dran polygon !")
       
       if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
         # Utiliser qgisprocess si disponible et configuré
@@ -132,21 +132,6 @@ server <- function(input, output, session) {
     },
   ignoreNULL = FALSE)
 
-  sql_query_footprint <- reactive({
-    # flog.info("Create spatial footprints for current filters")
-    # req(sql_query_all())
-    # sql_query_all <- sql_query_all()
-
-    sql_query_footprint <-  sql_query_all() %>% dplyr::group_by(codesource_area,gridtype,geom_wkt) %>% 
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
-           # dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>% dplyr::mutate(geom=st_as_text(st_sfc(geom_wkt),EWKT = TRUE))
-    
-    flog.info("###############################################################################################") 
-    flog.info("spatial footprints for current filters number of row is: %s", nrow(sql_query_footprint)) 
-    flog.info("###############################################################################################") 
-    
-  })
-  
   sql_query <- reactive({
     req(sql_query_all())
     sql_query_all <- sql_query_all()
@@ -232,7 +217,7 @@ server <- function(input, output, session) {
   
   flog.info("Starting leaflet in the global map module")
   # callModule(module = map_leaflet, id = "id_1")
-  map_leafletServer(id = "map_global",sql_query,sql_query_footprint)
+  map_leafletServer(id = "map_global",sql_query)
   
   flog.info("Starting time series module")
   timeSeriesServer(id = "time_series",sql_query)
