@@ -45,7 +45,7 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       
       flog.info("Spatialize footprint" )
       current_fooprint <- current_fooprint() 
-      # current_fooprint <- current_fooprint %>% st_as_sf(wkt="geom_wkt", crs = 4326) %>% st_combine()
+      # current_fooprint <- query_footprint() %>% st_as_sf(wkt="geom_wkt", crs = 4326) %>% st_combine() %>% st_sf()
       
       req(sql_query())
       this_df <- sql_query() 
@@ -242,13 +242,13 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
 
     
       this_footprint <- sql_query() %>% dplyr::group_by(dataset,codesource_area,gridtype,geom_wkt) %>% 
-        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup()  %>% st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()
+        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup()  %>% 
+        st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_sf()
       
-      current_fooprint <- query_footprint() %>% st_as_sf(wkt="geom_wkt", crs = 4326) %>% st_combine() %>% st_sf()
-      
+      # current_fooprint <- query_footprint() %>% st_as_sf(wkt="geom_wkt", crs = 4326) %>% st_combine() %>% st_sf()
       
       disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",
-                                                      INPUT = current_fooprint, 
+                                                      INPUT = this_footprint, 
                                                       PREDICATE = "disjoint", 
                                                       INTERSECT = new_selection)
       disjoint <- sf::st_as_sf(disjoint_WKT)
