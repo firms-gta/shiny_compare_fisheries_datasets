@@ -12,13 +12,13 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
   flog.info("Starting global map module")
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    # query_footprint <- reactive({
-    #   flog.info("################################ OLA #########################################################") 
-    #   flog.info("Spatial query for all filters without WKT" )
-    #   flog.info("################################ OLA #########################################################") 
-    #   req(sql_query_footprint())
-    #   query_footprint <- sql_query_footprint() %>% st_combine()
-    # }) 
+    query_footprint <- reactive({
+      flog.info("################################ OLA #########################################################")
+      flog.info("Spatial query for all filters without WKT" )
+      flog.info("################################ OLA #########################################################")
+      req(sql_query_footprint())
+      query_footprint <- sql_query_footprint() 
+    })
     
     flog.info("Data Table of the map")
     output$DT_query_data_map <- renderDT({
@@ -240,8 +240,17 @@ map_leafletServer <- function(id,sql_query,sql_query_footprint) {
       new_selection <- st_sf(st_as_sfc(new_wkt, crs = 4326))
       # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
 
-      current_fooprint <- current_fooprint() %>% st_as_sf(wkt="geom_wkt", crs = 4326) %>% st_combine()
-      disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = current_fooprint, PREDICATE = "disjoint", INTERSECT = new_selection)
+    
+      this_footprint <- sql_query() %>% dplyr::group_by(dataset,codesource_area,gridtype,geom_wkt) %>% 
+        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup()  %>% st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()
+      
+      current_fooprint <- query_footprint() %>% st_as_sf(wkt="geom_wkt", crs = 4326) %>% st_combine() %>% st_sf()
+      
+      
+      disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",
+                                                      INPUT = current_fooprint, 
+                                                      PREDICATE = "disjoint", 
+                                                      INTERSECT = new_selection)
       disjoint <- sf::st_as_sf(disjoint_WKT)
       
       
