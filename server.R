@@ -131,7 +131,7 @@ server <- function(input, output, session) {
     
      whole_footprint <- sql_query_all  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
       dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
-      st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text()
+      st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_as_text()
     flog.info("Current footprint for filters is %s: ",whole_footprint)
     current_selection_footprint_wkt(whole_footprint)
     
