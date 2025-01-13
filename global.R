@@ -57,6 +57,7 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
 flog.info("Initialize reactive values")
 main_wkt <- reactiveVal()
 drawn_wkt <- reactiveVal()
+current_selection_footprint_wkt <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
 initial_data <- reactiveVal()
 flog.info("Reactive values initialized successfully.")

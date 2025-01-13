@@ -117,7 +117,6 @@ server <- function(input, output, session) {
 
     sql_query_all <- main_data  %>% filter(!is.na(geom_wkt)) %>%  
       dplyr::filter(
-        codesource_area %in% within_areas,
         dataset %in% input$dataset,
         species %in% input$species,
         source_authority %in% input$source_authority,
@@ -128,9 +127,19 @@ server <- function(input, output, session) {
       ) %>% 
       dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, year, measurement_unit) %>% 
       # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>% 
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() 
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
+    
+     whole_footprint <- sql_query_all  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
+      st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text()
+    flog.info("Current footprint for filters is %s: ",whole_footprint)
+    current_selection_footprint_wkt(whole_footprint)
+    
+    sql_query_all <- sql_query_all  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+    
     },
   ignoreNULL = FALSE)
+  
 
   sql_query <- reactive({
     req(sql_query_all())

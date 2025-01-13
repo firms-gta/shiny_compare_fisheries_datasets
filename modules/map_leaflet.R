@@ -73,7 +73,8 @@ map_leafletServer <- function(id,sql_query) {
       spatial_footprint_1 <- df  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% st_combine() #%>% st_convex_hull(
       flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", module_wkt)
       spatial_footprint_5 <- df  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
-      all_polygons <- df_distinct_geom %>% st_combine() 
+      all_polygons <- df_distinct_geom %>% st_convex_hull() 
+      whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326))
       
       convex_hull <- st_convex_hull(df)
       bbx <- st_bbox(remaining_polygons) %>% as.numeric()
@@ -117,7 +118,8 @@ map_leafletServer <- function(id,sql_query) {
         # addPolygons(data = spatial_footprint_5,color="green",fillColor = "transparent", group="footprint5") %>%
         # addPolygons(data = current_fooprint,color="yellow",fillColor = "transparent", group="data_for_filters")  %>%
         # addPolygons(data = remaining_polygons,color="red",fillColor = "transparent", group="remaining")  %>%
-        addPolygons(data = all_polygons,fillColor = "transparent", group="all")
+        addPolygons(data = all_polygons,fillColor = "transparent", group="all")  %>% 
+        addPolygons(data = whole_footprint,color="yellow",fillColor = "transparent", group="all")
       
       flog.info("Adding new layers for each dataset in the selected WKT")
       # Overlay groups
@@ -256,14 +258,16 @@ map_leafletServer <- function(id,sql_query) {
         dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>%  ungroup()  %>%
         st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_sf()
       
+      whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326))
       
-      flog.info("QGIS checking if remaining data in the new polygon ust drawn !!")
+      
+      flog.info("QGIS checking if remaining data in the new polygon just drawn !!")
       disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",
-                                                      INPUT = this_footprint,
+                                                      INPUT = whole_footprint,
                                                       PREDICATE = "disjoint",
                                                       INTERSECT = new_selection)
 
-      flog.info("SF checking if remaining data in the new polygon ust drawn !!")
+      flog.info("SF checking if remaining data in the new polygon just drawn !!")
       # disjoint_WKT <- this_footprint %>% dplyr::filter(sf::st_disjoint(., new_selection, sparse = FALSE)) 
       disjoint <- sf::st_as_sf(disjoint_WKT)
       
@@ -310,7 +314,7 @@ map_leafletServer <- function(id,sql_query) {
             # # st_disjoint(current_selection,current_fooprint)
       
       if(nrow(disjoint)==1){
-        flog.info("New wkt not OK")
+        flog.info("New wkt disjoint from current polygon")
         showModal(modalDialog(
           title = "Warning",
           "No data left in this area with current filters, plase draw another polygon !",
