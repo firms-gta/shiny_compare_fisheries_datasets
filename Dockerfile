@@ -33,7 +33,6 @@ RUN apt install -y \
     protobuf-compiler \
     libjq-dev \
     libicu-dev \
-    librdf0-dev \
     cmake
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean
