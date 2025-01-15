@@ -29,8 +29,6 @@ RUN apt install -y \
     git \
     libnetcdf-dev \
     curl \
-    qgis \
-    qgis-plugin-grass \
     libprotobuf-dev \
     protobuf-compiler \
     libjq-dev \

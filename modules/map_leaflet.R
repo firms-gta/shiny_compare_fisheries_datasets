@@ -261,14 +261,25 @@ map_leafletServer <- function(id,sql_query) {
       whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326)) 
       
       
-      flog.info("QGIS checking if remaining data in the new polygon just drawn !!")
-      disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",
-                                                      INPUT = whole_footprint,
-                                                      PREDICATE = "disjoint",
-                                                      INTERSECT = new_selection)
+      if (requireNamespace("qgisprocess", quietly = TRUE) && spatial_processing_mode=="QGIS" ) {
+        
+        # Essayer de configurer qgisprocess pour voir s'il fonctionne
+        qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
+        flog.info("QGIS is used to select remaing data within the default or newly drawn polygon !")
+        
+        if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
+          flog.info("QGIS checking if remaining data in the new polygon just drawn !!")
+          disjoint_WKT <- qgisprocess::qgis_run_algorithm("native:extractbylocation",
+                                                          INPUT = whole_footprint,
+                                                          PREDICATE = "disjoint",
+                                                          INTERSECT = new_selection)
+        }
+      }else{
+        flog.info("SF checking if remaining data in the new polygon just drawn !!")
+        disjoint_WKT <- this_footprint %>% dplyr::filter(sf::st_disjoint(., whole_footprint, sparse = FALSE))
+      }
+      
 
-      flog.info("SF checking if remaining data in the new polygon just drawn !!")
-      # disjoint_WKT <- this_footprint %>% dplyr::filter(sf::st_disjoint(., new_selection, sparse = FALSE)) 
       disjoint <- sf::st_as_sf(disjoint_WKT)
       
       
