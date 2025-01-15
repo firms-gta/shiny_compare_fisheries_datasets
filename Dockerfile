@@ -32,7 +32,7 @@ RUN apt install -y \
     libprotobuf-dev \
     protobuf-compiler \
     libjq-dev \
-    libicu-dev \
+    #libicu-dev \
     cmake
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean
