@@ -32,7 +32,6 @@ RUN apt install -y \
     libprotobuf-dev \
     protobuf-compiler \
     libjq-dev \
-    libqgis-dev \
     libicu-dev \
     librdf0-dev \
     cmake
