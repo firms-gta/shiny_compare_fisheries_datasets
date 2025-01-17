@@ -100,6 +100,14 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
 # Initialize reactive values and default WKT for mapping
 flog.info("Initialize reactive values")
 main_wkt <- reactiveVal()
+current_wkt <- reactiveVal()
+current_dataset <- reactiveVal()
+current_species <- reactiveVal()
+current_source_authority <- reactiveVal()
+current_gear_type <- reactiveVal()
+current_year <- reactiveVal()
+current_fishing_fleet <- reactiveVal()
+current_unit <- reactiveVal()
 drawn_wkt <- reactiveVal()
 current_selection_footprint_wkt <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
@@ -206,7 +214,7 @@ load_data <- function(mode="DOI"){
       
       df_distinct_geom_nominal <- sf::read_sf("cl_nc_areas_simplfied.gpkg") %>% 
         dplyr::rename('codesource_area'= code)   %>% 
-        dplyr::mutate(geom=st_buffer(st_centroid(st_boundary(geom)),dist=1000000),'gridtype'="nominal")  %>% 
+        dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
         # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>% 
         dplyr::select(codesource_area,gridtype)
       
@@ -306,7 +314,7 @@ if(mode!="DOI"){
   
   df_distinct_geom_nominal <- sf::read_sf("data/cl_nc_areas_simplfied.gpkg") %>% 
     dplyr::rename('codesource_area'= code)   %>% 
-    dplyr::mutate(geom=st_buffer(st_centroid(st_boundary(geom)),dist=1000000),'gridtype'="nominal")  %>% 
+    dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
     # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>% 
     dplyr::select(codesource_area,gridtype)
   
@@ -320,16 +328,11 @@ if(mode!="DOI"){
 }
 
 
-default_wkt <- st_as_text(st_as_sfc(st_bbox(df_distinct_geom)))
-# main_wkt(default_wkt)
-new_wkt <- default_wkt
-
-
 flog.info("Check what are the existing / possible combinations between dimension values (to adapt the values of filters dynamically)")
 if(!file_exists("data/filters_combinations.parquet")){
   filters_combinations <- df_sf  %>% st_drop_geometry() %>%  dplyr::group_by(dataset,species, year, gear_type, measurement_unit, source_authority, fishing_fleet) %>% dplyr::summarise(count = n())
   flog.info("Filter combinations retrieved and stored.")
-  arrow::write_parquet(filters_combinations, "filters_combinations.parquet")
+  arrow::write_parquet(filters_combinations, "data/filters_combinations.parquet")
 }else{
   flog.info("Try  if a default file for filters is pre-calculated")
   filters_combinations <- arrow::read_parquet("data/filters_combinations.parquet")
@@ -337,14 +340,9 @@ if(!file_exists("data/filters_combinations.parquet")){
 
 
 flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
-target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
-# target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
-main_wkt(target_wkt)
-current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
-
+default_wkt <- st_as_text(st_union(df_distinct_geom))
 # main_wkt(default_wkt)
-
-# flog.info("Spatial filter :main WKT : %s", main_wkt())
+new_wkt <- default_wkt
 
 # target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
 target_dataset <- unique(filters_combinations$dataset) #  %>% arrange(desc(dataset))
@@ -362,7 +360,12 @@ target_flag <-  unique(filters_combinations$fishing_fleet)
 # target_fishing_mode <- dbGetQuery(con, "SELECT DISTINCT(fishing_mode) FROM public.shinycatch ORDER BY fishing_mode;")
 
 flog.info("Set filters values to be seflected by default")
-
+target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
+# target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
+# flog.info("Spatial filter :main WKT : %s", main_wkt())
+main_wkt(target_wkt)
+# main_wkt(default_wkt)
+current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
 # default_species <- c('YFT','SKJ','BET','SBF','ALB')
 default_species <- c('YFT')
 # default_species <- target_species
@@ -383,6 +386,18 @@ default_gridtype <- target_gridtype
 # default_fishing_fleet <- target_flag
 default_fishing_fleet <- c('EUFRA','EUESP')
 flog.info("Default filter values set.")
+
+
+flog.info("Keeping tracks of selected values for filters to faster data loading.")
+current_wkt(target_wkt)
+current_species(default_species)
+current_dataset(default_dataset)
+current_source_authority(default_source_authority)
+current_gear_type(default_gear_type)
+current_year(default_year)
+current_fishing_fleet(default_fishing_fleet)
+current_unit(default_unit)
+
 
 # Logging the successful execution of the script up to this point
 flog.info("Initial setup and data retrieval completed successfully.")
@@ -405,23 +420,24 @@ load_ui_modules()
 flog.info("Modules loaded")
 
 initial_data(df_sf)
+current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
+current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% default_gridtype)
+list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
+flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
+within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
+  rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
+
 pre_filtered_df <- "default_df.parquet"
 # Check if the file was downloaded
 if (file.exists("data/default_df.parquet")) {
   flog.info("Reading default parquet dataset (pre_filtered): %s", pre_filtered_df)
-  default_df <- arrow::read_parquet("data/default_df.parquet")
-} else {
-  flog.info("writting  default parquet dataset (pre_filtered): %s", pre_filtered_df)
-  current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
-  current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% default_gridtype)
-  list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
-  flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
-  within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
-    rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
+  whole_default_df <- arrow::read_parquet("data/default_df.parquet")  
   
-  default_df <- df_sf  %>% filter(!is.na(geom_wkt)) %>%  
+  } else {
+  flog.info("writting  default parquet dataset (pre_filtered): %s", pre_filtered_df)
+  whole_default_df <- df_sf  %>% filter(!is.na(geom_wkt)) %>%  
     dplyr::filter(
-      codesource_area %in% within_areas,
+      # codesource_area %in% within_areas,
       dataset %in% default_dataset,
       species %in% default_species,
       source_authority %in% default_source_authority,
@@ -432,13 +448,21 @@ if (file.exists("data/default_df.parquet")) {
     ) %>% 
     dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, year, measurement_unit) %>% 
     # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>% 
-    dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
-  
+    dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() 
   arrow::write_parquet(default_df, "data/default_df.parquet")
   
-}
+  }
+default_footprint <- whole_default_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
+  dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
+  st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_as_text()
+# flog.info("Current footprint for filters is %s: ",whole_footprint)
 
-# rm(df_sf)
+default_df <- whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+
+current_selection_footprint_wkt(default_footprint)
+
+
+rm(df_sf)
 
 flog.info("########################## End GLOBAL")
 flog.info("########################## START UI")
