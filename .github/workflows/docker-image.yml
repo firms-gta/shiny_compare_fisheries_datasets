@@ -1,12 +1,22 @@
 name: Build and Push Docker Image
 
 on:
+  push:
+    branches:
+      - 'main'
+      - 'dev'
+    tags:
+      - "v*"
   workflow_dispatch:
     inputs:
       base_branch:
-        description: "Branch to base the Docker image on (e.g., main, R4.2.3withoutQGIS)"
+        description: "Branch to base the Docker image on (e.g., main, dev)"
         required: true
         default: "main"
+      action:
+        description: "Action to perform: build,build-and-push, build-no-cache-and-push"
+        required: true
+        default: "build" 
 
 env:
   CACHE_IMAGE: ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
@@ -34,13 +44,14 @@ jobs:
       - name: Calculate DOI.csv hash
         id: doi_csv
         run: |
-          if [ -f data/DOI.csv ]; then
-            echo "doi_csv_hash=$(sha256sum data/DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
+          if [ -f DOI.csv ]; then
+            echo "doi_csv_hash=$(sha256sum DOI.csv | cut -d' ' -f1)" >> $GITHUB_ENV
           else
             echo "doi_csv_hash=default" >> $GITHUB_ENV
           fi
       - name: Docker meta
         id: meta
+        if: ${{ contains(github.event.inputs.action, 'push') }}
         uses: docker/metadata-action@v4
         with:
           images: ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests
@@ -52,8 +63,8 @@ jobs:
           labels: |
             org.opencontainers.image.url=${{ github.repository }}
             org.opencontainers.image.source=${{ github.repository }}
-            org.opencontainers.image.title=CompareTunaatlasDatasets
-            org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization and comparison
+            org.opencontainers.image.title=GlobalTunaAtlasComparison
+            org.opencontainers.image.description=Interactive Shiny application for Tuna Atlas data visualization and comparison between datasets
             org.opencontainers.image.vendor=IRD
             org.opencontainers.image.author=Julien Barde <julien.barde@ird.fr>
 
@@ -76,26 +87,42 @@ jobs:
         run: docker buildx du
 
       - name: Build Docker image
+        if: ${{ !contains(github.event.head_commit.message, 'No building docker image') }}
         run: |
           BRANCH_NAME=$(echo ${{ github.ref_name }} | tr '/' '_' | tr ':' '_')
-          docker buildx build \
-            --progress=plain \
-            --cache-from type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME} \
-            --cache-to type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME},mode=max \
-            --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
-            --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
-            --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
-            --tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} \
-            --output type=docker,dest=/tmp/docker-image.tar \
-            .
+    
+          if [[ "${{ github.event.inputs.action }}" == "build-no-cache-and-push" || "${{ github.event.inputs.action }}" == "build-no-cache" ]]; then
+            echo "Building without cache..."
+            docker buildx build \
+              --no-cache \
+              --progress=plain \
+              --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
+              --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
+              --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
+              --tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} \
+              --push \
+              .
+          else
+            echo "Building with cache..."
+            docker buildx build \
+              --progress=plain \
+              --cache-from type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME} \
+              --cache-to type=registry,ref=$CACHE_IMAGE:${BRANCH_NAME},mode=max \
+              --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
+              --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
+              --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
+              --tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} \
+              --output type=docker,dest=/tmp/docker-image.tar \
+              .
+          fi
 
       - name: Load Docker image
-        if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+        if: ${{ github.event_name == 'workflow_dispatch' && contains(github.event.inputs.action, 'push') || github.event_name == 'push' && github.ref_type == 'tag' }}
         run: |
           docker load -i /tmp/docker-image.tar
 
       - name: Conditional push Docker image
-        if: github.event_name == 'workflow_dispatch' || github.ref_type == 'tag'
+        if: ${{ github.event_name == 'workflow_dispatch' && contains(github.event.inputs.action, 'push') || github.event_name == 'push' && github.ref_type == 'tag' }}
         run: |
           TAG_NAME=$(basename ${GITHUB_REF})
           BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9_.-]/_/g') # Sanitize branch name
