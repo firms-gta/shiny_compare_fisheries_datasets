@@ -100,7 +100,7 @@ jobs:
               --build-arg RENV_PATHS_ROOT=${{ env.RENV_PATHS_ROOT }} \
               --build-arg RENV_LOCK_HASH=${{ env.renv_lock_hash }} \
               --build-arg DOI_CSV_HASH=${{ env.doi_csv_hash }} \
-              --tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} \
+              --tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:main \
               --push \
               .
           else
@@ -126,6 +126,6 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && contains(github.event.inputs.action, 'push') || github.event_name == 'push' && github.ref_type == 'tag' }}
         run: |
           TAG_NAME=$(basename ${GITHUB_REF})
-          docker tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${TAG_NAME}
+          docker tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:main
           docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest
-          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${TAG_NAME}
+          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:main
