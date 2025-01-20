@@ -25,7 +25,7 @@ on:
 env:
   CACHE_IMAGE: ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
   DOCKER_BUILDKIT: 1
-  RENV_PATHS_ROOT: ~/.cache/R/renv
+  RENV_PATHS_ROOT: /root/.cache/R/renv
 
 jobs:
   docker:
