@@ -143,7 +143,9 @@ map_leafletServer <- function(id,sql_query_all) {
             imperial = FALSE
           )
         )
-
+      
+      flog.info("########################## MAP UPDATED !!! ########################## ")
+      
       # observeEvent(main_wkt(), function() {
       #   wkt <- main_wkt()
       #   new_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
@@ -182,16 +184,17 @@ map_leafletServer <- function(id,sql_query_all) {
   # output$DT_query_data_map <- renderDT({
   #   data_map()
   # })
-    observe({
+    # observe({
+    observeEvent(input$map_draw_stop,{
+      # observe({
+      #use the draw_stop event to detect when users finished drawing
+      # req(input$mymap_draw_new_feature)
       flog.info("Check if the user is drawing a new feature !")
       req(input$map_draw_new_feature)
       flog.info("Check if the user is done drawing a new feature !")
       req(input$map_draw_stop)
-      flog.info("Call map proxy module !")
-      # feature <- input$map_draw_new_feature
       feature <- input$map_draw_new_feature
-      # print(feature)
-      flog.info("New wkt : %s", feature)
+      flog.info("User has drawn a new feature, wkt : %s", feature)
       #https://cobalt-casco.github.io/r-shiny-geospatial/07-spatial-input-selection.html
       # output$yourWKT <- renderText({
       #use the draw_stop event to detect when users finished drawing
@@ -227,7 +230,20 @@ map_leafletServer <- function(id,sql_query_all) {
       lat_centroid <- st_coordinates(centroid, crs = 4326)[2]
       lon_centroid <- st_coordinates(centroid, crs = 4326)[1]
       # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
-
+      
+      textPopup <- paste0("<b>Click Submit button if you want to extract data in this polygon</b>:", new_wkt)
+      
+      observe({
+        
+        leafletProxy("map",session) %>%
+          removeShape(c("theWKT")) %>% 
+          setView(lng = lon_centroid, lat =lat_centroid, zoom = 3) %>%
+          addPopups(lng = st_bbox(new_selection)$xmax,lat = st_bbox(new_selection)$ymin, popup =  textPopup) %>%
+          addRectangles(layerId="theWKT",lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
+          # addPolygons(data = new_selection,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group="draw")
+        
+      })
+      
       whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326)) 
       
       
@@ -307,12 +323,12 @@ map_leafletServer <- function(id,sql_query_all) {
         ))else{
         flog.info("New wkt OK: not disjoint")
         flog.info("Calling Proxy module !!!!!!!!!!!!!!!!!!!!!!")
-        map_proxy_server(
-          id="other",
-          map_id = "map",
-          new_wkt=new_wkt,
-          parent_session = session
-        )
+        # map_proxy_server(
+        #   id="other",
+        #   map_id = "map",
+        #   new_wkt=new_wkt,
+        #   parent_session = session
+        # )
       }
 
         # if(nrow(disjoint)==0)
@@ -334,7 +350,9 @@ map_leafletServer <- function(id,sql_query_all) {
         
       
       # updateTextInput(session,ns("yourWKT"), value = new_wkt)
-  })
+    },ignoreInit = FALSE)
+    # end observe)
+      
     
     })
   flog.info("End of global map module")
@@ -375,22 +393,22 @@ map_proxy_server <- function(id, map_id,new_wkt, parent_session){
         # fitBounds(lat1, lng1, lat2, lng2) %>%
         # setMaxBounds(lat1, lng1, lat2, lng2)
         # clearShapes() %>%
-        addPopups(lng = st_bbox(wkt_sf)$xmax,lat = st_bbox(wkt_sf)$ymin, popup =  textPopup
-                  # ,
-                  # popupOptions = popupOptions(  minWidth = 300
-                  #                             # # noHide = TRUE, 
-                  #                             # # direction = "bottom",
-                  #                             # textsize = "24px",
-                  #                             # style = list(
-                  #                             #   "color" = "red",
-                  #                             #   "font-family" = "serif",
-                  #                             #   "font-style" = "italic",
-                  #                             #   "box-shadow" = "3px 3px rgba(0,0,0,0.25)",
-                  #                             #   "font-size" = "12px",
-                  #                             #   "border-color" = "rgba(0,0,0,0.5)"
-                  #                             # )
-                  #   )
-                    ) %>% 
+        # addPopups(lng = st_bbox(wkt_sf)$xmax,lat = st_bbox(wkt_sf)$ymin, popup =  textPopup
+        #           # ,
+        #           # popupOptions = popupOptions(  minWidth = 300
+        #           #                             # # noHide = TRUE, 
+        #           #                             # # direction = "bottom",
+        #           #                             # textsize = "24px",
+        #           #                             # style = list(
+        #           #                             #   "color" = "red",
+        #           #                             #   "font-family" = "serif",
+        #           #                             #   "font-style" = "italic",
+        #           #                             #   "box-shadow" = "3px 3px rgba(0,0,0,0.25)",
+        #           #                             #   "font-size" = "12px",
+        #           #                             #   "border-color" = "rgba(0,0,0,0.5)"
+        #           #                             # )
+        #           #   )
+        #             ) %>% 
         addPolygons(data = wkt_sf,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group="draw")
         # addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
       
