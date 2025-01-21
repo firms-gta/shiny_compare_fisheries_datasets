@@ -126,6 +126,7 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' && contains(github.event.inputs.action, 'push') || github.event_name == 'push' && github.ref_type == 'tag' }}
         run: |
           TAG_NAME=$(basename ${GITHUB_REF})
-          docker tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:main
-          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest
-          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:main
+          BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/[^a-zA-Z0-9_.-]/_/g') # Sanitize branch name
+          docker tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${TAG_NAME}
+          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME}
+          docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${TAG_NAME}
