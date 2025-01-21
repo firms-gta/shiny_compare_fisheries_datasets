@@ -449,7 +449,7 @@ if (file.exists("data/default_df.parquet")) {
     dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, year, measurement_unit) %>% 
     # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>% 
     dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() 
-  arrow::write_parquet(default_df, "data/default_df.parquet")
+  arrow::write_parquet(whole_default_df, "data/default_df.parquet")
   
   }
 default_footprint <- whole_default_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
