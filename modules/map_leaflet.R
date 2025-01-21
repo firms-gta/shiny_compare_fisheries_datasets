@@ -70,8 +70,8 @@ map_leafletServer <- function(id,sql_query_all) {
       map <- leaflet(
         options=leafletOptions(doubleClickZoom = T, dragging=T,scrollWheelZoom=T, minZoom = 3, maxZoom = 10)
       ) %>% 
-        clearGroup("draw")%>%
-      clearShapes() %>%
+        # clearGroup("draw")%>%
+        # clearShapes() %>%
         setView(lng = lon_centroid, lat =lat_centroid, zoom = 4) %>%
         # setMaxBounds(bbox[1], bbox[2], bbox[3], bbox[4], zoom = 3) %>%  
         # fitBounds(lat1=bbx[1], lng1=bbx[2], lat2=bbx[3], lng2=bbx[4]) %>%
@@ -114,9 +114,11 @@ map_leafletServer <- function(id,sql_query_all) {
         addDrawToolbar(
           targetGroup = "draw",
           singleFeature = TRUE,
+          # clearFeatures = TRUE,
+          drag = TRUE,
           editOptions = editToolbarOptions(
-            selectedPathOptions = selectedPathOptions()
-          )
+            selectedPathOptions = selectedPathOptions()),
+          rectangleOptions = filterNULL(list(shapeOptions = drawShapeOptions()))
         ) %>% addWMSTiles(
           "https://geo.vliz.be/geoserver/MarineRegions/wms?SERVICE=WMS&VERSION=1.3.0",
           layers = "eez",
@@ -126,8 +128,8 @@ map_leafletServer <- function(id,sql_query_all) {
         )    %>% 
         addLayersControl(
           position = "topleft", 
-          baseGroups = c("draw","background","EEZ"),
-          overlayGroups = c(datasets,"footprint1","footprint5","data_for_filters","current_selection","all"),
+          baseGroups = c("background","EEZ"),
+          overlayGroups = c(datasets,"draw","footprint1","footprint5","data_for_filters","current_selection","all"),
           options = layersControlOptions(collapsed = TRUE)
         )  %>% 
         leaflet::addLegend("bottomleft", pal = qpal, values = data_map$measurement_value,
@@ -143,6 +145,12 @@ map_leafletServer <- function(id,sql_query_all) {
             imperial = FALSE
           )
         )
+      
+      
+      shapeOptions = drawShapeOptions(color = "green",
+                                      fillOpacity = 1,
+                                      fillColor = "yellow",
+                                      weight = 20)
       
       flog.info("########################## MAP UPDATED !!! ########################## ")
       
@@ -233,16 +241,17 @@ map_leafletServer <- function(id,sql_query_all) {
       
       textPopup <- paste0("<b>Click Submit button if you want to extract data in this polygon</b>:", new_wkt)
       
-      observe({
-        
-        leafletProxy("map",session) %>%
-          removeShape(c("theWKT")) %>% 
-          setView(lng = lon_centroid, lat =lat_centroid, zoom = 3) %>%
-          addPopups(lng = st_bbox(new_selection)$xmax,lat = st_bbox(new_selection)$ymin, popup =  textPopup) %>%
-          addRectangles(layerId="theWKT",lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
-          # addPolygons(data = new_selection,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group="draw")
-        
-      })
+      # observe({
+      #   
+      #   leafletProxy("map",session) %>%
+      #     removeShape(c("theWKT")) %>% 
+      #     setView(lng = lon_centroid, lat =lat_centroid, zoom = 3) %>%
+      #     addPopups(lng = st_bbox(new_selection)$xmax,lat = st_bbox(new_selection)$ymin, popup =  textPopup) %>%
+      #     addRectangles(layerId="theWKT",lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,
+      # fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
+      #     # addPolygons(data = new_selection,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group="draw")
+      #   
+      # })
       
       whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326)) 
       
@@ -322,7 +331,7 @@ map_leafletServer <- function(id,sql_query_all) {
           footer = NULL
         ))else{
         flog.info("New wkt OK: not disjoint")
-        flog.info("Calling Proxy module !!!!!!!!!!!!!!!!!!!!!!")
+        # flog.info("Calling Proxy module !!!!!!!!!!!!!!!!!!!!!!")
         # map_proxy_server(
         #   id="other",
         #   map_id = "map",
