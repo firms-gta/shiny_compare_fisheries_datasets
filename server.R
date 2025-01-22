@@ -116,7 +116,7 @@ server <- function(input, output, session) {
       }else{
         flog.info("Non spatial filters are different => applying these new filters to the whole dataset !!")
         flog.info("input$dataset : %s", all(input$dataset == current_dataset()))
-        if(all(input$dataset == current_dataset())){current_dataset(input$dataset)}
+        if(!all(input$dataset == current_dataset())){current_dataset(input$dataset)}
         
         flog.info("input$species : %s", all(input$species == current_species()))
         flog.info("input$species : %s", print(input$species))
