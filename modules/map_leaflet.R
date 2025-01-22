@@ -25,11 +25,17 @@ map_leafletServer <- function(id,sql_query_all) {
     flog.info("Set map" )
     output$map <- renderLeaflet({
       flog.info("Testing truthiness of the dataframe with req()")
+      shiny::validate(
+        need(nrow(sql_query_all())>0, 'Sorry no data with current filters !'),
+        errorClass = "myClass"
+      )
+      req(sql_query_all())
+      
+      
       module_wkt <- main_wkt()
       current_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
       flog.info("New module_wkt OK %s",module_wkt)
       
-      req(sql_query_all())
       data_map <- sql_query_all()  %>% st_as_sf(wkt="geom_wkt",crs=4326)
       flog.info("Number of rows of map data : %s", nrow(data_map))
       flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(data_map))
@@ -116,6 +122,10 @@ map_leafletServer <- function(id,sql_query_all) {
           singleFeature = TRUE,
           # clearFeatures = TRUE,
           drag = TRUE,
+          polylineOptions = FALSE,
+          circleOptions = FALSE,
+          markerOptions = FALSE,
+          circleMarkerOptions = FALSE,
           editOptions = editToolbarOptions(
             selectedPathOptions = selectedPathOptions()),
           rectangleOptions = filterNULL(list(shapeOptions = drawShapeOptions()))
@@ -136,7 +146,8 @@ map_leafletServer <- function(id,sql_query_all) {
                            title = "Total catch per cell for selected criteria",
                            labFormat = labelFormat(prefix = "MT "),
                            opacity = 1
-        )  %>%  addMiniMap(zoomLevelFixed = 1) %>%
+        )  %>%  
+        addMiniMap(zoomLevelFixed = 1) %>%
         addScaleBar(
           position = "topright",
           options = scaleBarOptions(
