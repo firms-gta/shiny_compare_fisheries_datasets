@@ -1,5 +1,5 @@
 server <- function(input, output, session) {
-  
+
   ########################################################## Dynamic filters ########################################################## 
   change <- reactive({
     unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
@@ -29,12 +29,12 @@ server <- function(input, output, session) {
   })
   
   
-  observeEvent(input$species,{
-    temp <- filters_combinations %>% filter(species %in% change()[1])
-    updateSelectInput(session,"year",choices = unique(temp$year),selected=c(seq(min(temp$year):max(temp$year))+min(temp$year)-1))
-    updateSelectInput(session,"gear_type",choices = unique(temp$gear_type),selected=unique(temp$gear_type))
-  }
-  )
+  # observeEvent(input$species,{
+  #   temp <- filters_combinations %>% filter(species %in% change()[1])
+  #   updateSelectInput(session,"year",choices = unique(temp$year),selected=c(seq(min(temp$year):max(temp$year))+min(temp$year)-1))
+  #   updateSelectInput(session,"gear_type",choices = unique(temp$gear_type),selected=unique(temp$gear_type))
+  # }
+  # )
   
   
   # observeEvent(input$gear_type,{
@@ -59,128 +59,164 @@ server <- function(input, output, session) {
   flog.info("set the main parameterized query (options for geom might be st_collect(geom) or  ST_ConvexHull(st_collect(geom)) as convexhull )")
   
   flog.info("Apply current filters to the main datasets when click on submit")
-  sql_query_all <- eventReactive(input$submit, {
-    
-    # sql_query <- reactive({
-    main_data <- initial_data()
-
-    sql_query_all <- main_data  %>%  dplyr::filter(
-      # codesource_area %in% within_areas,
-      dataset %in% input$dataset,
-      species %in% input$species,
-      source_authority %in% input$source_authority,
-      gear_type %in% input$gear_type,
-      year %in% input$year,
-      fishing_fleet %in% input$fishing_fleet,
-      measurement_unit %in% input$unit,
-      gridtype %in% input$gridtype) %>%
-      dplyr::group_by(codesource_area,geom, dataset, species,gear_type, year, measurement_unit, gridtype, source_authority) %>% 
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() # %>% filter(!is.na(geom))
-      
-    
-  },
-  ignoreNULL = FALSE)
-
-  sql_query_footprint <- reactive({
-    # flog.info("Create spatial footprints for current filters")
-    # req(sql_query_all())
-    # sql_query_all <- sql_query_all()
-    flog.info("###############################################################################################") 
-    flog.info("spatial footprints for current filters number of row is: %s", nrow(sql_query_footprint)) 
-    flog.info("###############################################################################################") 
-    
-    sql_query_footprint <-  sql_query_all() %>% dplyr::group_by(codesource_area,geom) %>% 
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>% dplyr::filter(!is.na(geom)) %>% 
-      st_as_sf(wkt="geom", crs = 4326) #%>% st_combine()
-    
-  })
   
-  sql_query <- reactive({
-    req(sql_query_all())
-    sql_query_all <- sql_query_all()
-    flog.info("###############################################################################################") 
-    flog.info("Applying new filters to main data") 
-    flog.info("###############################################################################################") 
+  sql_query_all <- eventReactive(input$submit , {
+    # sql_query_all <- observeEvent(main_wkt() , {
+      
+    # req(current_selection_footprint_wkt())
+    #   #   wkt <- main_wkt()
     
     req(main_wkt())
-    wkt <- main_wkt()    
-    flog.info("Spatial filter :main WKT : %s", wkt)
+    wkt <- main_wkt()
     
-    
-    flog.info("###############################################################################################") 
-    flog.info("Applying new filters to main data 2 ") 
-    flog.info("###############################################################################################") 
-    
-    current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
-    
-    flog.info("Spatial filter : keep only data whose areas are within the current WKT : %s", wkt)
-    # list_areas <- df_distinct_geom %>% dplyr::filter(!is.na(gridtype)) %>% 
-    #   qgisprocess::qgis_run_algorithm("native:extractbylocation",INPUT = ., PREDICATE = "are within", INTERSECT = st_sf(current_selection)) %>% sf::st_as_sf()
-    # 
-    # 
-    
-    
-    process_list_areas <- function(df_distinct_geom, current_selection) {
+    # if(wkt != target_wkt){
+      flog.info("Listing remaining areas within this new WKT: %s", wkt)
+      current_wkt(wkt)
       
-      # Vérifier si qgisprocess est installé
-      if (requireNamespace("qgisprocess", quietly = TRUE)) {
-        
-        # Essayer de configurer qgisprocess pour voir s'il fonctionne
-        qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
-        
-        if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
-          # Utiliser qgisprocess si disponible et configuré
-          message("Utilisation de qgisprocess pour traiter les données.")
-          list_areas <- df_distinct_geom %>%
-            dplyr::filter(!is.na(gridtype)) %>%
-            qgisprocess::qgis_run_algorithm(
-              "native:extractbylocation",
-              INPUT = .,
-              PREDICATE = "are within",
-              INTERSECT = st_sf(current_selection)
-            ) %>% 
-            sf::st_as_sf()
-          
-          return(list_areas)
+      current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+      current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
+      list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
+      flog.info("Remaining number of different areas within this WKT: %s", nrow(list_areas))
+      within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
+        rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
+    # }
+    
+    
+    
+      flog.info("Testing if non spatial filters have been updated !")
+      if(all(input$dataset == current_dataset()) && 
+       all(input$species == current_species()) && 
+       all(input$source_authority == current_source_authority()) && 
+       all(input$gear_type == current_gear_type()) && 
+       all(input$year == current_year()) && 
+       all(input$fishing_fleet == current_fishing_fleet()) && 
+       all(input$unit == current_unit())
+       ){
+      flog.info("Non spatial filters are the same => Loading pre-filtered dataset !!")
+      flog.info("sql_query_all  rows: %s", nrow(default_df))
+      if(wkt == target_wkt){
+        flog.info("Default WKT nothing has changed!!!")
+        sql_query_all <- default_df
+      }else{
+        flog.info("New WKT => filtering remaining areas")
+        sql_query_all <- whole_default_df %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
         }
+      }else{
+        flog.info("Non spatial filters are different => applying these new filters to the whole dataset !!")
+        flog.info("input$dataset : %s", all(input$dataset == current_dataset()))
+        if(all(input$dataset != current_dataset())){current_dataset(input$dataset)}
+        
+        flog.info("input$species : %s", all(input$species == current_species()))
+        flog.info("input$species : %s", print(input$species))
+        if(!all(input$species == current_species())){current_species(input$species)}
+        
+        flog.info("input$source_authority : %s", all(input$source_authority == current_source_authority()))
+        if(!all(input$source_authority == current_source_authority())){current_source_authority(input$source_authority)}
+        flog.info("input$gear_type : %s", all(input$gear_type == current_gear_type()))
+        if(!all(input$gear_type == current_gear_type())){current_gear_type(input$gear_type)}
+        flog.info("input$year : %s", all(input$year == current_year()))
+        if(!all(input$year == current_year())){current_year(input$year)}
+        flog.info("input$fishing_fleet : %s", all(input$fishing_fleet == current_fishing_fleet()))
+        if(!all(input$fishing_fleet == current_fishing_fleet())){current_fishing_fleet(input$fishing_fleet)}
+        flog.info("input$unit : %s", all(input$unit == current_unit()))
+        if(!all(input$unit == current_unit())){current_unit(input$unit)}
+
+        main_data <- initial_data()
+        
+        tmp_sql_query_all <- main_data  %>% filter(!is.na(geom_wkt)) %>%  
+          dplyr::filter(
+            dataset %in% input$dataset,
+            species %in% input$species,
+            source_authority %in% input$source_authority,
+            gear_type %in% input$gear_type,
+            year %in% input$year,
+            fishing_fleet %in% input$fishing_fleet,
+            measurement_unit %in% input$unit
+            ) %>% 
+          dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, year, measurement_unit) %>% 
+          # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>% 
+          dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
+        
+        this_footprint <- tmp_sql_query_all  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
+          dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
+          st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_as_text()
+        # flog.info("Current footprint for filters is %s: ",whole_footprint)
+        current_selection_footprint_wkt(this_footprint)
+        
+        whole_default_df <- tmp_sql_query_all
+        
+        default_df <- tmp_sql_query_all  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+        sql_query_all <- default_df
       }
-      
-      # Si qgisprocess n'est pas disponible ou configuré, utiliser sf
-      message("qgisprocess non disponible ou non configuré. Utilisation de sf pour traiter les données.")
-      list_areas <- df_distinct_geom %>%
-        dplyr::filter(!is.na(gridtype)) %>%
-        dplyr::filter(sf::st_within(., st_sf(current_selection), sparse = FALSE)) %>%
-        sf::st_as_sf()
-      
-      return(list_areas)
-    }
-    
-    if(wkt!=default_wkt){
-    list_areas <- process_list_areas(df_distinct_geom, current_selection)
     
     
-    flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
-    within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%  rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
+      if(nrow(sql_query_all)==0)
+        showModal(modalDialog(
+          title = "Warning",
+          "No data left with current filters, back to default filters!",
+          easyClose = TRUE,
+          footer = NULL
+        ))else{
+          sql_query_all
+        }
     
-    sql_query <- sql_query_all %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas)
-  }else{
-    sql_query <- sql_query_all
-  }
-  
-  flog.info("Main data number rows: %s", nrow(sql_query))
-  # https://shiny.posit.co/r/reference/shiny/latest/modaldialog
-  if(nrow(sql_query)==0)
-    showModal(modalDialog(
-      title = "Warning",
-      "No data left with current filters !",
-      easyClose = TRUE,
-      footer = NULL
-    ))else{
-      sql_query
-    }
-  })
+    
+    },
+    ignoreNULL = FALSE)
+  # ignoreInit = TRUE, once = TRUE)
   
   
+
+  
+#   sql_query <- reactive({
+#     req(sql_query_all())
+#     sql_query_all <- sql_query_all()
+#     flog.info("###############################################################################################") 
+#     flog.info("Applying new filters to main data") 
+#     flog.info("###############################################################################################") 
+#   #   
+#   #   req(main_wkt())
+#   #   wkt <- main_wkt()    
+#   #   flog.info("Spatial filter: main WKT : %s", wkt)
+#   #   
+#   #   flog.info("###############################################################################################") 
+#   #   flog.info("Applying new filters to main data 2 ") 
+#   #   flog.info("###############################################################################################") 
+#   #   
+#   #   current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+#   #   
+#   #   flog.info("Spatial filter : keep only data whose areas are within the current WKT : %s", wkt)
+#   #   
+#   #   if(wkt!=default_wkt){
+#   #   list_areas <- process_list_areas(df_distinct_geom, current_selection)
+#   #   
+#   #   flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
+#   #   within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>% 
+#   #     rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
+#   #   
+#   #   sql_query <- sql_query_all %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas) 
+#   # }else{
+#   #   sql_query <- sql_query_all
+#   # }
+#     # sql_query <- sql_query_all  %>% dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>% 
+#     #   dplyr::mutate(geom=st_as_text(st_sfc(geom_wkt),EWKT = TRUE))
+#     
+#     sql_query <- sql_query_all 
+#     
+#   flog.info("Main data number rows: %s", nrow(sql_query))
+#   # https://shiny.posit.co/r/reference/shiny/latest/modaldialog
+#   if(nrow(sql_query)==0)
+#     showModal(modalDialog(
+#       title = "Warning",
+#       "No data left with current filters !",
+#       easyClose = TRUE,
+#       footer = NULL
+#     ))else{
+#       sql_query 
+#     }
+#   })
+#   
+#   
   
   flog.info("##########################################################")
   flog.info("Outputs: text & Data tables")
@@ -207,7 +243,7 @@ server <- function(input, output, session) {
   })
   
   output$DT_main_dataset <- renderDT({
-    sql_query() %>% top_n(10)
+    sql_query_all() %>% top_n(10)
   })
   
   flog.info("##########################################################")
@@ -217,16 +253,16 @@ server <- function(input, output, session) {
   
   flog.info("Starting leaflet in the global map module")
   # callModule(module = map_leaflet, id = "id_1")
-  map_leafletServer(id = "map_global",sql_query,sql_query_footprint)
+  map_leafletServer(id = "map_global",sql_query_all)
   
   flog.info("Starting time series module")
-  timeSeriesServer(id = "time_series",sql_query)
+  timeSeriesServer(id = "time_series",sql_query_all)
     
   flog.info("Starting pie and bar Charts module")
-  pieBarChartsServer(id= "pie_bar_charts",sql_query)
+  pieBarChartsServer(id= "pie_bar_charts",sql_query_all)
   
   flog.info("Extra module to detail what gears are the most important in the time series of catches")
-  # timeSeriesGearServer(id= "time_series_gear",sql_query)
+  # timeSeriesGearServer(id= "time_series_gear",sql_query_all)
   
   # nav_bar_menu_rmd <- c(
   #   "rmd/Authors.Rmd", 

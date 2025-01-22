@@ -29,13 +29,10 @@ RUN apt install -y \
     git \
     libnetcdf-dev \
     curl \
-    qgis \
-    qgis-plugin-grass \
     libprotobuf-dev \
     protobuf-compiler \
     libjq-dev \
-    libqgis-dev \
-    libicu-dev \ 
+    #libicu-dev \
     cmake
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean

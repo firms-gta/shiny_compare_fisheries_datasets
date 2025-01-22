@@ -7,7 +7,7 @@ timeSeriesUI <- function(id) {
   )
 }
 
-timeSeriesServer <- function(id,sql_query) {
+timeSeriesServer <- function(id,sql_query_all) {
   flog.info("Starting time series module")
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -15,18 +15,21 @@ timeSeriesServer <- function(id,sql_query) {
     flog.info("Starting timeSeriesServer")
     
     data_all_datasets <- reactive({
-      data_all_datasets <- sql_query()  %>%  dplyr::group_by(dataset, year, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
+      data_all_datasets <- sql_query_all()  %>% as.data.frame()  %>%  dplyr::group_by(dataset, year, measurement_unit) %>% 
+        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
     })
     
     flog.info("Data Table of the time series")
     output$DT_data_all_datasets <- renderDT({
-      data_all_datasets()
+      data_all_datasets() 
     })
     
     flog.info("Starting plotly_time_series_all_datasets")
     output$plotly_time_series_all_datasets <- renderPlotly({
       req(data_all_datasets())
-      df_i1 = data_all_datasets()  %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% spread(dataset, measurement_value, fill=0) #   %>%  mutate(total = rowSums(across(any_of(as.vector(target_ocean$ocean)))))
+      df_i1 = data_all_datasets()  %>% 
+        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% 
+        spread(dataset, measurement_value, fill=0) #   %>%  mutate(total = rowSums(across(any_of(as.vector(target_ocean$ocean)))))
       df_i1 <- as_tibble(df_i1)  # %>% top_n(3)
       
       if(length(unique(df_i1$measurement_unit))>1){
@@ -72,8 +75,6 @@ timeSeriesServer <- function(id,sql_query) {
       }
       fig
     })
-    
-    
     
     flog.info("Starting dygraph_all_datasets with Dygraph")
     output$dygraph_all_datasets <- renderDygraph({
@@ -125,7 +126,7 @@ timeSeriesServer <- function(id,sql_query) {
         
         # create the gridtype chart
         # g1 <- dygraph(tuna_catches_timeSeries) # %>% dyOptions( fillGraph=TRUE )
-        # g1 <- dygraph(tuna_catches_timeSeries, main = "Catches by ocean") %>% dyRangeSelector() %>%       dyLegend(labelsDiv = "legendDivID")
+        # g1 <- dygraph(tuna_catches_timeSeries, main = "Catches by ocean") %>% dyRangeSelector() %>% dyLegend(labelsDiv = "legendDivID")
         # %>%
         #   dyStackedBarGroup(c('global_catch_5deg_1m_firms_level0', 'global_catch_1deg_1m_ps_bb_firms_level0','spatial','nominal'))
         # >%  dyOptions( fillGraph=TRUE) %>%        # create bar chart with the passed dygraph

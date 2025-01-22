@@ -95,7 +95,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "fishing_fleet",
                                           label = "Fishing fleet",
                                           choices = target_flag,
@@ -152,7 +152,7 @@ ui <- fluidPage(
              navbarMenu("Browse Data Tables",
                         tabPanel(
                           title = "Browse main dataset",
-                          DT::dataTableOutput("DT_main_dataset")
+                          DT::DTOutput("DT_main_dataset")
                         )
              ),
              # tabPanel(
