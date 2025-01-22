@@ -99,7 +99,6 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
 
 # Initialize reactive values and default WKT for mapping
 flog.info("Initialize reactive values")
-main_wkt <- reactiveVal()
 current_wkt <- reactiveVal()
 drawn_wkt <- reactiveVal()
 
@@ -342,7 +341,7 @@ if(!file_exists("data/filters_combinations.parquet")){
 
 flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
 default_wkt <- st_as_text(st_union(df_distinct_geom))
-# main_wkt(default_wkt)
+# current_wkt(default_wkt)
 new_wkt <- default_wkt
 
 # target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
@@ -363,9 +362,9 @@ target_flag <-  unique(filters_combinations$fishing_fleet)
 flog.info("Set filters values to be seflected by default")
 target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
 # target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
-# flog.info("Spatial filter :main WKT : %s", main_wkt())
-main_wkt(target_wkt)
-# main_wkt(default_wkt)
+# flog.info("Spatial filter :main WKT : %s", current_wkt())
+current_wkt(target_wkt)
+# current_wkt(default_wkt)
 current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
 # default_species <- c('YFT','SKJ','BET','SBF','ALB')
 default_species <- c('YFT')

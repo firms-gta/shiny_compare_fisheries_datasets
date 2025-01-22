@@ -32,7 +32,7 @@ map_leafletServer <- function(id,sql_query_all) {
       req(sql_query_all())
       
       
-      module_wkt <- main_wkt()
+      module_wkt <- current_wkt()
       current_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
       flog.info("New module_wkt OK %s",module_wkt)
       
@@ -165,8 +165,8 @@ map_leafletServer <- function(id,sql_query_all) {
       
       flog.info("########################## MAP UPDATED !!! ########################## ")
       
-      # observeEvent(main_wkt(), function() {
-      #   wkt <- main_wkt()
+      # observeEvent(current_wkt(), function() {
+      #   wkt <- current_wkt()
       #   new_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
       #                          
       #                          flog.info("leafletProxy !!")
@@ -288,10 +288,6 @@ map_leafletServer <- function(id,sql_query_all) {
       
       disjoint <- sf::st_as_sf(disjoint_WKT)
       
-      flog.info("Update WKT")
-      current_wkt(main_wkt())
-      main_wkt(new_wkt)
-      
 # 
 #       process_disjoint_WKT <- function(current_footprint, new_selection) {
 # 
@@ -334,14 +330,25 @@ map_leafletServer <- function(id,sql_query_all) {
             # # st_disjoint(current_selection,current_fooprint)
       
       flog.info("Test if new wkt is disjoint from current polygon")
-      if(nrow(disjoint)==1)
-        showModal(modalDialog(
-          title = "Warning",
-          "No data left in this area with current filters, plase draw another polygon !",
-          easyClose = TRUE,
-          footer = NULL
-        ))else{
-        flog.info("New wkt OK: not disjoint")
+      if(nrow(disjoint)==1){
+        flog.info("New wkt not OK: disjoint")
+        flog.info("Reset WKT: no spatial filter !")
+        current_wkt(target_wkt)
+        flog.info("Apply filters with no spatial filter !")
+        # shinyjs::click(id = "resetWkt")
+        # showModal(modalDialog(
+        #   title = "Warning",
+        #   "No data left in this area with current filters, plase draw another polygon !",
+        #   easyClose = TRUE,
+        #   footer = NULL
+        # ))
+        }else{
+          flog.info("New wkt OK: not disjoint")
+          flog.info("Update WKT; replace with new valid one")
+          current_wkt(new_wkt)
+          flog.info("Apply filters with new spatial filter !")
+          # shinyjs::click(id = "submit")
+          
         # flog.info("Calling Proxy module !!!!!!!!!!!!!!!!!!!!!!")
         # map_proxy_server(
         #   id="other",
@@ -433,8 +440,7 @@ map_proxy_server <- function(id, map_id,new_wkt, parent_session){
         # addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
       
       
-            # current_wkt(new_wkt)
-            main_wkt(new_wkt)
+            current_wkt(new_wkt)
       # })
       output$moduleverbatimWKT <- renderText({ input$yourmoduleWKT })
       # updateTextInput(session,ns("yourmoduleWKT"), value = wkt())

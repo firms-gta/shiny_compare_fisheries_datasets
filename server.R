@@ -4,28 +4,43 @@ server <- function(input, output, session) {
   change <- reactive({
     unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
   })
-
+  
+  observeEvent(current_wkt(),{
+    
+    if(current_wkt()==target_wkt){
+      current_wkt(target_wkt)
+    }else{
+      shinyjs::click(id = "submit")
+    }
+  })
+  
   observeEvent(input$yourWKT,{
     updateSelectInput(session = session,
                       inputId = "yourWKT",
-                      selected = main_wkt())
+                      selected = current_wkt())
   })
   
-  # observeEvent(updated_main_wkt$updated_main_wkt(), {
-  #   req(main_wkt())
-  #   if(updated_main_wkt$updated_main_wkt() != main_wkt()){
-  #     main_wkt(updated_main_wkt$updated_main_wkt())
+  observeEvent(input$yourWKT,{
+    updateSelectInput(session = session,
+                      inputId = "yourWKT",
+                      selected = current_wkt())
+  })
+  
+  # observeEvent(updated_current_wkt$updated_current_wkt(), {
+  #   req(current_wkt())
+  #   if(updated_current_wkt$updated_current_wkt() != current_wkt()){
+  #     current_wkt(updated_current_wkt$updated_current_wkt())
   #     submitTrigger(TRUE)
   #   }
   # })
   
   observeEvent(input$resetWkt, {
-    main_wkt(default_wkt)
+    current_wkt(default_wkt)
     output$verbatimWKT <- renderText({
       default_wkt
     })
-    # updateTextInput(session,"yourWKT", value = main_wkt())
-    #   updateTextInput(session,ns("yourWKT"), value = main_wkt())
+    # updateTextInput(session,"yourWKT", value = current_wkt())
+    #   updateTextInput(session,ns("yourWKT"), value = current_wkt())
   })
   
   
@@ -61,17 +76,17 @@ server <- function(input, output, session) {
   flog.info("Apply current filters to the main datasets when click on submit")
   
   sql_query_all <- eventReactive(input$submit , {
-    # sql_query_all <- observeEvent(main_wkt() , {
+    # sql_query_all <- observeEvent(current_wkt() , {
       
     # req(current_selection_footprint_wkt())
-    #   #   wkt <- main_wkt()
+    #   #   wkt <- current_wkt()
     
-    req(main_wkt())
-    wkt <- main_wkt()
+    req(current_wkt())
+    wkt <- current_wkt()
     
-    # if(wkt != target_wkt){
+    if(wkt != target_wkt){
       flog.info("Listing remaining areas within this new WKT: %s", wkt)
-      current_wkt(wkt)
+      # current_wkt(wkt)
       
       current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
       current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
@@ -79,7 +94,7 @@ server <- function(input, output, session) {
       flog.info("Remaining number of different areas within this WKT: %s", nrow(list_areas))
       within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
         rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
-    # }
+    }
     
     
     
@@ -175,8 +190,8 @@ server <- function(input, output, session) {
 #     flog.info("Applying new filters to main data") 
 #     flog.info("###############################################################################################") 
 #   #   
-#   #   req(main_wkt())
-#   #   wkt <- main_wkt()    
+#   #   req(current_wkt())
+#   #   wkt <- current_wkt()    
 #   #   flog.info("Spatial filter: main WKT : %s", wkt)
 #   #   
 #   #   flog.info("###############################################################################################") 
@@ -223,14 +238,14 @@ server <- function(input, output, session) {
   flog.info("##########################################################")
   
   output$selected_var <- renderText({ 
-    paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", main_wkt())
+    paste("You have selected:\n", input$species, "and \n", input$year, "and \n", input$fishing_fleet, "and \n", current_wkt())
   })
   
   
   # output$updatedWKT <- renderText({input$yourWKT})
   
   output$verbatimWKT <- renderText({
-    main_wkt()
+    current_wkt()
   })
   
   output$current_filters <- renderText({ 

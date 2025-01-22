@@ -1,4 +1,5 @@
 ui <- fluidPage(
+  shinyjs::useShinyjs(),  # Set up shinyjs
   # titlePanel("Global Tuna Atlas"),
   navbarPage(title="Compare Global Tuna Atlas datasets",
              position = c("fixed-top"),
