@@ -101,6 +101,7 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
 flog.info("Initialize reactive values")
 current_wkt <- reactiveVal()
 drawn_wkt <- reactiveVal()
+current_selection_footprint_wkt <- reactiveVal()
 
 current_dataset <- reactiveVal()
 current_species <- reactiveVal()
@@ -109,7 +110,6 @@ current_gear_type <- reactiveVal()
 current_year <- reactiveVal()
 current_fishing_fleet <- reactiveVal()
 current_unit <- reactiveVal()
-current_selection_footprint_wkt <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
 initial_data <- reactiveVal()
 flog.info("Reactive values initialized successfully.")
@@ -461,11 +461,10 @@ default_df <- whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(c
 
 current_selection_footprint_wkt(default_footprint)
 
-
 rm(df_sf)
 
-flog.info("########################## End GLOBAL")
+flog.info("########################## END GLOBAL")
 flog.info("########################## START UI")
 source(here::here("ui.R"))
-flog.info("########################## START GLOBAL")
+flog.info("########################## START SERVER")
 source(here::here("server.R"))

@@ -8,7 +8,7 @@ server <- function(input, output, session) {
   observeEvent(current_wkt(),{
     
     if(current_wkt()==target_wkt){
-      current_wkt(target_wkt)
+      # shinyjs::click(id = "submit")
     }else{
       shinyjs::click(id = "submit")
     }
@@ -75,12 +75,9 @@ server <- function(input, output, session) {
   
   flog.info("Apply current filters to the main datasets when click on submit")
   
-  sql_query_all <- eventReactive(input$submit , {
+  sql_query_all <- eventReactive(input$submit, {
     # sql_query_all <- observeEvent(current_wkt() , {
       
-    # req(current_selection_footprint_wkt())
-    #   #   wkt <- current_wkt()
-    
     req(current_wkt())
     wkt <- current_wkt()
     
@@ -177,7 +174,7 @@ server <- function(input, output, session) {
     
     
     },
-    ignoreNULL = FALSE)
+    ignoreInit = FALSE,ignoreNULL = FALSE)
   # ignoreInit = TRUE, once = TRUE)
   
   

@@ -29,17 +29,14 @@ map_leafletServer <- function(id,sql_query_all) {
         need(nrow(sql_query_all())>0, 'Sorry no data with current filters !'),
         errorClass = "myClass"
       )
-      req(sql_query_all())
+      # req(sql_query_all())
       
-      
-      module_wkt <- current_wkt()
+      module_wkt <- new_wkt
       current_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
       flog.info("New module_wkt OK %s",module_wkt)
       
       data_map <- sql_query_all()  %>% st_as_sf(wkt="geom_wkt",crs=4326)
       flog.info("Number of rows of map data : %s", nrow(data_map))
-      flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(data_map))
-      
       
       remaining_polygons <- list_areas %>% st_combine() #%>% st_convex_hull(
       flog.info("Updating spatial_footprint_1 to fit the new WKT  : %s", module_wkt)
@@ -209,7 +206,7 @@ map_leafletServer <- function(id,sql_query_all) {
       #use the draw_stop event to detect when users finished drawing
       # req(input$mymap_draw_new_feature)
       flog.info("Check if the user is drawing a new feature !")
-      req(input$map_draw_new_feature)
+      # req(input$map_draw_new_feature)
       flog.info("Check if the user is done drawing a new feature !")
       req(input$map_draw_stop)
       feature <- input$map_draw_new_feature
@@ -333,8 +330,13 @@ map_leafletServer <- function(id,sql_query_all) {
       if(nrow(disjoint)==1){
         flog.info("New wkt not OK: disjoint")
         flog.info("Reset WKT: no spatial filter !")
-        current_wkt(target_wkt)
         flog.info("Apply filters with no spatial filter !")
+        # shiny::validate(
+        #   need(nrow(disjoint)!=1, 'Sorry no data with current filters !'),
+        #   errorClass = "myClass"
+        # )
+        current_wkt(target_wkt)
+        
         # shinyjs::click(id = "resetWkt")
         # showModal(modalDialog(
         #   title = "Warning",
@@ -346,7 +348,7 @@ map_leafletServer <- function(id,sql_query_all) {
           flog.info("New wkt OK: not disjoint")
           flog.info("Update WKT; replace with new valid one")
           current_wkt(new_wkt)
-          flog.info("Apply filters with new spatial filter !")
+          # flog.info("Apply filters with new spatial filter !")
           # shinyjs::click(id = "submit")
           
         # flog.info("Calling Proxy module !!!!!!!!!!!!!!!!!!!!!!")
@@ -377,9 +379,9 @@ map_leafletServer <- function(id,sql_query_all) {
         
       
       # updateTextInput(session,ns("yourWKT"), value = new_wkt)
-    },ignoreInit = FALSE)
+    },ignoreInit = TRUE,ignoreNULL = TRUE)
+  
     # end observe)
-      
     
     })
   flog.info("End of global map module")
