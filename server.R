@@ -133,7 +133,7 @@ server <- function(input, output, session) {
         flog.info("input$unit : %s", all(input$unit == current_unit()))
         if(!all(input$unit == current_unit())){current_unit(input$unit)}
 
-        main_data <- initial_data()
+        main_data <- whole_dataset()
         
         tmp_sql_query_all <- main_data  %>% filter(!is.na(geom_wkt)) %>%  
           dplyr::filter(

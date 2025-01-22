@@ -111,7 +111,7 @@ current_year <- reactiveVal()
 current_fishing_fleet <- reactiveVal()
 current_unit <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
-initial_data <- reactiveVal()
+whole_dataset <- reactiveVal()
 flog.info("Reactive values initialized successfully.")
 
 mode="DOI"
@@ -419,7 +419,6 @@ load_ui_modules <- function() {
 load_ui_modules()
 flog.info("Modules loaded")
 
-initial_data(df_sf)
 current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
 current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% default_gridtype)
 list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
@@ -459,8 +458,10 @@ default_footprint <- whole_default_df  %>% dplyr::group_by(codesource_area, geom
 
 default_df <- whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
 
+
 current_selection_footprint_wkt(default_footprint)
 
+whole_dataset(df_sf)
 rm(df_sf)
 
 flog.info("########################## END GLOBAL")
