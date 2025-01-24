@@ -1,18 +1,25 @@
 map_leafletUI <- function(id) {
   ns <- NS(id)
   tagList(
-      leafletOutput(ns("map"),width="100%", height="100%"),
-      map_proxy_UI(ns("other")),
-      DT::DTOutput(ns("DT_query_data_map")),
-      DT::DTOutput(ns("DT_data_footprint"))
+    leafletOutput(ns("map"),width="100%", height="100%"),
+    textInput(ns("yourWKT"),"Draw paste a spatial WKT",width="98%"),
+    verbatimTextOutput("verbatimWKT", placeholder = TRUE),
+
+    tags$br(),
+    tags$br(),
+    # map_proxy_UI(ns("other")),
+    DT::DTOutput(ns("DT_query_data_map")),
+    DT::DTOutput(ns("DT_data_footprint"))
   )
 }
 
-map_leafletServer <- function(id,sql_query_all) {
+
+
+map_leafletServer <- function(id,map_df,map_wkt) {
   flog.info("Starting global map module")
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
- 
+    
     flog.info("Data Table of the map")
     output$DT_query_data_map <- renderDT({
       # sql_query()
@@ -21,43 +28,48 @@ map_leafletServer <- function(id,sql_query_all) {
       # sql_query_footprint()
     })
     
+    # observeEvent(input$resetWkt, {
+    #   current_wkt(all_wkt)
+    #   output$verbatimWKT <- renderText({ "all_wkt" })
+    #   #   updateSelectInput(session = session,
+    #   #                     inputId = ns("yourWKT"),
+    #   #                     selected = current_wkt())
+    #   updateTextInput(session,ns("yourWKT"), value = current_wkt())
+    #   # updateTextInput(session,"yourWKT", value = current_wkt())
+    # })
 
+    
     flog.info("Set map" )
     output$map <- renderLeaflet({
       flog.info("Testing truthiness of the dataframe with req()")
       shiny::validate(
-        need(nrow(sql_query_all())>0, 'Sorry no data with current filters !'),
+        need(nrow(map_df())>0, 'Sorry no data with current filters !'),
         errorClass = "myClass"
       )
-      req(sql_query_all())
+      # req(map_df())
       
+      this_wkt <- map_wkt()
+      current_selection <- st_sf(st_as_sfc(this_wkt, crs = 4326))
+      flog.info("New this_wkt OK %s",this_wkt)
       
-      module_wkt <- current_wkt()
-      current_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
-      flog.info("New module_wkt OK %s",module_wkt)
-      
-      data_map <- sql_query_all()  %>% st_as_sf(wkt="geom_wkt",crs=4326)
-      flog.info("Number of rows of map data : %s", nrow(data_map))
-      flog.info("Main data number of rows before leaflet map pre-procesing : %s", nrow(data_map))
-      
+      data_map <- map_df() 
       
       remaining_polygons <- list_areas %>% st_combine() #%>% st_convex_hull(
-      flog.info("Updating spatial_footprint_1 to fit the new WKT  : %s", module_wkt)
+      flog.info("Updating spatial_footprint_1 to fit the new WKT  : %s", this_wkt)
       # spatial_footprint_1 <- list_areas  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% st_combine() #%>% st_convex_hull(
-      flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", module_wkt)
+      flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", this_wkt)
       # spatial_footprint_5 <- list_areas  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
       all_polygons <- df_distinct_geom %>% st_combine() 
       whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326)) %>% st_combine()  # %>% st_union() st_convex_hull
-       
+      
       convex_hull <- st_convex_hull(whole_footprint)
       bbx <- st_bbox(remaining_polygons) %>% as.numeric()
-      
       centroid <-  convex_hull %>% st_centroid()
       lat_centroid <- st_coordinates(centroid, crs = 4326)[2]
       lon_centroid <- st_coordinates(centroid, crs = 4326)[1]
       flog.info("lat_centroid : %s",lat_centroid)
       datasets <- unique(data_map$dataset)
-      flog.info("listing different datasets : %s", datasets)
+      flog.info("listing different datasets : %s", print(datasets))
       
       flog.info("Setting the palette")
       pal <- colorNumeric(
@@ -97,8 +109,11 @@ map_leafletServer <- function(id,sql_query_all) {
       flog.info("Adding new layers for each dataset in the selected WKT")
       # Overlay groups
       for(d in datasets){
+        flog.info("Adding one layer for each selected dataset : %s", print(datasets))
         flog.info("Adding one layer for each selected dataset : %s",d)
         this_layer <- data_map %>% filter(dataset %in% d)
+        flog.info("Number of lines : %s", nrow(this_layer))
+        
         map <- map  %>% 
           addPolygons(data = this_layer,
                       label = ~measurement_value,
@@ -112,7 +127,7 @@ map_leafletServer <- function(id,sql_query_all) {
                       group=eval(d)
                       # color = ~pal(value)
           )  
-
+        
       }
       # Layers control
       flog.info("Adding layers control")
@@ -193,23 +208,23 @@ map_leafletServer <- function(id,sql_query_all) {
       #   ) 
       map
       # return(map)
-  })
- 
-  # flog.info("View data of the global map")
-  # output$this_wkt <- renderText({
-  #   wkt()
-  # })
-  
-  # output$DT_query_data_map <- renderDT({
-  #   data_map()
-  # })
+    })
+    
+    # flog.info("View data of the global map")
+    # output$this_wkt <- renderText({
+    #   wkt()
+    # })
+    
+    # output$DT_query_data_map <- renderDT({
+    #   data_map()
+    # })
     # observe({
     observeEvent(input$map_draw_stop,{
       # observe({
       #use the draw_stop event to detect when users finished drawing
       # req(input$mymap_draw_new_feature)
       flog.info("Check if the user is drawing a new feature !")
-      req(input$map_draw_new_feature)
+      # req(input$map_draw_new_feature)
       flog.info("Check if the user is done drawing a new feature !")
       req(input$map_draw_stop)
       feature <- input$map_draw_new_feature
@@ -252,6 +267,12 @@ map_leafletServer <- function(id,sql_query_all) {
       
       textPopup <- paste0("<b>Click Submit button if you want to extract data in this polygon</b>:", new_wkt)
       
+      output$verbatimWKT <- renderText({ input$yourWKT })
+      
+      # updateTextInput(session,ns("yourmoduleWKT"), value = new_wkt)
+      # output$moduleverbatimWKT <- renderText({
+      #   wkt()
+      
       # observe({
       #   
       #   leafletProxy("map",session) %>%
@@ -288,53 +309,58 @@ map_leafletServer <- function(id,sql_query_all) {
       
       disjoint <- sf::st_as_sf(disjoint_WKT)
       
-# 
-#       process_disjoint_WKT <- function(current_footprint, new_selection) {
-# 
-#         # Vérifier si qgisprocess est installé
-#         if (requireNamespace("qgisprocess", quietly = TRUE)) {
-# 
-#           # Essayer de configurer qgisprocess pour voir s'il fonctionne
-#           qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
-# 
-#           if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
-#             # Utiliser qgisprocess si disponible et configuré
-#             flog.info("QGIS checking AGAIN !!!! if remaining data in the new polygon ust drawn !!")
-#             message("Utilisation de qgisprocess pour traiter les données.")
-#             disjoint_WKT <- qgisprocess::qgis_run_algorithm(
-#               "native:extractbylocation",
-#               INPUT = st_sf(current_footprint),
-#               PREDICATE = "disjoint",
-#               INTERSECT = new_selection
-#             ) %>%
-#               sf::st_as_sf()
-# 
-#             return(disjoint_WKT)
-#           }
-#         }
-#         
-#         # Si qgisprocess n'est pas disponible ou configuré, utiliser sf
-#         message("qgisprocess non disponible ou non configuré. Utilisation de sf pour traiter les données.")
-#         flog.info("SF checking if remaining data in the new polygon ust drawn !!")
-#         current_footprint_sf <- st_sf(current_footprint)
-#         disjoint_WKT <- current_footprint_sf %>%
-#           dplyr::filter(sf::st_disjoint(., new_selection, sparse = FALSE)) %>%
-#           sf::st_as_sf()
-# 
-#         return(disjoint_WKT)
-#       }
-#       
-#       disjoint_WKT <- process_disjoint_WKT(current_fooprint, new_selection)
-# 
-#       
-            # # st_disjoint(current_selection,current_fooprint)
+      # 
+      #       process_disjoint_WKT <- function(current_footprint, new_selection) {
+      # 
+      #         # Vérifier si qgisprocess est installé
+      #         if (requireNamespace("qgisprocess", quietly = TRUE)) {
+      # 
+      #           # Essayer de configurer qgisprocess pour voir s'il fonctionne
+      #           qgis_path <- try(qgisprocess::qgis_configure(), silent = TRUE)
+      # 
+      #           if (!inherits(qgis_path, "try-error") && !is.null(qgis_path)) {
+      #             # Utiliser qgisprocess si disponible et configuré
+      #             flog.info("QGIS checking AGAIN !!!! if remaining data in the new polygon ust drawn !!")
+      #             message("Utilisation de qgisprocess pour traiter les données.")
+      #             disjoint_WKT <- qgisprocess::qgis_run_algorithm(
+      #               "native:extractbylocation",
+      #               INPUT = st_sf(current_footprint),
+      #               PREDICATE = "disjoint",
+      #               INTERSECT = new_selection
+      #             ) %>%
+      #               sf::st_as_sf()
+      # 
+      #             return(disjoint_WKT)
+      #           }
+      #         }
+      #         
+      #         # Si qgisprocess n'est pas disponible ou configuré, utiliser sf
+      #         message("qgisprocess non disponible ou non configuré. Utilisation de sf pour traiter les données.")
+      #         flog.info("SF checking if remaining data in the new polygon ust drawn !!")
+      #         current_footprint_sf <- st_sf(current_footprint)
+      #         disjoint_WKT <- current_footprint_sf %>%
+      #           dplyr::filter(sf::st_disjoint(., new_selection, sparse = FALSE)) %>%
+      #           sf::st_as_sf()
+      # 
+      #         return(disjoint_WKT)
+      #       }
+      #       
+      #       disjoint_WKT <- process_disjoint_WKT(current_fooprint, new_selection)
+      # 
+      #       
+      # # st_disjoint(current_selection,current_fooprint)
       
       flog.info("Test if new wkt is disjoint from current polygon")
       if(nrow(disjoint)==1){
         flog.info("New wkt not OK: disjoint")
         flog.info("Reset WKT: no spatial filter !")
-        current_wkt(target_wkt)
         flog.info("Apply filters with no spatial filter !")
+        # shiny::validate(
+        #   need(nrow(disjoint)!=1, 'Sorry no data with current filters !'),
+        #   errorClass = "myClass"
+        # )
+        current_wkt(target_wkt)
+        
         # shinyjs::click(id = "resetWkt")
         # showModal(modalDialog(
         #   title = "Warning",
@@ -342,13 +368,13 @@ map_leafletServer <- function(id,sql_query_all) {
         #   easyClose = TRUE,
         #   footer = NULL
         # ))
-        }else{
-          flog.info("New wkt OK: not disjoint")
-          flog.info("Update WKT; replace with new valid one")
-          current_wkt(new_wkt)
-          flog.info("Apply filters with new spatial filter !")
-          # shinyjs::click(id = "submit")
-          
+      }else{
+        flog.info("New wkt OK: not disjoint")
+        flog.info("Update WKT; replace with new valid one")
+        current_wkt(new_wkt)
+        # flog.info("Apply filters with new spatial filter !")
+        # shinyjs::click(id = "submit")
+        
         # flog.info("Calling Proxy module !!!!!!!!!!!!!!!!!!!!!!")
         # map_proxy_server(
         #   id="other",
@@ -357,31 +383,31 @@ map_leafletServer <- function(id,sql_query_all) {
         #   parent_session = session
         # )
       }
-
-        # if(nrow(disjoint)==0)
-        #   showModal(modalDialog(
-        #     title = "Warning",
-        #     "No data left with current spatial filter !",
-        #     easyClose = TRUE,
-        #     footer = NULL
-        #   ))else{
-        #     new_selection <- st_sf(st_as_sfc(module_wkt, crs = 4326))
-        #     map_proxy_server(
-        #       id="other",
-        #       map_id = "map", 
-        #       new_wkt=new_wkt,
-        #       parent_session = session
-        #     )
-        #   }
-        
-        
+      
+      # if(nrow(disjoint)==0)
+      #   showModal(modalDialog(
+      #     title = "Warning",
+      #     "No data left with current spatial filter !",
+      #     easyClose = TRUE,
+      #     footer = NULL
+      #   ))else{
+      #     new_selection <- st_sf(st_as_sfc(this_wkt, crs = 4326))
+      #     map_proxy_server(
+      #       id="other",
+      #       map_id = "map", 
+      #       new_wkt=new_wkt,
+      #       parent_session = session
+      #     )
+      #   }
+      
+      
       
       # updateTextInput(session,ns("yourWKT"), value = new_wkt)
-    },ignoreInit = FALSE)
-    # end observe)
-      
+    },ignoreInit = TRUE,ignoreNULL = TRUE)
     
-    })
+    # end observe)
+    
+  })
   flog.info("End of global map module")
 }
 
@@ -408,50 +434,49 @@ map_proxy_server <- function(id, map_id,new_wkt, parent_session){
     flog.info("My WKT %s",new_wkt)
     textPopup <- paste0("<b>Click Submit button if you want to extract data in this polygon</b>:", new_wkt)
     # observe({
-      leafletProxy(
-        # Taking the mapId from the parent module
-        mapId = map_id,
-        # Evaluating the mapId inside the parent module
-        # instead of inside itself
-        session = parent_session
-      ) %>% 
-          # clearShapes() %>%
-        setView(lng = lon_centroid, lat =lat_centroid, zoom = 3) %>%
-        # fitBounds(lat1, lng1, lat2, lng2) %>%
-        # setMaxBounds(lat1, lng1, lat2, lng2)
-        # clearShapes() %>%
-        # addPopups(lng = st_bbox(wkt_sf)$xmax,lat = st_bbox(wkt_sf)$ymin, popup =  textPopup
-        #           # ,
-        #           # popupOptions = popupOptions(  minWidth = 300
-        #           #                             # # noHide = TRUE, 
-        #           #                             # # direction = "bottom",
-        #           #                             # textsize = "24px",
-        #           #                             # style = list(
-        #           #                             #   "color" = "red",
-        #           #                             #   "font-family" = "serif",
-        #           #                             #   "font-style" = "italic",
-        #           #                             #   "box-shadow" = "3px 3px rgba(0,0,0,0.25)",
-        #           #                             #   "font-size" = "12px",
-        #           #                             #   "border-color" = "rgba(0,0,0,0.5)"
-        #           #                             # )
-        #           #   )
-        #             ) %>% 
-        addPolygons(data = wkt_sf,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group="draw")
-        # addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
-      
-      
-            current_wkt(new_wkt)
-      # })
-      output$moduleverbatimWKT <- renderText({ input$yourmoduleWKT })
-      # updateTextInput(session,ns("yourmoduleWKT"), value = wkt())
-      # output$moduleverbatimWKT <- renderText({
-      #   wkt()
-      # })
-      
+    leafletProxy(
+      # Taking the mapId from the parent module
+      mapId = map_id,
+      # Evaluating the mapId inside the parent module
+      # instead of inside itself
+      session = parent_session
+    ) %>% 
+      # clearShapes() %>%
+      setView(lng = lon_centroid, lat =lat_centroid, zoom = 3) %>%
+      # fitBounds(lat1, lng1, lat2, lng2) %>%
+      # setMaxBounds(lat1, lng1, lat2, lng2)
+      # clearShapes() %>%
+      # addPopups(lng = st_bbox(wkt_sf)$xmax,lat = st_bbox(wkt_sf)$ymin, popup =  textPopup
+      #           # ,
+      #           # popupOptions = popupOptions(  minWidth = 300
+      #           #                             # # noHide = TRUE, 
+      #           #                             # # direction = "bottom",
+      #           #                             # textsize = "24px",
+      #           #                             # style = list(
+      #           #                             #   "color" = "red",
+    #           #                             #   "font-family" = "serif",
+    #           #                             #   "font-style" = "italic",
+    #           #                             #   "box-shadow" = "3px 3px rgba(0,0,0,0.25)",
+    #           #                             #   "font-size" = "12px",
+    #           #                             #   "border-color" = "rgba(0,0,0,0.5)"
+    #           #                             # )
+    #           #   )
+    #             ) %>% 
+    addPolygons(data = wkt_sf,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group="draw")
+    # addRectangles(lng1=lng1,lat1=lat1,lng2=lng2,lat2=lat2,fillColor = "grey",fillOpacity = 0.1, stroke = TRUE, color = "red", opacity = 1, group = "draw")
+    
+    
+    current_wkt(new_wkt)
     # })
-      
+    output$moduleverbatimWKT <- renderText({ input$yourmoduleWKT })
+    # updateTextInput(session,ns("yourmoduleWKT"), value = wkt())
+    # output$moduleverbatimWKT <- renderText({
+    #   wkt()
+    # })
+    
+    # })
+    
   })
   flog.info("End of proxy map module")
 }
-
 

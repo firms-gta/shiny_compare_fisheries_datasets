@@ -5,7 +5,7 @@ timeSeriesGearUI <- function(id) {
   )
 }
 
-timeSeriesGearServer <- function(id,sql_query) {
+timeSeriesGearServer <- function(id,plot_df) {
   flog.info("Starting time series module")
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -13,7 +13,7 @@ timeSeriesGearServer <- function(id,sql_query) {
     flog.info("Starting timeSeriesGearServer")
     
     data_i2 <- reactive({
-      sql_query()  %>%  dplyr::group_by(measurement_unit, gear_type, year, species) %>% 
+      plot_df()  %>%  dplyr::group_by(measurement_unit, gear_type, year, species) %>% 
         dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
     })
     
@@ -40,8 +40,8 @@ timeSeriesGearServer <- function(id,sql_query) {
     })
     
     
- 
-    })
+    
+  })
   flog.info("End of time series module")
 }
 

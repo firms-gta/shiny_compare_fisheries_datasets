@@ -9,7 +9,7 @@ pieBarChartsUI <- function(id) {
   )
 }
 
-pieBarChartsServer <- function(id,sql_query_all) {
+pieBarChartsServer <- function(id,plot_df) {
   flog.info("Starting pie and bar charts module")
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -17,15 +17,15 @@ pieBarChartsServer <- function(id,sql_query_all) {
     flog.info("Starting pieBarChartsServer")
     
     data_pie_gridtype_catch <- reactive({
-      sql_query_all() %>% as.data.frame()  %>% dplyr::group_by(dataset, gridtype, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
+      plot_df() %>% as.data.frame()  %>% dplyr::group_by(dataset, gridtype, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
     })
     
     data_barplot_all_datasets <- reactive({
-      sql_query_all() %>% as.data.frame()  %>%  dplyr::group_by(dataset, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
+      plot_df() %>% as.data.frame()  %>%  dplyr::group_by(dataset, measurement_unit) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), count=n()) 
     })
     
     data_pie_all_datasets <- reactive({
-      sql_query_all() %>% as.data.frame()  %>% dplyr::group_by(dataset) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
+      plot_df() %>% as.data.frame()  %>% dplyr::group_by(dataset) %>% dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
     })
     
     flog.info("Data Table of the bar plots")
@@ -150,34 +150,34 @@ pieBarChartsServer <- function(id,sql_query_all) {
     })
     
     
-  output$barplot_datasets2 <- renderPlotly({
-
-    df_i1 <- data_barplot_all_datasets()
-    # df_i1 <- data_pie_gridtype_catch()
-    df_i1 <- df_i1 %>% filter(measurement_unit  == 't') %>% dplyr::select(c(dataset, measurement_unit,measurement_value)) # %>% spread(dataset, measurement_value, fill=0)
-
-    # df_i1$dataset <- factor(df_i1$dataset)
-    # df_i1$measurement_unit <- factor(df_i1$measurement_unit)
-
-    p <- ggplot(df_i1) + geom_bar(aes(x = dataset, stat=measurement_value, fill = measurement_unit))
-    # geom_bar(aes(x = dataset, fill = factor(measurement_unit)), position = position_dodge(preserve = 'single'))
-
-    # p <- ggplot(data=df_i1, aes(x = dataset, stat = measurement_value, fill = measurement_unit)) + geom_bar(stat = "identity", width = 1)
-    p <- p + ggtitle("Catch by dataset") + xlab("") + ylab("Datasets") # Adds titles
-    # p <- p + facet_grid(facets=. ~ dataset) # Side by side bar chart
-    # p <- p + coord_polar(theta="y") # side by side pie chart
-    #
-
-    # Turn it interactive
-    barplot_datasets <- ggplotly(p, tooltip="text")
-
-
-  })
-    
-    
-    
- 
+    output$barplot_datasets2 <- renderPlotly({
+      
+      df_i1 <- data_barplot_all_datasets()
+      # df_i1 <- data_pie_gridtype_catch()
+      df_i1 <- df_i1 %>% filter(measurement_unit  == 't') %>% dplyr::select(c(dataset, measurement_unit,measurement_value)) # %>% spread(dataset, measurement_value, fill=0)
+      
+      # df_i1$dataset <- factor(df_i1$dataset)
+      # df_i1$measurement_unit <- factor(df_i1$measurement_unit)
+      
+      p <- ggplot(df_i1) + geom_bar(aes(x = dataset, stat=measurement_value, fill = measurement_unit))
+      # geom_bar(aes(x = dataset, fill = factor(measurement_unit)), position = position_dodge(preserve = 'single'))
+      
+      # p <- ggplot(data=df_i1, aes(x = dataset, stat = measurement_value, fill = measurement_unit)) + geom_bar(stat = "identity", width = 1)
+      p <- p + ggtitle("Catch by dataset") + xlab("") + ylab("Datasets") # Adds titles
+      # p <- p + facet_grid(facets=. ~ dataset) # Side by side bar chart
+      # p <- p + coord_polar(theta="y") # side by side pie chart
+      #
+      
+      # Turn it interactive
+      barplot_datasets <- ggplotly(p, tooltip="text")
+      
+      
     })
+    
+    
+    
+    
+  })
   flog.info("End of time series module")
 }
 

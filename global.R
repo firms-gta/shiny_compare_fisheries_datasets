@@ -99,8 +99,18 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
 
 # Initialize reactive values and default WKT for mapping
 flog.info("Initialize reactive values")
+reset_all <- FALSE
+
+whole_dataset <- reactiveVal()
+whole_default_df <- reactiveVal()
+main_df <- reactiveVal()
+plot_df <- reactiveVal()
+map_df <- reactiveVal()
+
 current_wkt <- reactiveVal()
 drawn_wkt <- reactiveVal()
+current_selection_footprint_wkt <- reactiveVal()
+map_wkt <- reactiveVal()
 
 current_dataset <- reactiveVal()
 current_species <- reactiveVal()
@@ -109,9 +119,9 @@ current_gear_type <- reactiveVal()
 current_year <- reactiveVal()
 current_fishing_fleet <- reactiveVal()
 current_unit <- reactiveVal()
-current_selection_footprint_wkt <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
-initial_data <- reactiveVal()
+
+
 flog.info("Reactive values initialized successfully.")
 
 mode="DOI"
@@ -149,35 +159,35 @@ load_data <- function(mode="DOI"){
           extract_zenodo_metadata(doi = DOI$DOI[i], filename=DOI$Filename[i],data_dir = ".")
           unzip(zipfile = DOI$Filename[i],files = c(paste0(filename,".csv")), exdir=".",overwrite = TRUE)
           file.rename(from = paste0(filename,".csv"),to = newname)
-          } else if (!file.exists(newname) && file_mime =="csv") {
-            flog.info("######################### CSV FILE DONT EXIST")
-            flog.info("Loading dataset: %s Zenodo record", record_id)
-            extract_zenodo_metadata(doi = DOI$DOI[i], filename=gsub(" ","%20", DOI$Filename[i]),data_dir = ".")
-            file.rename(from = DOI$Filename[i],to = newname)
-          }else if (!file.exists(newname) && file_mime =="qs") {
-            flog.info("######################### QS FILE DONT EXIST")
-            flog.info("Loading dataset: %s Zenodo record", record_id)
-            extract_zenodo_metadata(doi = DOI$DOI[i], filename=gsub(" ","%20", DOI$Filename[i]),data_dir = ".")
-            file.rename(from = DOI$Filename[i],to = newname)
-            flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
-            if(!file.exists("gta_geom.RDS")){
-              df_distinct_geom <- qread(newname) %>%
-                dplyr::select(geographic_identifier, GRIDTYPE) %>% 
-                dplyr::mutate(ogc_fid = 1) %>% 
-                dplyr::rename(codesource_area=geographic_identifier,gridtype=GRIDTYPE,geom=geom_wkt) %>%
-                mutate(ogc_fid=row_number(codesource_area)) %>% 
-                dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(count = sum(ogc_fid)) %>% ungroup() %>%  st_set_crs(4326)
-              #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
-
-                            saveRDS(df_distinct_geom, "gta_geom.RDS")   
-            }
+        } else if (!file.exists(newname) && file_mime =="csv") {
+          flog.info("######################### CSV FILE DONT EXIST")
+          flog.info("Loading dataset: %s Zenodo record", record_id)
+          extract_zenodo_metadata(doi = DOI$DOI[i], filename=gsub(" ","%20", DOI$Filename[i]),data_dir = ".")
+          file.rename(from = DOI$Filename[i],to = newname)
+        }else if (!file.exists(newname) && file_mime =="qs") {
+          flog.info("######################### QS FILE DONT EXIST")
+          flog.info("Loading dataset: %s Zenodo record", record_id)
+          extract_zenodo_metadata(doi = DOI$DOI[i], filename=gsub(" ","%20", DOI$Filename[i]),data_dir = ".")
+          file.rename(from = DOI$Filename[i],to = newname)
+          flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
+          if(!file.exists("gta_geom.RDS")){
+            df_distinct_geom <- qread(newname) %>%
+              dplyr::select(geographic_identifier, GRIDTYPE) %>% 
+              dplyr::mutate(ogc_fid = 1) %>% 
+              dplyr::rename(codesource_area=geographic_identifier,gridtype=GRIDTYPE,geom=geom_wkt) %>%
+              mutate(ogc_fid=row_number(codesource_area)) %>% 
+              dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(count = sum(ogc_fid)) %>% ungroup() %>%  st_set_crs(4326)
+            #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
+            
+            saveRDS(df_distinct_geom, "gta_geom.RDS")   
           }
+        }
         flog.info("Dataset  %s downloaded successfully from Zenodo.", newname)
         
         this_df <- switch (file_mime,
                            "csv" =  read.csv(newname),
                            "zip" =  read.csv(newname),
-                           "qs" =  qread(newname) %>% dplyr::as_data_frame()
+                           "qs" =  qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_data_frame()
         )
         
         # print(colnames(this_df))
@@ -197,7 +207,7 @@ load_data <- function(mode="DOI"){
           flog.info("Renaming fishingfleet / gear / schooltype / unit / value columns")
           this_df <- this_df %>% 
             dplyr::rename(fishing_fleet=fishingfleet,gear_type=gear,fishing_mode=schooltype,measurement_unit=unit,measurement_value=value)
-          }          
+        }          
         this_df <- this_df %>% 
           dplyr::select(c("source_authority","fishing_fleet","time_start","time_end","codesource_area","gear_type","species","fishing_mode","measurement_unit","measurement_value"))  %>%
           mutate(dataset=gsub(file_mime,"",filename), year=year(time_start))  %>%
@@ -205,7 +215,7 @@ load_data <- function(mode="DOI"){
           mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
           mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
           mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))
-        })
+      })
       loaded_data <- do.call(rbind, df_dois)
       
       flog.info("Add spatial geometries for both nominal and gridded catches")
@@ -220,27 +230,27 @@ load_data <- function(mode="DOI"){
       
       df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
         dplyr::mutate('ogc_fid'= row_number(codesource_area)) 
-
+      
       df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
         st_drop_geometry()  %>% dplyr::as_data_frame()
-        
+      
       flog.info("Left join with spatial geometries for both nominal and gridded catches")
       loaded_data <- loaded_data %>% 
-         dplyr::left_join((df_distinct_geom_light), by=c('codesource_area'))
-
+        dplyr::left_join((df_distinct_geom_light), by=c('codesource_area'))
+      
       flog.info("Write all binded dataframes into a parquet file")
       arrow::write_parquet(loaded_data, "gta_dois.parquet")
       
     }
     #read all DOIs data from parquet file
     loaded_data <- arrow::read_parquet("gta_dois.parquet")
-    }else if(mode=="gpkg"){
-      flog.info("Loading main data from %s file",mode)
-      gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
+  }else if(mode=="gpkg"){
+    flog.info("Loading main data from %s file",mode)
+    gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
     # st_write(loaded_data,gpkg_file,layer = "public.shinycatch",delete_dsn = TRUE)
     con <- dbConnect(RSQLite::SQLite(), dbname = gpkg_file)
     # result <- dbSendQuery(con, "ALTER TABLElihinycatch RENAME to public.shinycatch;")
-
+    
     res <- dbSendQuery(con, "select load_extension('/usr/lib/x86_64-linux-gnu/mod_spatialite.so');")
     res <-st_read(con,query="select sqlite_version(), spatialite_version();")
     dbListTables(con)
@@ -252,11 +262,11 @@ load_data <- function(mode="DOI"){
     # change geometry type to "POLYGON" and turn geom colum into eWKT to save and read it by using parquet or feather data format
     transform_df_sf <- st_as_sf(loaded_data) %>% st_cast("POLYGON") %>% as.data.frame() %>% dplyr::mutate(geom=st_as_text(st_sfc(geom),EWKT = TRUE))
     saveRDS(transform_df_sf, "shinycatch.RDS")
-
+    
     #save and read the data frame by using parquet and feather data formats
     feather::write_feather(transform_df_sf,"gta.feather")
     df_feather <- feather::read_feather("gta.feather") %>% st_as_sf(wkt="geom", crs = 4326)
-
+    
     arrow::write_parquet(transform_df_sf, "gta.parquet")
     reloaded_data = arrow::read_parquet("gta.parquet") %>% st_as_sf(wkt="geom", crs = 4326)
   }else if(mode=="feather"){
@@ -270,7 +280,7 @@ load_data <- function(mode="DOI"){
     if(!file.exists("gta.parquet")){
       loaded_data <- load_data(mode="postgres")
       arrow::write_parquet(loaded_data, "gta.parquet")    
-      }
+    }
     loaded_data <- arrow::read_parquet("gta.parquet")
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
@@ -284,7 +294,7 @@ load_data <- function(mode="DOI"){
     db_name <- Sys.getenv("DB_NAME")
     db_user <- Sys.getenv("DB_USER_READONLY")
     db_password <- Sys.getenv("DB_PASSWORD")
-
+    
     con <- dbConnect(RPostgreSQL::PostgreSQL(), host=db_host, port=db_port, dbname=db_name, user=db_user, password=db_password)
     # loaded_data <- st_read(con, query="SELECT * FROM public.shinycatch ;")
     query <- paste0("SELECT ogc_fid,dataset,year,month,species,fishing_fleet,gear_type, measurement_value,measurement_unit,count,gridtype,fishing_mode, codesource_area, geom_id,ST_AsText(ST_GeometryN(geom, 1)) AS geom
@@ -297,9 +307,40 @@ load_data <- function(mode="DOI"){
   }
   return(loaded_data)
 }
-flog.info("Data succesfully loaded")
+flog.info("All data succesfully loaded")
 df_sf <- load_data(mode=mode) 
 setwd(dir)
+
+
+pre_grouped_df <- "whole_group_df.parquet"
+# Check if the file was downloaded
+if (file.exists("data/whole_group_df.parquet")) {
+  flog.info("Reading default parquet dataset (whole_group_df.parquet): %s", pre_grouped_df)
+  whole_group_df <- arrow::read_parquet("data/whole_group_df.parquet")  
+  
+} else {
+  flog.info("writting  default parquet dataset (pre_filtered): %s", pre_grouped_df)
+  whole_group_df <- df_sf  %>% filter(!is.na(geom_wkt))  %>%    
+    dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, fishing_fleet, year, measurement_unit) %>% 
+    dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
+  
+  arrow::write_parquet(whole_group_df, "data/whole_group_df.parquet")
+  
+}
+
+
+# whole_dataset(df_sf)
+whole_dataset(whole_group_df)
+
+whole_map_df <- whole_group_df %>%  dplyr::group_by(geom_wkt, dataset, measurement_unit) %>%
+  dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>% st_as_sf(wkt="geom_wkt",crs=4326)
+
+whole_plot_df <- whole_group_df  %>% 
+  dplyr::group_by(dataset, year, gridtype, measurement_unit) %>%
+  dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
+
+flog.info("nrow(df_sf) %s: ",nrow(whole_group_df))
+
 
 flog.info("Load spatial data")
 
@@ -321,7 +362,7 @@ if(mode!="DOI"){
   df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
     dplyr::mutate('ogc_fid'= row_number(codesource_area)) 
   
-    # df_distinct_geom_nominal <- read.csv("data/cl_nc_areas.csv") %>% sf::st_as_sf(wkt="geom_wkt",crs=4326)   %>% 
+  # df_distinct_geom_nominal <- read.csv("data/cl_nc_areas.csv") %>% sf::st_as_sf(wkt="geom_wkt",crs=4326)   %>% 
   #   dplyr::mutate('geom'=st_bbox(),'codesource_area'=geographic_identifier)
   # arrow::write_parquet(df_distinct_geom, "gta_geom.parquet")
   
@@ -330,7 +371,8 @@ if(mode!="DOI"){
 
 flog.info("Check what are the existing / possible combinations between dimension values (to adapt the values of filters dynamically)")
 if(!file_exists("data/filters_combinations.parquet")){
-  filters_combinations <- df_sf  %>% st_drop_geometry() %>%  dplyr::group_by(dataset,species, year, gear_type, measurement_unit, source_authority, fishing_fleet) %>% dplyr::summarise(count = n())
+  filters_combinations <- df_sf  %>% st_drop_geometry() %>% 
+    dplyr::group_by(dataset,species, year, gear_type, measurement_unit, source_authority, fishing_fleet) %>% dplyr::summarise(count = n())
   flog.info("Filter combinations retrieved and stored.")
   arrow::write_parquet(filters_combinations, "data/filters_combinations.parquet")
 }else{
@@ -340,9 +382,9 @@ if(!file_exists("data/filters_combinations.parquet")){
 
 
 flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
-default_wkt <- st_as_text(st_union(df_distinct_geom))
-# current_wkt(default_wkt)
-new_wkt <- default_wkt
+all_wkt <- st_as_text(st_union(df_distinct_geom))
+# current_wkt(all_wkt)
+new_wkt <- all_wkt
 
 # target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
 target_dataset <- unique(filters_combinations$dataset) #  %>% arrange(desc(dataset))
@@ -356,17 +398,14 @@ target_measurement_unit <- unique(filters_combinations$measurement_unit) # %>% a
 target_source_authority <- unique(filters_combinations$source_authority)
 target_gridtype <- unique(df_distinct_geom$gridtype) 
 # df_sf %>% group_by(geom_id)
-target_flag <-  unique(filters_combinations$fishing_fleet)
+target_fishing_fleet <-  unique(filters_combinations$fishing_fleet)
 # target_fishing_mode <- dbGetQuery(con, "SELECT DISTINCT(fishing_mode) FROM public.shinycatch ORDER BY fishing_mode;")
 
 flog.info("Set filters values to be seflected by default")
-target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
-# target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
 # flog.info("Spatial filter :main WKT : %s", current_wkt())
-current_wkt(target_wkt)
-# current_wkt(default_wkt)
-current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
 # default_species <- c('YFT','SKJ','BET','SBF','ALB')
+# default_dataset <- c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
+default_dataset <- c('global_catch_tunaatlasird_level2','global_nominal_catch_firms_level0_public')
 default_species <- c('YFT')
 # default_species <- target_species
 # default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-2)
@@ -374,22 +413,23 @@ default_year <- c(seq(1:10)+2010)
 # default_year <- c(seq(1950:2021)+1949)
 # default_year <- c(seq((max(target_year)-10):max(target_year))+max(target_year)-11)
 # default_gear <- c('01.1','01.2')
-default_gear_type <- target_gear_type
-default_gear_type <- c('01.1','01.2')
-# default_dataset <- c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
-default_dataset <- c('global_catch_tunaatlasird_level2','global_nominal_catch_firms_level0_public')
+# default_gear_type <- target_gear_type
+default_gear_type <- c('1.1','1.2')
 # default_unit <- target_measurement_unit
 default_unit <- c('t')
 default_source_authority <- unique(target_source_authority)
 # default_gridtype <- c("1deg_x_1deg")
 default_gridtype <- target_gridtype
-# default_fishing_fleet <- target_flag
+# default_fishing_fleet <- target_fishing_fleet
 default_fishing_fleet <- c('EUFRA','EUESP')
 flog.info("Default filter values set.")
 
 
 flog.info("Keeping tracks of selected values for filters to faster data loading.")
+target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
+# target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
 current_wkt(target_wkt)
+current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
 current_species(default_species)
 current_dataset(default_dataset)
 current_source_authority(default_source_authority)
@@ -419,7 +459,6 @@ load_ui_modules <- function() {
 load_ui_modules()
 flog.info("Modules loaded")
 
-initial_data(df_sf)
 current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
 current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% default_gridtype)
 list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
@@ -431,11 +470,11 @@ pre_filtered_df <- "default_df.parquet"
 # Check if the file was downloaded
 if (file.exists("data/default_df.parquet")) {
   flog.info("Reading default parquet dataset (pre_filtered): %s", pre_filtered_df)
-  whole_default_df <- arrow::read_parquet("data/default_df.parquet")  
+  init_whole_default_df <- arrow::read_parquet("data/default_df.parquet")  
   
-  } else {
+} else {
   flog.info("writting  default parquet dataset (pre_filtered): %s", pre_filtered_df)
-  whole_default_df <- df_sf  %>% filter(!is.na(geom_wkt)) %>%  
+  init_whole_default_df <- df_sf  %>% filter(!is.na(geom_wkt)) %>%  
     dplyr::filter(
       # codesource_area %in% within_areas,
       dataset %in% default_dataset,
@@ -446,26 +485,27 @@ if (file.exists("data/default_df.parquet")) {
       fishing_fleet %in% default_fishing_fleet,
       measurement_unit %in% default_unit
     ) %>% 
-    dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, year, measurement_unit) %>% 
-    # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>% 
+    dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, fishing_fleet, year, measurement_unit) %>% 
     dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() 
-  arrow::write_parquet(whole_default_df, "data/default_df.parquet")
+  arrow::write_parquet(init_whole_default_df, "data/default_df.parquet")
   
-  }
-default_footprint <- whole_default_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
+}
+
+default_footprint <- init_whole_default_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
-  st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_as_text()
+  st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_simplify() %>% st_as_text()
 # flog.info("Current footprint for filters is %s: ",whole_footprint)
 
-default_df <- whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+default_df <- init_whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
 
 current_selection_footprint_wkt(default_footprint)
+whole_default_df(init_whole_default_df)
 
-
+# flog.info("nrow(df_sf) %s: ",nrow(df_sf))
 rm(df_sf)
 
-flog.info("########################## End GLOBAL")
+flog.info("########################## END GLOBAL")
 flog.info("########################## START UI")
 source(here::here("ui.R"))
-flog.info("########################## START GLOBAL")
+flog.info("########################## START SERVER")
 source(here::here("server.R"))
