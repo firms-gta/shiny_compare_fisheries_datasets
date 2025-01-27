@@ -1,13 +1,15 @@
 server <- function(input, output, session) {
   
   ########################################################## Dynamic filters ########################################################## 
-  # change <- reactive({
-  #   unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
-  # })
+
   
   observeEvent(current_wkt(),{
     shinyjs::click(id = "submit")
   })
+  
+  # change <- reactive({
+  #   unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
+  # })
   
   # observeEvent(input$yourWKT,{
   #   updateSelectInput(session = session,
@@ -38,7 +40,6 @@ server <- function(input, output, session) {
     map_wkt(all_wkt)
     
     # updateTextInput(session, "polygon", value = all_wkt)
-    
     
     current_dataset(target_dataset)
     updatePickerInput(session,"dataset",selected=target_dataset)

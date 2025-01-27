@@ -404,7 +404,7 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       
       # updateTextInput(session,ns("yourWKT"), value = new_wkt)
     },ignoreInit = TRUE,ignoreNULL = TRUE)
-    
+  
     # end observe)
     
   })
@@ -479,4 +479,3 @@ map_proxy_server <- function(id, map_id,new_wkt, parent_session){
   })
   flog.info("End of proxy map module")
 }
-

@@ -10,10 +10,7 @@ flog.info("All libraries loaded successfully.")
 sf::sf_use_s2(FALSE)
 spatial_processing_mode <- "sf" # "QGIS"
 
-
 ########################################################## Function for spatial filters ########################################################## 
-
-
 process_list_areas <- function(df_distinct_geom, current_selection) {
   
   # Vérifier si qgisprocess est installé
@@ -51,7 +48,7 @@ process_list_areas <- function(df_distinct_geom, current_selection) {
   return(list_areas)
 }
 
-
+########################################################## Load data from a list of DOIs ########################################################## 
 DOI <- readr::read_csv("data/DOI.csv") %>% dplyr::mutate(identifier="",title="")
 
 options(timeout = 60000) # Global timeout for downloads
@@ -120,6 +117,7 @@ current_year <- reactiveVal()
 current_fishing_fleet <- reactiveVal()
 current_unit <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
+whole_dataset <- reactiveVal()
 
 
 flog.info("Reactive values initialized successfully.")
@@ -497,6 +495,7 @@ default_footprint <- init_whole_default_df  %>% dplyr::group_by(codesource_area,
 # flog.info("Current footprint for filters is %s: ",whole_footprint)
 
 default_df <- init_whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+
 
 current_selection_footprint_wkt(default_footprint)
 whole_default_df(init_whole_default_df)
