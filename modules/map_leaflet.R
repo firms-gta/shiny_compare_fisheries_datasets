@@ -359,7 +359,7 @@ map_leafletServer <- function(id,map_df,map_wkt) {
         #   need(nrow(disjoint)!=1, 'Sorry no data with current filters !'),
         #   errorClass = "myClass"
         # )
-        current_wkt(target_wkt)
+        # current_wkt(target_wkt)
         
         # shinyjs::click(id = "resetWkt")
         # showModal(modalDialog(

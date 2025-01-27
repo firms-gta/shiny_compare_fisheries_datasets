@@ -3,10 +3,6 @@ server <- function(input, output, session) {
   ########################################################## Dynamic filters ########################################################## 
 
   
-  observeEvent(current_wkt(),{
-    shinyjs::click(id = "submit")
-  })
-  
   # change <- reactive({
   #   unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
   # })
@@ -26,55 +22,6 @@ server <- function(input, output, session) {
   # })
   
   
-  observeEvent(input$resetWkt, {
-    current_wkt(all_wkt)
-  },
-  ignoreInit = TRUE)
-  
-  
-  observeEvent(input$resetAllFilters, {
-    
-    flog.info("Action Button => Reset all filters !")
-    
-    # current_wkt(all_wkt)
-    map_wkt(all_wkt)
-    
-    # updateTextInput(session, "polygon", value = all_wkt)
-    
-    current_dataset(target_dataset)
-    updatePickerInput(session,"dataset",selected=target_dataset)
-    
-    current_species(target_species)
-    updatePickerInput(session,"species",selected=target_species)
-    
-    current_gear_type(target_gear_type)
-    updatePickerInput(session,"gear_type",selected=target_gear_type)
-    
-    current_year(target_year)
-    updatePickerInput(session,"year",selected=target_year)
-
-    current_fishing_fleet(target_fishing_fleet)
-    updatePickerInput(session,"fishing_fleet",selected=target_fishing_fleet)
-    
-    current_unit(target_measurement_unit)
-    updatePickerInput(session,"unit",selected=target_measurement_unit)
-    
-    current_source_authority(target_source_authority)
-    updatePickerInput(session,"source_authority",selected=target_source_authority)
-    
-    # current_gridtype(target_gridtype)
-    # updatePickerInput(session,"gridtype",selected=target_gridtype)
-    
-    # main_df <- default_df
-    # main_df(whole_dataset())
-    # plot_df(whole_plot_df)
-    # map_df(whole_map_df)
-    reset_all <- TRUE
-    
-    shinyjs::click(id = "submit")
-    
-  },
-  ignoreInit = TRUE)
   
   
   # observeEvent(input$species,{
@@ -94,15 +41,75 @@ server <- function(input, output, session) {
   # if All is not in selection, filter to selected continents
   
   
-  observeEvent(input$switched, {
-    if(switch_unit()){switch_unit(FALSE)}else{switch_unit(TRUE)}
-  })
-  
   # observeEvent(input$year,{
   #   temp <- filters_combinations %>% filter(species %in% change()[1], year %in% change()[2])
   #   updateSelectInput(session,"gear",choices = unique(temp$gear),selected=unique(temp$gear))
   # }
   # )
+  
+
+  
+  observeEvent(input$resetWkt, {
+    current_wkt(all_wkt)
+  },
+  ignoreInit = TRUE)
+  
+  observeEvent(current_wkt(),{
+    shinyjs::click(id = "submit")
+  })
+  
+  observeEvent(input$resetAllFilters, {
+    
+    flog.info("Action Button => Reset all filters !")
+    
+    reset_all <- TRUE
+    # updateTextInput(session, "polygon", value = all_wkt)
+    
+    current_dataset(target_dataset)
+    updatePickerInput(session,"dataset",selected=target_dataset)
+    
+    current_species(target_species)
+    updatePickerInput(session,"species",selected=target_species,
+                      choicesOpt = list(
+                        disabled = disabled_choices,
+                        style = ifelse(disabled_choices,
+                                       yes = "color: rgba(119, 119, 119, 0.5);",
+                                       no = "")
+                      ))
+    
+    current_gear_type(target_gear_type)
+    updatePickerInput(session,"gear_type",selected=target_gear_type)
+    
+    current_year(target_year)
+    updatePickerInput(session,"year",selected=target_year)
+
+    current_fishing_fleet(target_fishing_fleet)
+    updatePickerInput(session,"fishing_fleet",selected=target_fishing_fleet)
+    
+    current_unit(target_measurement_unit)
+    updatePickerInput(session,"unit",selected=target_measurement_unit)
+    
+    current_source_authority(target_source_authority)
+    updatePickerInput(session,"source_authority",selected=target_source_authority)
+    
+    current_gridtype(target_gridtype)
+    updatePickerInput(session,"gridtype",selected=target_gridtype)
+    
+    # main_df <- default_df
+    # main_df(whole_dataset())
+    # plot_df(whole_plot_df)
+    # map_df(whole_map_df)
+    
+    # shinyjs::click(id = "submit")
+    
+  },
+  ignoreInit = TRUE)
+  
+  observeEvent(input$switched, {
+    if(switch_unit()){switch_unit(FALSE)}else{switch_unit(TRUE)}
+  })
+  
+
   flog.info("##########################################################")
   flog.info("set the main parameterized query (options for geom might be st_collect(geom) or  ST_ConvexHull(st_collect(geom)) as convexhull )")
   
@@ -111,102 +118,138 @@ server <- function(input, output, session) {
   main_df <- eventReactive(input$submit, {
     # main_df <- observeEvent(current_wkt() , {
     
-    
-    if(reset_all){
-      main_df<- whole_dataset()
-    }else{
-      reset_all <- FALSE
-      
+    flog.info("Filters are going to be applied!!")
+    flog.info("WKT !!")
     req(current_wkt())
     wkt <- current_wkt()
-    map_wkt(wkt)
+    flog.info("Non spatial filters !!")
     
-    if(wkt != target_wkt){
-      flog.info("Listing remaining areas within this new WKT: %s", wkt)
-      # current_wkt(wkt)
-      
-      current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
-      current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
-      list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
-      flog.info("Remaining number of different areas within this WKT: %s", nrow(list_areas))
-      within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
-        rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
-    }
-    
-    
-    
-    flog.info("Testing if non spatial filters have been updated !")
-    if(all(input$dataset == current_dataset()) && 
-       all(input$species == current_species()) && 
-       all(input$source_authority == current_source_authority()) && 
-       all(input$gear_type == current_gear_type()) && 
-       all(input$year == current_year()) && 
-       all(input$fishing_fleet == current_fishing_fleet()) && 
-       all(input$unit == current_unit())
+    if(all(input$dataset == target_dataset) && 
+       all(input$species == target_species) && 
+       all(input$source_authority == target_source_authority) && 
+       all(input$gear_type == target_gear_type) && 
+       all(input$year == target_year) && 
+       all(input$fishing_fleet == target_fishing_fleet) && 
+       all(input$gridtype == target_gridtype) && 
+       all(input$unit == target_measurement_unit)
     ){
+      flog.info("No no spatial filters => full dataset !!!")
       
-      flog.info("Non spatial filters are the same => Loading pre-filtered dataset !!")
-      flog.info("main_df  rows: %s", nrow(default_df))
-      if(wkt == target_wkt){
-        flog.info("Default WKT nothing has changed!!!")
-        main_df <- default_df
-      }else{
-        flog.info("Same filters but new WKT => filtering remaining areas")
-        main_df <- whole_default_df() %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
-      }
-    }else{
-      flog.info("Non spatial filters are different => applying these new filters to the whole dataset !!")
-      flog.info("input$dataset : %s", all(input$dataset == current_dataset()))
-      if(!all(input$dataset == current_dataset())){current_dataset(input$dataset)}
+      flog.info("input$dataset : %s", all(input$dataset == target_dataset))
+      flog.info("input$species : %s", all(input$species == target_species))
+      flog.info("input$source_authority : %s", all(input$source_authority == target_source_authority))
+      flog.info("input$gear_type : %s", all(input$gear_type == target_gear_type))
+      flog.info("input$year : %s", all(input$year == target_year))
+      flog.info("input$fishing_fleet : %s", all(input$fishing_fleet == target_fishing_fleet))
+      flog.info("input$unit : %s", all(input$unit == target_measurement_unit))
+      flog.info("Tests TRUE !!!")
       
-      flog.info("input$species : %s", all(input$species == current_species()))
-      flog.info("input$species : %s", print(input$species))
-      if(!all(input$species == current_species())){current_species(input$species)}
-      
-      flog.info("input$source_authority : %s", all(input$source_authority == current_source_authority()))
-      if(!all(input$source_authority == current_source_authority())){current_source_authority(input$source_authority)}
-      flog.info("input$gear_type : %s", all(input$gear_type == current_gear_type()))
-      if(!all(input$gear_type == current_gear_type())){current_gear_type(input$gear_type)}
-      flog.info("input$year : %s", all(input$year == current_year()))
-      if(!all(input$year == current_year())){current_year(input$year)}
-      flog.info("input$fishing_fleet : %s", all(input$fishing_fleet == current_fishing_fleet()))
-      if(!all(input$fishing_fleet == current_fishing_fleet())){current_fishing_fleet(input$fishing_fleet)}
-      flog.info("input$unit : %s", all(input$unit == current_unit()))
-      if(!all(input$unit == current_unit())){current_unit(input$unit)}
-      
-      
-      flog.info("Laoding all grouped data")
       main_data <- whole_dataset()
       
-      flog.info("Filtering all grouped data")
+      flog.info("test if spatial filter TRUE !!!")
       
-      tmp_main_df <- main_data  %>% filter(!is.na(geom_wkt)) %>%  
-        dplyr::filter(
-          dataset %in% input$dataset,
-          species %in% input$species,
-          source_authority %in% input$source_authority,
-          gear_type %in% input$gear_type,
-          year %in% input$year,
-          fishing_fleet %in% input$fishing_fleet,
-          measurement_unit %in% input$unit
-        )
-      # %>% 
-      #   dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, year, measurement_unit) %>%
-      #   # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>%
-      #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
-      
-      flog.info("Footprint of all grouped filtered data")
-      this_footprint <- tmp_main_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
-        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
-        st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_simplify() %>% st_as_text()
-      # flog.info("Current footprint for filters is %s: ",whole_footprint)
-      current_selection_footprint_wkt(this_footprint)
-      
-      whole_default_df(tmp_main_df)
-      default_df <- tmp_main_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
-      
-      main_df <- default_df
-    }
+      if(wkt==all_wkt){
+        flog.info("No spatial filter either !!")
+        current_selection_footprint_wkt(all_wkt)
+        main_df<- main_data
+      }else{
+          flog.info("Listing remaining areas within the new WKT: %s", wkt)
+          # current_wkt(wkt)
+          current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+          current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
+          list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
+          flog.info("Remaining number of different areas within this WKT: %s", nrow(list_areas))
+          within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
+            rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
+        current_selection_footprint_wkt(all_wkt)
+        flog.info("Laoding all grouped data")
+        main_df<- main_data %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+      }
+      }else{
+        # reset_all <- FALSE
+      if(wkt != target_wkt){
+        flog.info("Listing remaining areas within this new WKT: %s", wkt)
+        # current_wkt(wkt)
+        current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+        current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
+        list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
+        flog.info("Remaining number of different areas within this WKT: %s", nrow(list_areas))
+        within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
+          rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
+      }
+      flog.info("Testing if non spatial filters have been updated !")
+      if(all(input$dataset == current_dataset()) && 
+         all(input$species == current_species()) && 
+         all(input$source_authority == current_source_authority()) && 
+         all(input$gear_type == current_gear_type()) && 
+         all(input$year == current_year()) && 
+         all(input$fishing_fleet == current_fishing_fleet()) && 
+         all(input$unit == current_unit())
+      ){
+        
+        flog.info("Non spatial filters are the same => Loading pre-filtered dataset !!")
+        flog.info("main_df  rows: %s", nrow(default_df))
+        if(wkt == target_wkt){
+          flog.info("Default WKT nothing has changed!!!")
+          main_df <- default_df
+        }else{
+          flog.info("Same filters but new WKT => filtering remaining areas")
+          main_df <- whole_default_df() %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+          
+        }
+      }else{
+        flog.info("Non spatial filters are different => applying these new filters to the whole dataset !!")
+        flog.info("input$dataset : %s", all(input$dataset == current_dataset()))
+        if(!all(input$dataset == current_dataset())){current_dataset(input$dataset)}
+        
+        flog.info("input$species : %s", all(input$species == current_species()))
+        flog.info("input$species : %s", print(input$species))
+        if(!all(input$species == current_species())){current_species(input$species)}
+        
+        flog.info("input$source_authority : %s", all(input$source_authority == current_source_authority()))
+        if(!all(input$source_authority == current_source_authority())){current_source_authority(input$source_authority)}
+        flog.info("input$gear_type : %s", all(input$gear_type == current_gear_type()))
+        if(!all(input$gear_type == current_gear_type())){current_gear_type(input$gear_type)}
+        flog.info("input$year : %s", all(input$year == current_year()))
+        if(!all(input$year == current_year())){current_year(input$year)}
+        flog.info("input$fishing_fleet : %s", all(input$fishing_fleet == current_fishing_fleet()))
+        if(!all(input$fishing_fleet == current_fishing_fleet())){current_fishing_fleet(input$fishing_fleet)}
+        flog.info("input$unit : %s", all(input$unit == current_unit()))
+        if(!all(input$unit == current_unit())){current_unit(input$unit)}
+        
+        
+        flog.info("Laoding all grouped data")
+        main_data <- whole_dataset()
+        
+        flog.info("Filtering all grouped data")
+        
+        tmp_main_df <- main_data  %>% filter(!is.na(geom_wkt)) %>%  
+          dplyr::filter(
+            dataset %in% input$dataset,
+            species %in% input$species,
+            source_authority %in% input$source_authority,
+            gear_type %in% input$gear_type,
+            year %in% input$year,
+            fishing_fleet %in% input$fishing_fleet,
+            measurement_unit %in% input$unit
+          )
+        # %>% 
+        #   dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, year, measurement_unit) %>%
+        #   # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>%
+        #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
+        
+        flog.info("Footprint of all grouped filtered data")
+        this_footprint <- tmp_main_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
+          dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
+          st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_simplify() %>% st_as_text()
+        # flog.info("Current footprint for filters is %s: ",whole_footprint)
+        current_selection_footprint_wkt(this_footprint)
+        
+        whole_default_df(tmp_main_df)
+        default_df <- tmp_main_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+        
+        main_df <- default_df
+      }
     }
     
     if(nrow(main_df)==0)
@@ -229,15 +272,13 @@ server <- function(input, output, session) {
   
   map_df <- reactive({
     
-    if(reset_all){
-      map_df <- whole_map_df
-    }else{
-      reset_all <- FALSE
       
-    req(main_df())
+      map_df <- whole_map_df
+      
+      req(main_df())
     main_df <- main_df()
     flog.info("###############################################################################################")
-    flog.info("Applying new filters to main data")
+    flog.info("Applying new filters to MAP data")
     flog.info("###############################################################################################")
     #
     #   req(current_wkt())
@@ -284,7 +325,6 @@ server <- function(input, output, session) {
     #     map_df
     #   }
     
-    }
     
   })
   
@@ -292,19 +332,17 @@ server <- function(input, output, session) {
   
   
   plot_df <- reactive({
-    
-    if(reset_all){
-      map_df <- whole_plot_df
-    }else{
-      reset_all <- FALSE
+    flog.info("###############################################################################################")
+    flog.info("Applying new filters to PLOT data")
+    flog.info("###############################################################################################")
       
-    req(main_df())
+      map_df <- whole_plot_df
+      req(main_df())
     main_df <- main_df()
     plot_df <- main_df  %>% 
       dplyr::group_by(dataset, year, gridtype, measurement_unit) %>%
       dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
     # flog.info("Number of rows of plot data : %s", nrow(plot_df))
-    }
   })
   
   
@@ -342,7 +380,7 @@ server <- function(input, output, session) {
   
   flog.info("Starting leaflet in the global map module")
   # callModule(module = map_leaflet, id = "id_1")
-  map_leafletServer(id = "map_global",map_df,map_wkt)
+  map_leafletServer(id = "map_global",map_df,wkt)
   
   flog.info("Starting time series module")
   timeSeriesServer(id = "time_series",plot_df)

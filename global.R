@@ -116,8 +116,8 @@ current_gear_type <- reactiveVal()
 current_year <- reactiveVal()
 current_fishing_fleet <- reactiveVal()
 current_unit <- reactiveVal()
+current_gridtype <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
-whole_dataset <- reactiveVal()
 
 
 flog.info("Reactive values initialized successfully.")
@@ -435,6 +435,7 @@ current_gear_type(default_gear_type)
 current_year(default_year)
 current_fishing_fleet(default_fishing_fleet)
 current_unit(default_unit)
+current_gridtype(default_gridtype)
 
 
 # Logging the successful execution of the script up to this point
