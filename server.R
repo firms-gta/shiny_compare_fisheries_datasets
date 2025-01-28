@@ -124,6 +124,7 @@ server <- function(input, output, session) {
     wkt <- current_wkt()
     flog.info("Non spatial filters !!")
     
+    flog.info("Check if some filters have been selected")
     if(all(input$dataset == target_dataset) && 
        all(input$species == target_species) && 
        all(input$source_authority == target_source_authority) && 
@@ -133,7 +134,7 @@ server <- function(input, output, session) {
        all(input$gridtype == target_gridtype) && 
        all(input$unit == target_measurement_unit)
     ){
-      flog.info("No no spatial filters => full dataset !!!")
+      flog.info("No non spatial filters have been selected => full dataset !!!")
       
       flog.info("input$dataset : %s", all(input$dataset == target_dataset))
       flog.info("input$species : %s", all(input$species == target_species))
@@ -166,6 +167,7 @@ server <- function(input, output, session) {
         main_df<- main_data %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
       }
     }else{
+      flog.info("Some filters have been selected : checking if new selection is refining the previous one")
       # reset_all <- FALSE
       if(wkt != target_wkt){
         flog.info("Listing remaining areas within this new WKT: %s", wkt)
@@ -194,10 +196,58 @@ server <- function(input, output, session) {
           main_df <- default_df
         }else{
           flog.info("Same filters but new WKT => filtering remaining areas")
-          main_df <- whole_default_df() %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+          main_df <- whole_filtered_df() %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
           
         }
-      }else{
+      }else if(length(setdiff(input$dataset,current_dataset())) == 0 && 
+               length(setdiff(input$species,current_species())) == 0 && 
+               length(setdiff(input$source_authority,current_source_authority())) == 0 && 
+               length(setdiff(input$gear_type,current_gear_type())) == 0 && 
+               length(setdiff(input$year,current_year())) == 0 && 
+               length(setdiff(input$fishing_fleet,current_fishing_fleet())) == 0 && 
+               length(setdiff(input$unit,current_unit())) == 0  
+               ){ 
+        flog.info("New filters are just a subset of previous ones : refining  !!")
+        flog.info("Loading new values")
+        
+        current_source_authority(input$dataset)
+        current_source_authority(input$species)
+        current_source_authority(input$source_authority)
+        current_gear_type(input$gear_type)
+        current_year(input$year)
+        current_fishing_fleet(input$fishing_fleet)
+        current_unit(input$unit)        
+        
+        flog.info("Subsetting / refining previous dataset with new values")
+        
+        tmp_main_df <- whole_filtered_df()  %>% filter(!is.na(geom_wkt)) %>%  
+          dplyr::filter(
+            dataset %in% input$dataset,
+            species %in% input$species,
+            source_authority %in% input$source_authority,
+            gear_type %in% input$gear_type,
+            year %in% input$year,
+            fishing_fleet %in% input$fishing_fleet,
+            measurement_unit %in% input$unit
+          )
+        # %>% 
+        #   dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, year, measurement_unit) %>%
+        #   # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>%
+        #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
+        
+        flog.info("Footprint of all grouped filtered data")
+        this_footprint <- tmp_main_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
+          dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
+          st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_simplify() %>% st_as_text()
+        # flog.info("Current footprint for filters is %s: ",whole_footprint)
+        current_selection_footprint_wkt(this_footprint)
+        
+        whole_filtered_df(tmp_main_df)
+        default_df <- tmp_main_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+        
+        main_df <- default_df
+        
+        }else{
         flog.info("Non spatial filters are different => applying these new filters to the whole dataset !!")
         flog.info("input$dataset : %s", all(input$dataset == current_dataset()))
         if(!all(input$dataset == current_dataset())){current_dataset(input$dataset)}
@@ -245,7 +295,7 @@ server <- function(input, output, session) {
         # flog.info("Current footprint for filters is %s: ",whole_footprint)
         current_selection_footprint_wkt(this_footprint)
         
-        whole_default_df(tmp_main_df)
+        whole_filtered_df(tmp_main_df)
         default_df <- tmp_main_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
         
         main_df <- default_df

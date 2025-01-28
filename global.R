@@ -99,7 +99,7 @@ flog.info("Initialize reactive values")
 reset_all <- FALSE
 
 whole_dataset <- reactiveVal()
-whole_default_df <- reactiveVal()
+whole_filtered_df <- reactiveVal()
 main_df <- reactiveVal()
 plot_df <- reactiveVal()
 map_df <- reactiveVal()
@@ -383,6 +383,7 @@ flog.info("Set values of filters : list distinct values in the main dataset for 
 all_wkt <- st_as_text(st_union(df_distinct_geom))
 # current_wkt(all_wkt)
 new_wkt <- all_wkt
+flog.info("Storing all possible values for retained filters : list distinct values in the main dataset for each dimension")
 
 # target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
 target_dataset <- unique(filters_combinations$dataset) #  %>% arrange(desc(dataset))
@@ -399,7 +400,7 @@ target_gridtype <- unique(df_distinct_geom$gridtype)
 target_fishing_fleet <-  unique(filters_combinations$fishing_fleet)
 # target_fishing_mode <- dbGetQuery(con, "SELECT DISTINCT(fishing_mode) FROM public.shinycatch ORDER BY fishing_mode;")
 
-flog.info("Set filters values to be seflected by default")
+flog.info("Define filters values to be selected by default")
 # flog.info("Spatial filter :main WKT : %s", current_wkt())
 # default_species <- c('YFT','SKJ','BET','SBF','ALB')
 # default_dataset <- c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
@@ -423,7 +424,7 @@ default_fishing_fleet <- c('EUFRA','EUESP')
 flog.info("Default filter values set.")
 
 
-flog.info("Keeping tracks of selected values for filters to faster data loading.")
+flog.info("Keeping tracks of current selected values for filters to faster data loading.")
 target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
 # target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
 current_wkt(target_wkt)
@@ -441,22 +442,8 @@ current_gridtype(default_gridtype)
 # Logging the successful execution of the script up to this point
 flog.info("Initial setup and data retrieval completed successfully.")
 
-#---------------------------------------------------------------------------------------
-source(here::here('modules/map_leaflet.R'))
+flog.info("Load default dataset!!")
 
-# Source external R scripts for additional functionalities
-# source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
-flog.info("External R scripts sourced successfully.")
-flog.info("Loading modules.")
-load_ui_modules <- function() {
-  ui_files <- c("modules/map_leaflet.R","modules/timeSeries.R","modules/pie_bar_charts.R","modules/timeSeries_per_geartype.R","modules/about.R")
-  lapply(ui_files, function(file) {
-    source(here::here(file))
-    flog.info(paste("Loaded UI module:", file))
-  })
-}
-load_ui_modules()
-flog.info("Modules loaded")
 
 current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
 current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% default_gridtype)
@@ -499,13 +486,37 @@ default_df <- init_whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::fil
 
 
 current_selection_footprint_wkt(default_footprint)
-whole_default_df(init_whole_default_df)
+whole_filtered_df(init_whole_default_df)
 
 # flog.info("nrow(df_sf) %s: ",nrow(df_sf))
 rm(df_sf)
+
+
+
+#---------------------------------------------------------------------------------------
+source(here::here('modules/map_leaflet.R'))
+
+# Source external R scripts for additional functionalities
+# source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
+flog.info("External R scripts sourced successfully.")
+flog.info("Loading modules.")
+load_ui_modules <- function() {
+  ui_files <- c("modules/map_leaflet.R","modules/timeSeries.R","modules/pie_bar_charts.R","modules/timeSeries_per_geartype.R","modules/about.R")
+  lapply(ui_files, function(file) {
+    source(here::here(file))
+    flog.info(paste("Loaded UI module:", file))
+  })
+}
+load_ui_modules()
+flog.info("Modules loaded")
+
+
+
 
 flog.info("########################## END GLOBAL")
 flog.info("########################## START UI")
 source(here::here("ui.R"))
 flog.info("########################## START SERVER")
 source(here::here("server.R"))
+
+
