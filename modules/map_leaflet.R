@@ -371,6 +371,7 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       }else{
         flog.info("New wkt OK: not disjoint")
         flog.info("Update WKT; replace with new valid one")
+        last_wkt(current_wkt())
         current_wkt(new_wkt)
         # flog.info("Apply filters with new spatial filter !")
         # shinyjs::click(id = "submit")

@@ -50,6 +50,7 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$resetWkt, {
+    last_wkt(all_wkt)
     current_wkt(all_wkt)
   },
   ignoreInit = TRUE)
@@ -123,6 +124,74 @@ server <- function(input, output, session) {
     req(current_wkt())
     wkt <- current_wkt()
     flog.info("Non spatial filters !!")
+    
+    
+    
+    flog.info("Check if filters have been updated")
+    if(all(input$dataset == current_dataset()) && 
+       all(input$species == current_species()) && 
+       all(input$source_authority == current_source_authority()) && 
+       all(input$gear_type == current_gear_type()) && 
+       all(input$year == current_year()) && 
+       all(input$fishing_fleet == current_fishing_fleet()) && 
+       all(input$unit == current_unit())
+    ){
+      flog.info("--------------------------------------------")
+      flog.info("USE CASE 1: Filters have not been updated")
+      flog.info("--------------------------------------------")
+      flog.info("USE CASE 1: Check if there is a new WKT")
+      flog.info("--------------------------------------------")
+      if(wkt == last_wkt() && wkt!=all_wkt){
+        flog.info("--------------------------------------------")
+        flog.info("USE CASE 1: same WKT as the last one => exactly the same dataset !!")
+        flog.info("--------------------------------------------")
+        flog.info("USE CASE 1:  Nothing to do !!")
+        flog.info("USE CASE 1: same WKT as the last one => exactly the same dataset !!")
+        
+      }else{
+        if(wkt==all_wkt) {
+          flog.info("--------------------------------------------")
+          flog.info("USE CASE 1: No spatial filter => whole dataset !!")
+          flog.info("--------------------------------------------")
+          # main_df <- whole_filtered_df()
+        }else{
+          flog.info("--------------------------------------------")
+          flog.info("USE CASE 1: Brand new WKT  => filtering whole dataset !!")
+          flog.info("--------------------------------------------")
+          # main_df <- whole_filtered_df() %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+        }
+      } 
+    }else if (length(setdiff(input$dataset,current_dataset())) == 0 && 
+              length(setdiff(input$species,current_species())) == 0 && 
+              length(setdiff(input$source_authority,current_source_authority())) == 0 && 
+              length(setdiff(input$gear_type,current_gear_type())) == 0 && 
+              length(setdiff(input$year,current_year())) == 0 && 
+              length(setdiff(input$fishing_fleet,current_fishing_fleet())) == 0 && 
+              length(setdiff(input$unit,current_unit())) == 0) {
+      flog.info("--------------------------------------------")
+      flog.info("USE CASE 2: Filters have been updated but are a subset of previous ones => no additionnal filters, just refining current data")
+      flog.info("--------------------------------------------")
+      # main_data <- whole_filtered_df()
+      
+    }else{
+      flog.info("--------------------------------------------")
+      flog.info("USE CASE 3: Some additional filters not present in the previous filters => filtering the whole dataset but are a subset of previous ones")
+      flog.info("USE CASE 3: might take time")
+      flog.info("--------------------------------------------")
+      # main_data <- whole_dataset()
+      
+      }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     flog.info("Check if some filters have been selected")
     if(all(input$dataset == target_dataset) && 
@@ -301,7 +370,7 @@ server <- function(input, output, session) {
         main_df <- default_df
       }
     }
-    
+    # map_wkt <- wkt
     if(nrow(main_df)==0)
       showModal(modalDialog(
         title = "Warning",
@@ -430,7 +499,7 @@ server <- function(input, output, session) {
   
   flog.info("Starting leaflet in the global map module")
   # callModule(module = map_leaflet, id = "id_1")
-  map_leafletServer(id = "map_global",map_df,wkt)
+  map_leafletServer(id = "map_global",map_df,current_wkt)
   
   flog.info("Starting time series module")
   timeSeriesServer(id = "time_series",plot_df)

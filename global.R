@@ -105,9 +105,9 @@ plot_df <- reactiveVal()
 map_df <- reactiveVal()
 
 current_wkt <- reactiveVal()
-drawn_wkt <- reactiveVal()
+last_wkt <- reactiveVal()
+# map_wkt <- reactiveVal()
 current_selection_footprint_wkt <- reactiveVal()
-map_wkt <- reactiveVal()
 
 current_dataset <- reactiveVal()
 current_species <- reactiveVal()
@@ -428,6 +428,7 @@ flog.info("Keeping tracks of current selected values for filters to faster data 
 target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
 # target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
 current_wkt(target_wkt)
+last_wkt(target_wkt)
 current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
 current_species(default_species)
 current_dataset(default_dataset)
