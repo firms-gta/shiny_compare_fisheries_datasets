@@ -7,7 +7,7 @@ timeSeriesUI <- function(id) {
   )
 }
 
-timeSeriesServer <- function(id,sql_query_all) {
+timeSeriesServer <- function(id,plot_df) {
   flog.info("Starting time series module")
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -15,7 +15,7 @@ timeSeriesServer <- function(id,sql_query_all) {
     flog.info("Starting timeSeriesServer")
     
     data_all_datasets <- reactive({
-      data_all_datasets <- sql_query_all()  %>% as.data.frame()  %>%  dplyr::group_by(dataset, year, measurement_unit) %>% 
+      data_all_datasets <- plot_df()  %>% as.data.frame()  %>%  dplyr::group_by(dataset, year, measurement_unit) %>% 
         dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) 
     })
     
@@ -143,8 +143,8 @@ timeSeriesServer <- function(id,sql_query_all) {
     })
     
     
- 
-    })
+    
+  })
   flog.info("End of time series module")
 }
 

@@ -1,30 +1,17 @@
 server <- function(input, output, session) {
-
+  
   ########################################################## Dynamic filters ########################################################## 
-  change <- reactive({
-    unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
-  })
   
-  observeEvent(current_wkt(),{
-    
-    if(current_wkt()==target_wkt){
-      # shinyjs::click(id = "submit")
-    }else{
-      shinyjs::click(id = "submit")
-    }
-  })
   
-  observeEvent(input$yourWKT,{
-    updateSelectInput(session = session,
-                      inputId = "yourWKT",
-                      selected = current_wkt())
-  })
+  # change <- reactive({
+  #   unlist(strsplit(paste(c(input$species,input$year,input$gear_type),collapse="|"),"|",fixed=TRUE))
+  # })
   
-  observeEvent(input$yourWKT,{
-    updateSelectInput(session = session,
-                      inputId = "yourWKT",
-                      selected = current_wkt())
-  })
+  # observeEvent(input$yourWKT,{
+  #   updateSelectInput(session = session,
+  #                     inputId = "yourWKT",
+  #                     selected = current_wkt())
+  # })
   
   # observeEvent(updated_current_wkt$updated_current_wkt(), {
   #   req(current_wkt())
@@ -34,14 +21,7 @@ server <- function(input, output, session) {
   #   }
   # })
   
-  observeEvent(input$resetWkt, {
-    current_wkt(default_wkt)
-    output$verbatimWKT <- renderText({
-      default_wkt
-    })
-    # updateTextInput(session,"yourWKT", value = current_wkt())
-    #   updateTextInput(session,ns("yourWKT"), value = current_wkt())
-  })
+  
   
   
   # observeEvent(input$species,{
@@ -59,59 +39,163 @@ server <- function(input, output, session) {
   # }
   # )
   # if All is not in selection, filter to selected continents
-
   
-  observeEvent(input$switched, {
-    if(switch_unit()){switch_unit(FALSE)}else{switch_unit(TRUE)}
-  })
   
   # observeEvent(input$year,{
   #   temp <- filters_combinations %>% filter(species %in% change()[1], year %in% change()[2])
   #   updateSelectInput(session,"gear",choices = unique(temp$gear),selected=unique(temp$gear))
   # }
   # )
+  
+  
+  
+  observeEvent(input$resetWkt, {
+    current_wkt(all_wkt)
+  },
+  ignoreInit = TRUE)
+  
+  observeEvent(current_wkt(),{
+    shinyjs::click(id = "submit")
+  })
+  
+  observeEvent(input$resetAllFilters, {
+    
+    flog.info("Action Button => Reset all filters !")
+    
+    reset_all <- TRUE
+    # updateTextInput(session, "polygon", value = all_wkt)
+    
+    current_dataset(target_dataset)
+    updatePickerInput(session,"dataset",selected=target_dataset)
+    
+    current_species(target_species)
+    updatePickerInput(session,"species",selected=target_species,
+                      choicesOpt = list(
+                        disabled = disabled_choices,
+                        style = ifelse(disabled_choices,
+                                       yes = "color: rgba(119, 119, 119, 0.5);",
+                                       no = "")
+                      ))
+    
+    current_gear_type(target_gear_type)
+    updatePickerInput(session,"gear_type",selected=target_gear_type)
+    
+    current_year(target_year)
+    updatePickerInput(session,"year",selected=target_year)
+    
+    current_fishing_fleet(target_fishing_fleet)
+    updatePickerInput(session,"fishing_fleet",selected=target_fishing_fleet)
+    
+    current_unit(target_measurement_unit)
+    updatePickerInput(session,"unit",selected=target_measurement_unit)
+    
+    current_source_authority(target_source_authority)
+    updatePickerInput(session,"source_authority",selected=target_source_authority)
+    
+    current_gridtype(target_gridtype)
+    updatePickerInput(session,"gridtype",selected=target_gridtype)
+    
+    # main_df <- default_df
+    # main_df(whole_dataset())
+    # plot_df(whole_plot_df)
+    # map_df(whole_map_df)
+    
+    # shinyjs::click(id = "submit")
+    
+  },
+  ignoreInit = TRUE)
+  
+  observeEvent(input$switched, {
+    if(switch_unit()){switch_unit(FALSE)}else{switch_unit(TRUE)}
+  })
+  
+  
   flog.info("##########################################################")
   flog.info("set the main parameterized query (options for geom might be st_collect(geom) or  ST_ConvexHull(st_collect(geom)) as convexhull )")
   
   flog.info("Apply current filters to the main datasets when click on submit")
   
-  sql_query_all <- eventReactive(input$submit, {
-    # sql_query_all <- observeEvent(current_wkt() , {
-      
+  main_df <- eventReactive(input$submit, {
+    # main_df <- observeEvent(current_wkt() , {
+    
+    flog.info("Filters are going to be applied!!")
+    flog.info("WKT !!")
     req(current_wkt())
     wkt <- current_wkt()
+    flog.info("Non spatial filters !!")
     
-    if(wkt != target_wkt){
-      flog.info("Listing remaining areas within this new WKT: %s", wkt)
-      # current_wkt(wkt)
+    if(all(input$dataset == target_dataset) && 
+       all(input$species == target_species) && 
+       all(input$source_authority == target_source_authority) && 
+       all(input$gear_type == target_gear_type) && 
+       all(input$year == target_year) && 
+       all(input$fishing_fleet == target_fishing_fleet) && 
+       all(input$gridtype == target_gridtype) && 
+       all(input$unit == target_measurement_unit)
+    ){
+      flog.info("No no spatial filters => full dataset !!!")
       
-      current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
-      current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
-      list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
-      flog.info("Remaining number of different areas within this WKT: %s", nrow(list_areas))
-      within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
-        rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
-    }
-    
-    
-    
+      flog.info("input$dataset : %s", all(input$dataset == target_dataset))
+      flog.info("input$species : %s", all(input$species == target_species))
+      flog.info("input$source_authority : %s", all(input$source_authority == target_source_authority))
+      flog.info("input$gear_type : %s", all(input$gear_type == target_gear_type))
+      flog.info("input$year : %s", all(input$year == target_year))
+      flog.info("input$fishing_fleet : %s", all(input$fishing_fleet == target_fishing_fleet))
+      flog.info("input$unit : %s", all(input$unit == target_measurement_unit))
+      flog.info("Tests TRUE !!!")
+      
+      main_data <- whole_dataset()
+      
+      flog.info("test if spatial filter TRUE !!!")
+      
+      if(wkt==all_wkt){
+        flog.info("No spatial filter either !!")
+        current_selection_footprint_wkt(all_wkt)
+        main_df<- main_data
+      }else{
+        flog.info("Listing remaining areas within the new WKT: %s", wkt)
+        # current_wkt(wkt)
+        current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+        current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
+        list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
+        flog.info("Remaining number of different areas within this WKT: %s", nrow(list_areas))
+        within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
+          rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
+        current_selection_footprint_wkt(all_wkt)
+        flog.info("Laoding all grouped data")
+        main_df<- main_data %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+      }
+    }else{
+      # reset_all <- FALSE
+      if(wkt != target_wkt){
+        flog.info("Listing remaining areas within this new WKT: %s", wkt)
+        # current_wkt(wkt)
+        current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+        current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
+        list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
+        flog.info("Remaining number of different areas within this WKT: %s", nrow(list_areas))
+        within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
+          rename_at(1,~"codesource_area") %>% dplyr::select(codesource_area) %>% pull()
+      }
       flog.info("Testing if non spatial filters have been updated !")
       if(all(input$dataset == current_dataset()) && 
-       all(input$species == current_species()) && 
-       all(input$source_authority == current_source_authority()) && 
-       all(input$gear_type == current_gear_type()) && 
-       all(input$year == current_year()) && 
-       all(input$fishing_fleet == current_fishing_fleet()) && 
-       all(input$unit == current_unit())
-       ){
-      flog.info("Non spatial filters are the same => Loading pre-filtered dataset !!")
-      flog.info("sql_query_all  rows: %s", nrow(default_df))
-      if(wkt == target_wkt){
-        flog.info("Default WKT nothing has changed!!!")
-        sql_query_all <- default_df
-      }else{
-        flog.info("New WKT => filtering remaining areas")
-        sql_query_all <- whole_default_df %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+         all(input$species == current_species()) && 
+         all(input$source_authority == current_source_authority()) && 
+         all(input$gear_type == current_gear_type()) && 
+         all(input$year == current_year()) && 
+         all(input$fishing_fleet == current_fishing_fleet()) && 
+         all(input$unit == current_unit())
+      ){
+        
+        flog.info("Non spatial filters are the same => Loading pre-filtered dataset !!")
+        flog.info("main_df  rows: %s", nrow(default_df))
+        if(wkt == target_wkt){
+          flog.info("Default WKT nothing has changed!!!")
+          main_df <- default_df
+        }else{
+          flog.info("Same filters but new WKT => filtering remaining areas")
+          main_df <- whole_default_df() %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
+          
         }
       }else{
         flog.info("Non spatial filters are different => applying these new filters to the whole dataset !!")
@@ -132,10 +216,14 @@ server <- function(input, output, session) {
         if(!all(input$fishing_fleet == current_fishing_fleet())){current_fishing_fleet(input$fishing_fleet)}
         flog.info("input$unit : %s", all(input$unit == current_unit()))
         if(!all(input$unit == current_unit())){current_unit(input$unit)}
-
+        
+        
+        flog.info("Laoding all grouped data")
         main_data <- whole_dataset()
         
-        tmp_sql_query_all <- main_data  %>% filter(!is.na(geom_wkt)) %>%  
+        flog.info("Filtering all grouped data")
+        
+        tmp_main_df <- main_data  %>% filter(!is.na(geom_wkt)) %>%  
           dplyr::filter(
             dataset %in% input$dataset,
             species %in% input$species,
@@ -144,91 +232,119 @@ server <- function(input, output, session) {
             year %in% input$year,
             fishing_fleet %in% input$fishing_fleet,
             measurement_unit %in% input$unit
-            ) %>% 
-          dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, year, measurement_unit) %>% 
-          # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>% 
-          dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
+          )
+        # %>% 
+        #   dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, year, measurement_unit) %>%
+        #   # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>%
+        #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
         
-        this_footprint <- tmp_sql_query_all  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
+        flog.info("Footprint of all grouped filtered data")
+        this_footprint <- tmp_main_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
           dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
-          st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_as_text()
+          st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_simplify() %>% st_as_text()
         # flog.info("Current footprint for filters is %s: ",whole_footprint)
         current_selection_footprint_wkt(this_footprint)
         
-        whole_default_df <- tmp_sql_query_all
+        whole_default_df(tmp_main_df)
+        default_df <- tmp_main_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
         
-        default_df <- tmp_sql_query_all  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
-        sql_query_all <- default_df
+        main_df <- default_df
+      }
+    }
+    
+    if(nrow(main_df)==0)
+      showModal(modalDialog(
+        title = "Warning",
+        "No data left with current filters, back to default filters!",
+        easyClose = TRUE,
+        footer = NULL
+      ))else{
+        main_df
       }
     
     
-      if(nrow(sql_query_all)==0)
-        showModal(modalDialog(
-          title = "Warning",
-          "No data left with current filters, back to default filters!",
-          easyClose = TRUE,
-          footer = NULL
-        ))else{
-          sql_query_all
-        }
-    
-    
-    },
-    ignoreInit = FALSE,ignoreNULL = FALSE)
+  },
+  ignoreInit = FALSE,ignoreNULL = FALSE)
   # ignoreInit = TRUE, once = TRUE)
   
   
-
   
-#   sql_query <- reactive({
-#     req(sql_query_all())
-#     sql_query_all <- sql_query_all()
-#     flog.info("###############################################################################################") 
-#     flog.info("Applying new filters to main data") 
-#     flog.info("###############################################################################################") 
-#   #   
-#   #   req(current_wkt())
-#   #   wkt <- current_wkt()    
-#   #   flog.info("Spatial filter: main WKT : %s", wkt)
-#   #   
-#   #   flog.info("###############################################################################################") 
-#   #   flog.info("Applying new filters to main data 2 ") 
-#   #   flog.info("###############################################################################################") 
-#   #   
-#   #   current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
-#   #   
-#   #   flog.info("Spatial filter : keep only data whose areas are within the current WKT : %s", wkt)
-#   #   
-#   #   if(wkt!=default_wkt){
-#   #   list_areas <- process_list_areas(df_distinct_geom, current_selection)
-#   #   
-#   #   flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
-#   #   within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>% 
-#   #     rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
-#   #   
-#   #   sql_query <- sql_query_all %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas) 
-#   # }else{
-#   #   sql_query <- sql_query_all
-#   # }
-#     # sql_query <- sql_query_all  %>% dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>% 
-#     #   dplyr::mutate(geom=st_as_text(st_sfc(geom_wkt),EWKT = TRUE))
-#     
-#     sql_query <- sql_query_all 
-#     
-#   flog.info("Main data number rows: %s", nrow(sql_query))
-#   # https://shiny.posit.co/r/reference/shiny/latest/modaldialog
-#   if(nrow(sql_query)==0)
-#     showModal(modalDialog(
-#       title = "Warning",
-#       "No data left with current filters !",
-#       easyClose = TRUE,
-#       footer = NULL
-#     ))else{
-#       sql_query 
-#     }
-#   })
-#   
-#   
+  
+  map_df <- reactive({
+    
+    
+    map_df <- whole_map_df
+    
+    req(main_df())
+    main_df <- main_df()
+    flog.info("###############################################################################################")
+    flog.info("Applying new filters to MAP data")
+    flog.info("###############################################################################################")
+    #
+    #   req(current_wkt())
+    #   wkt <- current_wkt()
+    #   flog.info("Spatial filter: main WKT : %s", wkt)
+    #
+    #   flog.info("###############################################################################################")
+    #   flog.info("Applying new filters to main data 2 ")
+    #   flog.info("###############################################################################################")
+    #
+    #   current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
+    #
+    #   flog.info("Spatial filter : keep only data whose areas are within the current WKT : %s", wkt)
+    #
+    #   if(wkt!=all_wkt){
+    #   list_areas <- process_list_areas(df_distinct_geom, current_selection)
+    #
+    #   flog.info("Remaining number of different areas within this WKT: %s", length(list_areas))
+    #   within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%
+    #     rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
+    #
+    #   map_df <- main_df %>% filter(!is.na(geom)) %>%  dplyr::filter(codesource_area %in% within_areas)
+    # }else{
+    #   map_df <- main_df
+    # }
+    # map_df <- main_df  %>% dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>%
+    #   dplyr::mutate(geom=st_as_text(st_sfc(geom_wkt),EWKT = TRUE))
+    
+    map_df <- main_df %>% 
+      dplyr::group_by(geom_wkt, dataset, measurement_unit) %>%
+      # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>%
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>% st_as_sf(wkt="geom_wkt",crs=4326)
+    # flog.info("Number of rows of map data : %s", nrow(map_df))
+    
+    # flog.info("Main data number rows: %s", nrow(map_df))
+    # # https://shiny.posit.co/r/reference/shiny/latest/modaldialog
+    # if(nrow(map_df)==0)
+    #   showModal(modalDialog(
+    #     title = "Warning",
+    #     "No data left with current filters !",
+    #     easyClose = TRUE,
+    #     footer = NULL
+    #   ))else{
+    #     map_df
+    #   }
+    
+    
+  })
+  
+  
+  
+  
+  plot_df <- reactive({
+    flog.info("###############################################################################################")
+    flog.info("Applying new filters to PLOT data")
+    flog.info("###############################################################################################")
+    
+    map_df <- whole_plot_df
+    req(main_df())
+    main_df <- main_df()
+    plot_df <- main_df  %>% 
+      dplyr::group_by(dataset, year, gridtype, measurement_unit) %>%
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
+    # flog.info("Number of rows of plot data : %s", nrow(plot_df))
+  })
+  
   
   flog.info("##########################################################")
   flog.info("Outputs: text & Data tables")
@@ -246,7 +362,6 @@ server <- function(input, output, session) {
   })
   
   output$current_filters <- renderText({ 
-    # paste("Your SQL Query is : \n", sql_query())
     species_list <- input$species     
     # within_areas <- unique(list_areas$codesource_area) %>% as.data.frame() %>%  rename_at(1,~"codesource_area") %>%  dplyr::select(codesource_area) %>% pull()
     year_list <- input$year
@@ -255,7 +370,7 @@ server <- function(input, output, session) {
   })
   
   output$DT_main_dataset <- renderDT({
-    sql_query_all() %>% top_n(10)
+    main_df() %>% top_n(10)
   })
   
   flog.info("##########################################################")
@@ -265,16 +380,16 @@ server <- function(input, output, session) {
   
   flog.info("Starting leaflet in the global map module")
   # callModule(module = map_leaflet, id = "id_1")
-  map_leafletServer(id = "map_global",sql_query_all)
+  map_leafletServer(id = "map_global",map_df,wkt)
   
   flog.info("Starting time series module")
-  timeSeriesServer(id = "time_series",sql_query_all)
-    
+  timeSeriesServer(id = "time_series",plot_df)
+  
   flog.info("Starting pie and bar Charts module")
-  pieBarChartsServer(id= "pie_bar_charts",sql_query_all)
+  pieBarChartsServer(id= "pie_bar_charts",plot_df)
   
   flog.info("Extra module to detail what gears are the most important in the time series of catches")
-  # timeSeriesGearServer(id= "time_series_gear",sql_query_all)
+  # timeSeriesGearServer(id= "time_series_gear",plot_df)
   
   # nav_bar_menu_rmd <- c(
   #   "rmd/Authors.Rmd", 
@@ -290,7 +405,7 @@ server <- function(input, output, session) {
   # }
   # nav_bar_menu_html <- render_rmd_files(nav_bar_menu_rmd)
   # aboutServer("about", rmd_paths=nav_bar_menu_html)
-    
+  
   onStop(function() {
     # dbDisconnect(con)
   })

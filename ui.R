@@ -68,7 +68,7 @@ ui <- fluidPage(
                                           width = "98%"
                                         ),
                                         pickerInput(
-                                        # selectInput(
+                                          # selectInput(
                                           inputId = "species",
                                           label = "Species",
                                           choices = target_species,
@@ -99,22 +99,30 @@ ui <- fluidPage(
                                         shinyWidgets::pickerInput(
                                           inputId = "fishing_fleet",
                                           label = "Fishing fleet",
-                                          choices = target_flag,
+                                          choices = target_fishing_fleet,
                                           multiple = TRUE,
                                           selected= default_fishing_fleet,
                                           options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
                                         map_leafletUI("other"),
-                                        textInput("yourWKT","Main draw or paste a new WKT",width="98%"),
+                                        # textInput("yourWKT","Draw paste a spatial WKT",width="98%"),
                                         # textInput("yourWKT","Paste you WKT",value=textOutput("updatedWKT")),
-                                        verbatimTextOutput("updatedWKT", placeholder = TRUE),
+                                        # verbatimTextOutput("updatedWKT", placeholder = TRUE),
                                         # verbatimTextOutput("verbatimWKT"),
                                         
-                                        actionButton(inputId ="resetWkt", label = "Reset WKT (no spatial filter)", icon("map"), 
-                                                     style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large;
+                                        # actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map"), 
+                                        #              style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large;
+                                        #                                                                                    font-weight: bold;"),
+                                        
+                                        actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map"), 
+                                                     style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large; font-weight: bold;"),
+                                        
+                                        actionButton(inputId ="resetAllFilters", label = "Remove all filters", icon("map"), 
+                                                     style="color: #fff; background-color: #91c9b9; border-color: #2e6da4;font-size: xx-large;
                                                                                                                            font-weight: bold;"),
-                                        actionButton(inputId = "submit",label = "Apply filters !", icon("paper-plane"), 
+                                       
+                                         actionButton(inputId = "submit",label = "Apply filters !", icon("paper-plane"), 
                                                      style="color: #fff; background-color: #d63638; border-color: #2e6da4;font-size: xx-large;
                                                      font-weight: bold;"),
                                         # actionButton(inputId="applytWkt", label="Select features within this WKT"),
@@ -191,5 +199,5 @@ ui <- fluidPage(
                                  )
                         )
              )
-             )
+  )
 )
