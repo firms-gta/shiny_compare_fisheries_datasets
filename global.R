@@ -100,13 +100,14 @@ reset_all <- FALSE
 
 whole_dataset <- reactiveVal()
 whole_filtered_df <- reactiveVal()
+filtered_default_df <- reactiveVal()
 main_df <- reactiveVal()
 plot_df <- reactiveVal()
 map_df <- reactiveVal()
 
 current_wkt <- reactiveVal()
 last_wkt <- reactiveVal()
-# map_wkt <- reactiveVal()
+map_wkt <- reactiveVal()
 current_selection_footprint_wkt <- reactiveVal()
 
 current_dataset <- reactiveVal()
@@ -488,6 +489,7 @@ default_df <- init_whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::fil
 
 current_selection_footprint_wkt(default_footprint)
 whole_filtered_df(init_whole_default_df)
+filtered_default_df(default_df)
 
 # flog.info("nrow(df_sf) %s: ",nrow(df_sf))
 rm(df_sf)
