@@ -126,7 +126,7 @@ server <- function(input, output, session) {
     wkt <- current_wkt()
     map_wkt(wkt)
     
-    if(wkt != last_wkt() && wkt!=all_wkt){
+    if( (wkt != last_wkt() && wkt!=all_wkt) || !all(input$gridtype == current_gridtype()) ){
       current_selection <- st_sf(st_as_sfc(wkt, crs = 4326))
       current_df_distinct_geom <- df_distinct_geom %>% dplyr::filter(gridtype %in% input$gridtype)
       list_areas <- process_list_areas(current_df_distinct_geom, current_selection)
