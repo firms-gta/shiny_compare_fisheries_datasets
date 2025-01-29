@@ -100,9 +100,9 @@ map_leafletServer <- function(id,map_df,map_wkt) {
         addProviderTiles("CartoDB", "background")   %>%
         addProviderTiles("Esri.OceanBasemap", "background")   %>%
         addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection") %>%
-        # addPolygons(data = spatial_footprint_1,color="blue",fillColor = "transparent", group="footprint1") %>%
-        # addPolygons(data = spatial_footprint_5,color="green",fillColor = "transparent", group="footprint5") %>%
-        # addPolygons(data = current_fooprint,color="yellow",fillColor = "transparent", group="data_for_filters")  %>%
+        addPolygons(data = spatial_footprint_1,color="grey",fillColor = "transparent", group="footprint1") %>%
+        addPolygons(data = spatial_footprint_5_converted,color="grey",fillColor = "transparent", group="footprint5") %>%
+        addPolygons(data = current_fooprint,color="red",fillColor = "transparent", group="data_for_filters")  %>%
         # addPolygons(data = remaining_polygons,color="red",fillColor = "transparent", group="remaining")  %>%
         addPolygons(data = all_polygons,color="cyan",fillColor = "transparent", group="all")  %>%
         addPolygons(data = whole_footprint,color="yellow",fillColor = "transparent", group="data_for_filters")
@@ -267,7 +267,6 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       # polygon_coordinates <- input$map_draw_new_feature$geometry$coordinates[[1]]
       
       textPopup <- paste0("<b>Click Submit button if you want to extract data in this polygon</b>:", new_wkt)
-      
       output$verbatimWKT <- renderText({ input$yourWKT })
       
       # updateTextInput(session,ns("yourmoduleWKT"), value = new_wkt)

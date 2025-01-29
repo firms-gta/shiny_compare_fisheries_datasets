@@ -283,7 +283,11 @@ load_data <- function(mode="DOI"){
     loaded_data <- arrow::read_parquet("gta.parquet")
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
-  }else if(mode=="postgres"){
+  } else if (mode == "DOI"){ 
+    source(here::here("download_CWP_shapefiles.R"))
+    source(here::here("create_parquet_from_DOI.R"))
+    loaded_data <- load_data(mode="parquet") 
+    } else if(mode=="postgres"){
     # Database connection setup
     flog.info("Loading main data from %s database",mode)
     try(dotenv::load_dot_env("connection_tunaatlas_inv.txt"))
@@ -299,7 +303,6 @@ load_data <- function(mode="DOI"){
     query <- paste0("SELECT ogc_fid,dataset,year,month,species,fishing_fleet,gear_type, measurement_value,measurement_unit,count,gridtype,fishing_mode, codesource_area, geom_id,ST_AsText(ST_GeometryN(geom, 1)) AS geom
                               FROM public.shinycatch ;")
     loaded_data <- dbGetQuery(con,query )
-    qs::qsave(loaded_data,"newshinypublic.qs")
     #save and read the data frame by using parquet and feather data formats
   }else{
     flog.info("No data loaded !!")
