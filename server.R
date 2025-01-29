@@ -57,7 +57,8 @@ server <- function(input, output, session) {
   
   observeEvent(current_wkt(),{
     shinyjs::click(id = "submit")
-  })
+  },
+  ignoreInit = TRUE)
   
   observeEvent(input$resetAllFilters, {
     

@@ -62,7 +62,8 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       all_polygons <- df_distinct_geom %>% st_combine() 
       whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326)) %>% st_combine()  # %>% st_union() st_convex_hull
       
-      convex_hull <- st_convex_hull(whole_footprint)
+      # convex_hull <- st_convex_hull(whole_footprint)
+      convex_hull <- st_convex_hull(current_selection)
       bbx <- st_bbox(remaining_polygons) %>% as.numeric()
       centroid <-  convex_hull %>% st_centroid()
       lat_centroid <- st_coordinates(centroid, crs = 4326)[2]
