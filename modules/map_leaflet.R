@@ -47,23 +47,24 @@ map_leafletServer <- function(id,map_df,map_wkt) {
         errorClass = "myClass"
       )
       # req(map_df())
+      data_map <- map_df() 
       
       this_wkt <- map_wkt()
       current_selection <- st_sf(st_as_sfc(this_wkt, crs = 4326))
-      # flog.info("New this_wkt OK %s",this_wkt)
-      flog.info("this_wkt OK")
+      whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326)) %>% st_combine()  # %>% st_union() st_convex_hull
       
-      data_map <- map_df() 
       
       # flog.info("Updating spatial_footprint_1 to fit the new WKT  : %s", this_wkt)
       # spatial_footprint_1 <- list_areas  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% st_combine() #%>% st_convex_hull(
       # flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", this_wkt)
       # spatial_footprint_5 <- list_areas  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
-      all_polygons <- df_distinct_geom %>% st_combine() 
-      whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326)) %>% st_combine()  # %>% st_union() st_convex_hull
       
-      # convex_hull <- st_convex_hull(whole_footprint)
-      convex_hull <- st_convex_hull(current_selection)
+      if(this_wkt!=all_wkt){
+        convex_hull <- st_convex_hull(current_selection)
+      }else{
+        convex_hull <- st_convex_hull(whole_footprint)
+      }
+      
       # bbx <- st_bbox(whole_footprint) %>% as.numeric()
       centroid <-  convex_hull %>% st_centroid()
       lat_centroid <- st_coordinates(centroid, crs = 4326)[2]

@@ -127,16 +127,14 @@ server <- function(input, output, session) {
     map_wkt(wkt)
     
     # flog.info("Define the rules to update the spatial filtering of list of areas within the WKT !!")
-    # if( (wkt != last_wkt() && (wkt != all_wkt && all(input$gridtype == current_gridtype()))) || 
-    #     (wkt==last_wkt() && !all(input$gridtype == current_gridtype())) || !all(input$gridtype == current_gridtype()) ){
+    if( (wkt != last_wkt() && !(wkt == all_wkt && all(input$gridtype == current_gridtype()))) ||
+        (wkt==last_wkt() && !all(input$gridtype == current_gridtype())) || 
+        !all(input$gridtype == current_gridtype()) ){
       flog.info("************ YES UPDATE within_areas ***************************** !!")
       within_areas <- process_list_areas(df_distinct_geom, wkt=current_wkt(), list_gridtype=input$gridtype) 
-    # }else{
-    #   flog.info("************ NO UPDATE within_areas ***************************** !!")
-    # }
-    
-    
-
+    }else{
+      flog.info("************ NO UPDATE within_areas ***************************** !!")
+    }
     
     flog.info("Check if filters have been updated")
     if(all(input$dataset == current_dataset()) && 
@@ -151,6 +149,7 @@ server <- function(input, output, session) {
       flog.info("--------------------------------------------")
       flog.info("USE CASE 1: Non spatial filters => same / not updated")
       flog.info("USE CASE 1: Check if the Spatial filters / WKT has been updated")
+      
       flog.info("--------------------------------------------")
       if(wkt == last_wkt()){
         flog.info("--------------------------------------------")
@@ -169,11 +168,8 @@ server <- function(input, output, session) {
           flog.info("--------------------------------------------")
           flog.info("Listing remaining areas within the new WKT: %s", wkt)
           main_data <- whole_filtered_df()
-          current_selection_footprint_wkt(all_wkt)
-
           main_df<- main_data %>% filter(!is.na(geom_wkt)) %>% 
             dplyr::filter(codesource_area %in% within_areas)
-
           }
       } 
     }else if (length(setdiff(input$dataset,current_dataset())) == 0 && 
@@ -216,7 +212,7 @@ server <- function(input, output, session) {
       #   tmp_main_df <- main_data %>% dplyr::filter(gridtype %in% input$gridtype)
       # }
       
-      flog.info("Footprint of all grouped filtered data")
+      flog.info("Footprint has to be refined from previous one !!!")
       this_footprint <- tmp_main_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>%
         dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%
         st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text() # %>% st_simplify()
@@ -297,7 +293,7 @@ server <- function(input, output, session) {
            current_unit(target_measurement_unit)
            current_gridtype(target_gridtype)
            
-           current_selection_footprint_wkt(all_wkt)
+           current_selection_footprint_wkt(all_polygons_footprint)
            whole_filtered_df(main_data)
            
            if(wkt != all_wkt){
@@ -582,9 +578,6 @@ server <- function(input, output, session) {
   },
   ignoreInit = FALSE,ignoreNULL = FALSE)
   # ignoreInit = TRUE, once = TRUE)
-  
-  
-  
   
   map_df <- reactive({
     
