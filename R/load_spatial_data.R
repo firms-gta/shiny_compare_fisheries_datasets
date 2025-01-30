@@ -1,5 +1,16 @@
 load_spatial_data <- function(mode,df_sf) {
   
+  if(!file.exists("data/gta_geom.RDS")){
+    df_distinct_geom <- qread("data/global_catch_tunaatlasird_level2_14184244.qs") %>%
+      dplyr::select(geographic_identifier, GRIDTYPE) %>% 
+      dplyr::mutate(ogc_fid = 1) %>% 
+      dplyr::rename(codesource_area=geographic_identifier,gridtype=GRIDTYPE,geom=geom_wkt) %>%
+      mutate(ogc_fid=row_number(codesource_area)) %>% 
+      dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(count = sum(ogc_fid)) %>% ungroup() %>%  st_set_crs(4326)
+    #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
+    saveRDS(df_distinct_geom, "data/gta_geom.RDS")   
+  } 
+    
 if(mode!="DOI"){
   flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
   df_distinct_geom <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area,gridtype,geom) %>%
