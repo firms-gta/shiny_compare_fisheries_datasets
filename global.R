@@ -54,7 +54,7 @@ flog.info("Loading data with mode: %s", mode)
 ########################################################## Load data from a list of DOIs ########################################################## 
 list_DOIs <-"data/DOI.csv"
 DOI <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
-df_sf <- load_data(mode=mode)
+# df_sf <- load_data(mode=mode)
 flog.info("All data succesfully loaded")
 
 setwd(dir)
@@ -81,7 +81,7 @@ df_distinct_geom <-  load_spatial_data(mode=mode,df_sf=whole_group_df)
 all_polygons <- df_distinct_geom %>% st_combine() 
 all_polygons_footprint <- all_polygons %>% st_as_text()
   
-
+# possible_values / selected_values / current_values
 flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
 all_wkt <- st_as_text(st_union(df_distinct_geom))
 new_wkt <- all_wkt
@@ -122,6 +122,10 @@ target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.
 current_wkt(target_wkt)
 last_wkt(target_wkt)
 current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
+# current_areas ?
+within_areas <- process_list_areas(df_distinct_geom, wkt=target_wkt, list_gridtype=default_gridtype) 
+
+# add function to update the values of current filters ?
 current_species(default_species)
 current_dataset(default_dataset)
 current_source_authority(default_source_authority)
@@ -137,11 +141,11 @@ flog.info("Initial setup and data retrieval completed successfully.")
 
 flog.info("Load default dataset!!")
 
-within_areas <- process_list_areas(df_distinct_geom, wkt=target_wkt, list_gridtype=default_gridtype) 
-
+# add parameter = list of values ?
 init_whole_default_df <- load_default_dataset(df=whole_group_df, filename="default_df.parquet")
 whole_filtered_df(init_whole_default_df)
 
+# add function to calculate the footprint of a df ?
 default_footprint <- init_whole_default_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
   st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_as_text() # %>% st_simplify()
