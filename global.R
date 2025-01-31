@@ -17,6 +17,7 @@ source(here::here('R/load_spatial_data.R'))
 source(here::here('R/load_default_dataset.R'))
 source(here::here('R/load_grouped_data.R'))
 source(here::here('R/load_filters_combinations.R'))
+source(here::here('R/update_current_filters.R'))
 source(here::here('R/list_areas_within_wkt.R'))
 source(here::here('R/verify_filesize.R'))
 
@@ -55,12 +56,14 @@ flog.info("Loading data with mode: %s", mode)
 ########################################################## Load data from a list of DOIs ########################################################## 
 list_DOIs <-"data/DOI.csv"
 DOI <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
-whole_dataset(load_data(mode=mode))
+list_dataframes <- load_data(mode=mode)
+whole_dataset(list_dataframes$whole_group_df)
+filters_combinations <- list_dataframes$filters_combinations
+list_values_dimensions <- list_dataframes$list_values_dimensions
 # flog.info("nrow(whole_group_df) %s: ",nrow(whole_dataset()))
 # whole_dataset(df_sf)
 flog.info("All data succesfully loaded")
 setwd(dir)
-
 
 # main_df(whole_dataset())
 # whole_map_df <- whole_dataset() %>%  dplyr::group_by(geom_wkt, dataset, measurement_unit) %>%
@@ -70,8 +73,6 @@ setwd(dir)
 #   dplyr::group_by(dataset, year, gridtype, measurement_unit) %>%
 #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
 
-flog.info("Load non spatial filters combinations")
-filters_combinations <- load_filters_combinations(df_sf=whole_dataset(), filename = "data/filters_combinations.parquet")
 
 flog.info("Load spatial filter data")
 df_distinct_geom <-  load_spatial_data(df_sf=whole_dataset(), mode=mode)
@@ -82,29 +83,27 @@ all_polygons_footprint <- all_polygons %>% st_as_text()
 flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
 all_wkt <- st_as_text(st_union(df_distinct_geom))
 new_wkt <- all_wkt
-flog.info("Storing all possible values for retained filters : list distinct values in the main dataset for each dimension")
-# target_dataset <- dbGetQuery(con,"SELECT DISTINCT(dataset) FROM public.shinycatch ORDER BY dataset;")  %>% distinct(dataset) %>% select(dataset) %>% unique()
-target_dataset <- unique(filters_combinations$dataset) #  %>% arrange(desc(dataset))
-target_species <- unique(filters_combinations$species) # %>% arrange(desc(species))
-target_year <-  unique(filters_combinations$year)  # %>% arrange(desc(year))
-target_gear_type <-  unique(filters_combinations$gear_type)# %>% arrange(desc(gear_type))
-target_measurement_unit <- unique(filters_combinations$measurement_unit) # %>% arrange(desc(measurement_unit))
-target_source_authority <- unique(filters_combinations$source_authority)
-target_gridtype <- unique(df_distinct_geom$gridtype) 
-target_fishing_fleet <-  unique(filters_combinations$fishing_fleet)
 
 flog.info("Set filters values to be applied by default (before user selection)")
 # flog.info("Spatial filter :main WKT : %s", current_wkt())
 default_dataset <- c('global_catch_tunaatlasird_level2','global_nominal_catch_firms_level0_public') # c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
 default_species <- c('YFT') # c('YFT','SKJ','BET','SBF','ALB')
-default_year <- c(seq(1:10)+2010) # c(seq(min(target_year):max(target_year))+min(target_year)-2) | c(seq(1950:2021)+1949) | c(seq((max(target_year)-10):max(target_year))+max(target_year)-11)
+default_year <- c(seq(1:10)+2010) # c(seq(min(list_values_dimensions$year):max(list_values_dimensions$year))+min(list_values_dimensions$year)-2) | c(seq(1950:2021)+1949) | c(seq((max(list_values_dimensions$year)-10):max(list_values_dimensions$year))+max(list_values_dimensions$year)-11)
 default_gear_type <- c('1.1','1.2') #  c('01.1','01.2')
 default_unit <- c('t')
-default_source_authority <- unique(target_source_authority)
-default_gridtype <- target_gridtype # c("1deg_x_1deg")
+default_source_authority <- unique(list_values_dimensions$source_authority)
+default_gridtype <- list_values_dimensions$gridtype # c("1deg_x_1deg")
 default_fishing_fleet <- c('EUFRA','EUESP')
 flog.info("Default filters values set.")
-
+list_default_filters = list("dataset"=default_dataset,
+                           "species"=default_species,
+                           "year"=default_year,
+                           "gear_type"=default_gear_type,
+                           "unit"=default_unit,
+                           "source_authority"=default_source_authority,
+                           "gridtype"=default_gridtype,
+                           "fishing_fleet"=default_fishing_fleet)
+update_current_filters(list_filters_values = list_default_filters)
 
 flog.info("Keeping tracks of current selected values for filters to faster data loading.")
 target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
@@ -115,23 +114,12 @@ current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
 # current_areas ?
 within_areas <- process_list_areas(df_distinct_geom, wkt=target_wkt, list_gridtype=default_gridtype) 
 
-# add function to update the values of current filters ?
-current_species(default_species)
-current_dataset(default_dataset)
-current_source_authority(default_source_authority)
-current_gear_type(default_gear_type)
-current_year(default_year)
-current_fishing_fleet(default_fishing_fleet)
-current_unit(default_unit)
-current_gridtype(default_gridtype)
-
 # Logging the successful execution of the script up to this point
 flog.info("Initial setup and data retrieval completed successfully.")
 
 flog.info("Load default dataset!!")
-
 # add parameter = list of values ?
-init_whole_default_df <- load_default_dataset(df=whole_dataset(), filename="default_df.parquet")
+init_whole_default_df <- load_default_dataset(df=list_dataframes$whole_group_df, filename="data/default_df.parquet",list_filters=list_default_filters)
 whole_filtered_df(init_whole_default_df)
 
 # add function to calculate the footprint of a df ?

@@ -231,15 +231,14 @@ server <- function(input, output, session) {
         filtered_default_df(default_df)
         main_data <- filtered_default_df()
       }
-      
-      current_dataset(input$dataset)
-      current_species(input$species)
-      current_source_authority(input$source_authority)
-      current_gear_type(input$gear_type)
-      current_year(input$year)
-      current_fishing_fleet(input$fishing_fleet)
-      current_unit(input$unit)
-      current_gridtype(input$gridtype)
+      update_current_filters(list_filters_values = list("dataset"=input$dataset,
+                                                            "species"=input$species,
+                                                            "year"=input$year,
+                                                            "gear_type"=input$species,
+                                                            "unit"=input$unit,
+                                                            "source_authority"=input$species,
+                                                            "gridtype"=input$gridtype,
+                                                            "fishing_fleet"=input$fishing_fleet))
       
       main_df <- main_data 
     }else{
@@ -284,14 +283,15 @@ server <- function(input, output, session) {
            flog.info("USE CASE 3: All non spatial filters have just been reset !!")
            flog.info("--------------------------------------------")
            
-           current_dataset(target_dataset)
-           current_species(target_species)
-           current_source_authority(target_source_authority)
-           current_gear_type(target_gear_type)
-           current_year(target_year)
-           current_fishing_fleet(target_fishing_fleet)
-           current_unit(target_measurement_unit)
-           current_gridtype(target_gridtype)
+           update_current_filters(list_filters_values = list("dataset"=list_values_dimensions$dataset,
+                                                                 "species"=list_values_dimensions$species,
+                                                                 "year"=list_values_dimensions$year,
+                                                                 "gear_type"=list_values_dimensions$gear_type,
+                                                                 "unit"=list_values_dimensions$measurement_unit,
+                                                                 "source_authority"=list_values_dimensions$source_authority,
+                                                                 "gridtype"=list_values_dimensions$gridtype,
+                                                                 "fishing_fleet"=list_values_dimensions$fishing_fleet))
+           
            
            current_selection_footprint_wkt(all_polygons_footprint)
            whole_filtered_df(main_data)
@@ -309,14 +309,14 @@ server <- function(input, output, session) {
            flog.info("USE CASE 3: Not a full reset / just few additional filters not present in the previous filters => filtering the whole dataset but are a subset of previous ones")
            flog.info("--------------------------------------------")
            
-           current_dataset(input$dataset)
-           current_species(input$species)
-           current_source_authority(input$source_authority)
-           current_gear_type(input$gear_type)
-           current_year(input$year)
-           current_fishing_fleet(input$fishing_fleet)
-           current_unit(input$unit)
-           current_gridtype(input$gridtype)
+           update_current_filters(list_filters_values = list("dataset"=input$dataset,
+                                                                 "species"=input$species,
+                                                                 "year"=input$year,
+                                                                 "gear_type"=input$gear_type,
+                                                                 "unit"=input$unit,
+                                                                 "source_authority"=input$source_authority,
+                                                                 "gridtype"=input$gridtype,
+                                                                 "fishing_fleet"=input$fishing_fleet))
 
            flog.info("Filtering all grouped data")
            main_data <- whole_dataset()
@@ -356,14 +356,16 @@ server <- function(input, output, session) {
              main_data <- filtered_default_df()
            }
            
-           current_dataset(input$dataset)
-           current_species(input$species)
-           current_source_authority(input$source_authority)
-           current_gear_type(input$gear_type)
-           current_year(input$year)
-           current_fishing_fleet(input$fishing_fleet)
-           current_unit(input$unit)
-           current_gridtype(input$gridtype)
+           
+           update_current_filters(list_filters_values = list("dataset"=input$dataset,
+                                                                 "species"=input$species,
+                                                                 "year"=input$year,
+                                                                 "gear_type"=input$gear_type,
+                                                                 "unit"=input$unit,
+                                                                 "source_authority"=input$source_authority,
+                                                                 "gridtype"=input$gridtype,
+                                                                 "fishing_fleet"=input$fishing_fleet))
+           
            
            main_df <- main_data
            

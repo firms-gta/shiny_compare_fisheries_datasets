@@ -170,9 +170,20 @@ load_data <- function(mode="DOI"){
     flog.info("No data loaded !!")
   }
   
-  
   flog.info("Loading / storing aggregated data with dimensions only needed by filters")
   whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = "whole_group_df.parquet")
   
-  return(whole_group_df)
+  flog.info("Load non spatial filters combinations  & List all values for non spatial filters")
+  list_filters <- load_filters_combinations(df_sf=whole_group_df, filename = "filters_combinations.parquet")
+  filters_combinations <- list_filters$filters_combinations
+  list_values_dimensions <- list_filters$list_values_dimensions
+  
+  flog.info("Returns a list of dataframes")
+  list_df = list(
+    "whole_group_df" = whole_group_df,
+    "filters_combinations" = filters_combinations,
+    "list_values_dimensions" = list_values_dimensions
+  )
+  
+  return(list_df)
 }

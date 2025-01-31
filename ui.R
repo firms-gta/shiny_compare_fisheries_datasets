@@ -33,7 +33,7 @@ ui <- fluidPage(
                                         pickerInput(
                                           inputId = "dataset",
                                           label = "Dataset",
-                                          choices = target_dataset,
+                                          choices = list_values_dimensions$dataset,
                                           multiple = TRUE,
                                           selected= default_dataset,
                                           options = list(`actions-box` = TRUE),
@@ -42,7 +42,7 @@ ui <- fluidPage(
                                         pickerInput(
                                           inputId = "unit",
                                           label = "Unit",
-                                          choices = target_measurement_unit,
+                                          choices = list_values_dimensions$measurement_unit,
                                           multiple = TRUE,
                                           selected= default_unit,
                                           options = list(`actions-box` = TRUE),
@@ -51,7 +51,7 @@ ui <- fluidPage(
                                         pickerInput(
                                           inputId = "source_authority",
                                           label = "Source authority",
-                                          choices = target_source_authority,
+                                          choices = list_values_dimensions$source_authority,
                                           multiple = TRUE,
                                           selected= default_source_authority,
                                           options = list(`actions-box` = TRUE),
@@ -61,7 +61,7 @@ ui <- fluidPage(
                                         pickerInput(
                                           inputId = "gridtype",
                                           label = "Grid size",
-                                          choices = target_gridtype,
+                                          choices = list_values_dimensions$gridtype,
                                           multiple = TRUE,
                                           selected= default_gridtype,
                                           options = list(`actions-box` = TRUE),
@@ -71,7 +71,7 @@ ui <- fluidPage(
                                           # selectInput(
                                           inputId = "species",
                                           label = "Species",
-                                          choices = target_species,
+                                          choices = list_values_dimensions$species,
                                           multiple = TRUE,
                                           selected= default_species,
                                           options = list(`actions-box` = TRUE),
@@ -80,7 +80,7 @@ ui <- fluidPage(
                                         pickerInput(
                                           inputId = "year",
                                           label = "Year",
-                                          choices = target_year,
+                                          choices = list_values_dimensions$year,
                                           multiple = TRUE,
                                           selected= default_year,
                                           options = list(`actions-box` = TRUE),
@@ -89,8 +89,8 @@ ui <- fluidPage(
                                         pickerInput(
                                           inputId = "gear_type",
                                           label = "Gear",
-                                          # choices = c("All",target_gear_type),
-                                          choices =target_gear_type,
+                                          # choices = c("All",list_values_dimensions$gear_type),
+                                          choices =list_values_dimensions$gear_type,
                                           multiple = TRUE,
                                           selected= default_gear_type,
                                           options = list(`actions-box` = TRUE),
@@ -99,7 +99,7 @@ ui <- fluidPage(
                                         shinyWidgets::pickerInput(
                                           inputId = "fishing_fleet",
                                           label = "Fishing fleet",
-                                          choices = target_fishing_fleet,
+                                          choices = list_values_dimensions$fishing_fleet,
                                           multiple = TRUE,
                                           selected= default_fishing_fleet,
                                           options = list(`actions-box` = TRUE),
