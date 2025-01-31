@@ -6,8 +6,8 @@ require(futile.logger)
 source(here::here('install.R'))
 flog.info("Loading libraries")
 flog.info("All libraries loaded successfully.")
-sf::sf_use_s2(FALSE)
 spatial_processing_mode <- "sf" # "QGIS"
+sf::sf_use_s2(FALSE)
 
 # loadSupport(  ) ??
 futile.logger::flog.info("Load zenodo download function")
@@ -20,9 +20,10 @@ source(here::here('R/load_filters_combinations.R'))
 source(here::here('R/list_areas_within_wkt.R'))
 source(here::here('R/verify_filesize.R'))
 
-# Initialize reactive values and default WKT for mapping
-flog.info("Initialize reactive values")
+# Initialize variables and reactive values and default WKT for mapping
 reset_all <- FALSE
+
+flog.info("Initialize reactive values")
 
 whole_dataset <- reactiveVal()
 whole_filtered_df <- reactiveVal()
@@ -54,31 +55,27 @@ flog.info("Loading data with mode: %s", mode)
 ########################################################## Load data from a list of DOIs ########################################################## 
 list_DOIs <-"data/DOI.csv"
 DOI <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
-# df_sf <- load_data(mode=mode)
+whole_dataset(load_data(mode=mode))
+# flog.info("nrow(whole_group_df) %s: ",nrow(whole_dataset()))
+# whole_dataset(df_sf)
 flog.info("All data succesfully loaded")
-
 setwd(dir)
 
-flog.info("Loading / storing aggregated data")
-whole_group_df <- load_grouped_data(filename = "whole_group_df.parquet")
-# whole_dataset(df_sf)
-whole_dataset(whole_group_df)
-flog.info("nrow(whole_group_df) %s: ",nrow(whole_group_df))
 
-# main_df(whole_group_df)
-# whole_map_df <- whole_group_df %>%  dplyr::group_by(geom_wkt, dataset, measurement_unit) %>%
+# main_df(whole_dataset())
+# whole_map_df <- whole_dataset() %>%  dplyr::group_by(geom_wkt, dataset, measurement_unit) %>%
 #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>% st_as_sf(wkt="geom_wkt",crs=4326)
 # 
-# whole_plot_df <- whole_group_df  %>% 
+# whole_plot_df <- whole_dataset()  %>% 
 #   dplyr::group_by(dataset, year, gridtype, measurement_unit) %>%
 #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
 
 flog.info("Load non spatial filters combinations")
-filters_combinations <- load_filters_combinations(filename = "data/filters_combinations.parquet")
+filters_combinations <- load_filters_combinations(df_sf=whole_dataset(), filename = "data/filters_combinations.parquet")
 
 flog.info("Load spatial filter data")
-df_distinct_geom <-  load_spatial_data(mode=mode,df_sf=whole_group_df)
-all_polygons <- df_distinct_geom %>% st_combine() 
+df_distinct_geom <-  load_spatial_data(df_sf=whole_dataset(), mode=mode)
+all_polygons <- df_distinct_geom %>% st_combine() # %>% st_simplify() 
 all_polygons_footprint <- all_polygons %>% st_as_text()
   
 # possible_values / selected_values / current_values
@@ -98,20 +95,13 @@ target_fishing_fleet <-  unique(filters_combinations$fishing_fleet)
 
 flog.info("Set filters values to be applied by default (before user selection)")
 # flog.info("Spatial filter :main WKT : %s", current_wkt())
-# default_species <- c('YFT','SKJ','BET','SBF','ALB')
-# default_dataset <- c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
-default_dataset <- c('global_catch_tunaatlasird_level2','global_nominal_catch_firms_level0_public')
-default_species <- c('YFT')
-# default_year <- c(seq(min(target_year):max(target_year))+min(target_year)-2)
-default_year <- c(seq(1:10)+2010)
-# default_year <- c(seq(1950:2021)+1949)
-# default_year <- c(seq((max(target_year)-10):max(target_year))+max(target_year)-11)
-# default_gear <- c('01.1','01.2')
-default_gear_type <- c('1.1','1.2')
+default_dataset <- c('global_catch_tunaatlasird_level2','global_nominal_catch_firms_level0_public') # c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
+default_species <- c('YFT') # c('YFT','SKJ','BET','SBF','ALB')
+default_year <- c(seq(1:10)+2010) # c(seq(min(target_year):max(target_year))+min(target_year)-2) | c(seq(1950:2021)+1949) | c(seq((max(target_year)-10):max(target_year))+max(target_year)-11)
+default_gear_type <- c('1.1','1.2') #  c('01.1','01.2')
 default_unit <- c('t')
 default_source_authority <- unique(target_source_authority)
-# default_gridtype <- c("1deg_x_1deg")
-default_gridtype <- target_gridtype
+default_gridtype <- target_gridtype # c("1deg_x_1deg")
 default_fishing_fleet <- c('EUFRA','EUESP')
 flog.info("Default filters values set.")
 
@@ -135,14 +125,13 @@ current_fishing_fleet(default_fishing_fleet)
 current_unit(default_unit)
 current_gridtype(default_gridtype)
 
-
 # Logging the successful execution of the script up to this point
 flog.info("Initial setup and data retrieval completed successfully.")
 
 flog.info("Load default dataset!!")
 
 # add parameter = list of values ?
-init_whole_default_df <- load_default_dataset(df=whole_group_df, filename="default_df.parquet")
+init_whole_default_df <- load_default_dataset(df=whole_dataset(), filename="default_df.parquet")
 whole_filtered_df(init_whole_default_df)
 
 # add function to calculate the footprint of a df ?
@@ -154,15 +143,10 @@ current_selection_footprint_wkt(default_footprint)
 
 default_df <- init_whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
 filtered_default_df(default_df)
+flog.info("########################## DEFAULT FILTERED DATA LOADED")
 
-# flog.info("nrow(df_sf) %s: ",nrow(df_sf))
-rm(df_sf)
-
-#---------------------------------------------------------------------------------------
-source(here::here('modules/map_leaflet.R'))
-
+flog.info("########################## LOAD MODULES")
 # Source external R scripts for additional functionalities
-# source("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/R/TunaAtlas_i2_SpeciesByGear.R")
 flog.info("External R scripts sourced successfully.")
 flog.info("Loading modules.")
 load_ui_modules <- function() {
@@ -173,15 +157,10 @@ load_ui_modules <- function() {
   })
 }
 load_ui_modules()
-flog.info("Modules loaded")
+flog.info("########################## All Modules loaded")
 
-
-
-
-flog.info("########################## END GLOBAL")
 flog.info("########################## START UI")
 source(here::here("ui.R"))
 flog.info("########################## START SERVER")
 source(here::here("server.R"))
-
-
+flog.info("########################## END GLOBAL")

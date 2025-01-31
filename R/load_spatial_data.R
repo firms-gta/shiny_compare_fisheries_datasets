@@ -1,4 +1,4 @@
-load_spatial_data <- function(mode,df_sf) {
+load_spatial_data <- function(df_sf,mode) {
   
   if(!file.exists("data/gta_geom.RDS")){
     df_distinct_geom <- qread("data/global_catch_tunaatlasird_level2_14184244.qs") %>%
@@ -34,7 +34,6 @@ if(mode!="DOI"){
   # arrow::write_parquet(df_distinct_geom, "gta_geom.parquet")
   
 }
-  
   
   return(df_distinct_geom)
 }

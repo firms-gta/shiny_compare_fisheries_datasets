@@ -1,4 +1,4 @@
-load_filters_combinations <- function(filename) {
+load_filters_combinations <- function(df_sf,filename) {
   
   flog.info("Check what are the existing / possible combinations between dimension values (to adapt the values of filters dynamically)")
   if(!file_exists(filename)){

@@ -169,5 +169,10 @@ load_data <- function(mode="DOI"){
   }else{
     flog.info("No data loaded !!")
   }
-  return(loaded_data)
+  
+  
+  flog.info("Loading / storing aggregated data with dimensions only needed by filters")
+  whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = "whole_group_df.parquet")
+  
+  return(whole_group_df)
 }
