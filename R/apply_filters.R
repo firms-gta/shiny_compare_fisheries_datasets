@@ -57,7 +57,7 @@ apply_filters <- function(df, list_filters,wkt) {
     # fishing_fleet %in% input$fishing_fleet,
     # measurement_unit %in% input$unit,
     # gridtype %in% input$gridtype
-  )
+  # )
 # %>%
 #   dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, year, measurement_unit) %>%
 #   # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>%
