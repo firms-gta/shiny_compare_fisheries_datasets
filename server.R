@@ -113,19 +113,14 @@ server <- function(input, output, session) {
   
   
   flog.info("##########################################################")
-  flog.info("set the main parameterized query (options for geom might be st_collect(geom) or  ST_ConvexHull(st_collect(geom)) as convexhull )")
-  
-  flog.info("Apply current filters to the main datasets when click on submit")
-  
+  flog.info("Click on submit => subset data with selected filters")
   main_df <- eventReactive(input$submit, {
     # main_df <- observeEvent(current_wkt() , {
     
-    flog.info("Filters are going to be applied!!")
-    flog.info("WKT !!")
+    flog.info("Set WKT !!")
     req(current_wkt())
     wkt <- current_wkt()
     map_wkt(wkt)
-    
     # flog.info("Define the rules to update the spatial filtering of list of areas within the WKT !!")
     if( (wkt != last_wkt() && !(wkt == all_wkt && all(input$gridtype == current_gridtype()))) ||
         (wkt==last_wkt() && !all(input$gridtype == current_gridtype())) || 
@@ -184,16 +179,10 @@ server <- function(input, output, session) {
       flog.info("--------------------------------------------")
       flog.info("USE CASE 2: Non spatial filters updated =>  subset of previous ones without additionnal filters, just refining current data")
       flog.info("--------------------------------------------")
-
-      flog.info("Subsetting / refining previous dataset with new values")
+     
+      flog.info("Starting from previous dataset to refine / subset it with new values")
       main_data <- whole_filtered_df()
       
-      # if(wkt == all_wkt){
-      #   main_data <- whole_filtered_df()
-      #   
-      # }else{
-      #   main_data <- filtered_default_df()
-      # }
       tmp_main_df <- main_data  %>% filter(!is.na(geom_wkt)) %>%
         dplyr::filter(
           dataset %in% input$dataset,
@@ -219,11 +208,11 @@ server <- function(input, output, session) {
       # flog.info("Current footprint for filters is %s: ",whole_footprint)
       current_selection_footprint_wkt(this_footprint)
       
+      flog.info("Replacing filtered dataset with the new one")
       whole_filtered_df(tmp_main_df)
       
       if(wkt == all_wkt){
         main_data <- whole_filtered_df()
-
       }else{
         main_data <- whole_filtered_df()           
         default_df <- main_data %>% filter(!is.na(geom_wkt)) %>% 
@@ -246,7 +235,7 @@ server <- function(input, output, session) {
       flog.info("USE CASE 3: Non spatial filters updated => different filters not all included in previous filters => filtering the whole dataset from scratch")
       flog.info("USE CASE 3: might take time")
       flog.info("--------------------------------------------")
-      flog.info("Loading all grouped data")
+      flog.info("Loading all (grouped) data")
       main_data <- whole_dataset()
       
           flog.info("Non spatial filters are different => applying these new filters to the whole dataset !!")
