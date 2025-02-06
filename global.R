@@ -20,6 +20,7 @@ source(here::here('R/load_filters_combinations.R'))
 source(here::here('R/update_current_filters.R'))
 source(here::here('R/list_areas_within_wkt.R'))
 source(here::here('R/verify_filesize.R'))
+source(here::here('R/apply_filters.R'))
 
 # Initialize variables and reactive values and default WKT for mapping
 reset_all <- FALSE

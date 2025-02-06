@@ -68,11 +68,11 @@ server <- function(input, output, session) {
     reset_all_filters <- TRUE
     # updateTextInput(session, "polygon", value = all_wkt)
     
-    # current_dataset(target_dataset)
-    updatePickerInput(session,"dataset",selected=target_dataset)
+    # current_dataset(list_values_dimensions$dataset)
+    updatePickerInput(session,"dataset",selected=list_values_dimensions$dataset)
     
-    # current_species(target_species)
-    updatePickerInput(session,"species",selected=target_species,
+    # current_species(list_values_dimensions$species)
+    updatePickerInput(session,"species",selected=list_values_dimensions$species,
                       choicesOpt = list(
                         disabled = disabled_choices,
                         style = ifelse(disabled_choices,
@@ -80,23 +80,23 @@ server <- function(input, output, session) {
                                        no = "")
                       ))
     
-    # current_gear_type(target_gear_type)
-    updatePickerInput(session,"gear_type",selected=target_gear_type)
+    # current_gear_type(list_values_dimensions$gear_type)
+    updatePickerInput(session,"gear_type",selected=list_values_dimensions$gear_type)
     
-    # current_year(target_year)
-    updatePickerInput(session,"year",selected=target_year)
+    # current_year(list_values_dimensions$year)
+    updatePickerInput(session,"year",selected=list_values_dimensions$year)
     
-    # current_fishing_fleet(target_fishing_fleet)
-    updatePickerInput(session,"fishing_fleet",selected=target_fishing_fleet)
+    # current_fishing_fleet(list_values_dimensions$fishing_fleet)
+    updatePickerInput(session,"fishing_fleet",selected=list_values_dimensions$fishing_fleet)
     
-    # current_unit(target_measurement_unit)
-    updatePickerInput(session,"unit",selected=target_measurement_unit)
+    # current_unit(list_values_dimensions$measurement_unit)
+    updatePickerInput(session,"unit",selected=list_values_dimensions$measurement_unit)
     
-    # current_source_authority(target_source_authority)
-    updatePickerInput(session,"source_authority",selected=target_source_authority)
+    # current_source_authority(list_values_dimensions$source_authority)
+    updatePickerInput(session,"source_authority",selected=list_values_dimensions$source_authority)
     
-    # current_gridtype(target_gridtype)
-    updatePickerInput(session,"gridtype",selected=target_gridtype)
+    # current_gridtype(list_values_dimensions$gridtype)
+    updatePickerInput(session,"gridtype",selected=list_values_dimensions$gridtype)
     
     # main_df <- default_df
     # main_df(whole_dataset())
@@ -130,6 +130,10 @@ server <- function(input, output, session) {
     }else{
       flog.info("************ NO UPDATE within_areas ***************************** !!")
     }
+    list_filters <- list("dataset"=input$dataset,"species"=input$species,"source_authority"=input$source_authority,
+                         "gear_type"=input$gear_type,"year"=input$year,"fishing_fleet"=input$fishing_fleet,
+                         "gridtype"=input$gridtype,"unit"=input$unit)
+    
     
     flog.info("Check if filters have been updated")
     if(all(input$dataset == current_dataset()) && 
@@ -137,8 +141,7 @@ server <- function(input, output, session) {
        all(input$source_authority == current_source_authority()) && 
        all(input$gear_type == current_gear_type()) && 
        all(input$year == current_year()) && 
-       all(input$fishing_fleet == current_fishing_fleet()) && 
-       all(input$fishing_fleet == current_fishing_fleet()) && 
+       all(input$unit == current_unit()) && 
        all(input$gridtype == current_gridtype())
     ){
       flog.info("--------------------------------------------")
@@ -182,54 +185,54 @@ server <- function(input, output, session) {
      
       flog.info("Starting from previous dataset to refine / subset it with new values")
       main_data <- whole_filtered_df()
-      
-      tmp_main_df <- main_data  %>% filter(!is.na(geom_wkt)) %>%
-        dplyr::filter(
-          dataset %in% input$dataset,
-          species %in% input$species,
-          source_authority %in% input$source_authority,
-          gear_type %in% input$gear_type,
-          year %in% input$year,
-          fishing_fleet %in% input$fishing_fleet,
-          measurement_unit %in% input$unit,
-          gridtype %in% input$gridtype
-        )
-      # if(length(setdiff(input$gridtype,current_gridtype())) != 0){
-      #   # flog.info("Current footprint for filters is %s: ",whole_footprint)
-      #   # within_areas
-      #   # tmp_main_df <- main_data %>% dplyr::filter(codesource_area %in% within_areas)
-      #   tmp_main_df <- main_data %>% dplyr::filter(gridtype %in% input$gridtype)
+      # 
+      # tmp_main_df <- main_data  %>% filter(!is.na(geom_wkt)) %>%
+      #   dplyr::filter(
+      #     dataset %in% input$dataset,
+      #     species %in% input$species,
+      #     source_authority %in% input$source_authority,
+      #     gear_type %in% input$gear_type,
+      #     year %in% input$year,
+      #     fishing_fleet %in% input$fishing_fleet,
+      #     measurement_unit %in% input$unit,
+      #     gridtype %in% input$gridtype
+      #   )
+      # # if(length(setdiff(input$gridtype,current_gridtype())) != 0){
+      # #   # flog.info("Current footprint for filters is %s: ",whole_footprint)
+      # #   # within_areas
+      # #   # tmp_main_df <- main_data %>% dplyr::filter(codesource_area %in% within_areas)
+      # #   tmp_main_df <- main_data %>% dplyr::filter(gridtype %in% input$gridtype)
+      # # }
+      # 
+      # flog.info("Footprint has to be refined from previous one !!!")
+      # this_footprint <- tmp_main_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>%
+      #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%
+      #   st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text() # %>% st_simplify()
+      # # flog.info("Current footprint for filters is %s: ",whole_footprint)
+      # current_selection_footprint_wkt(this_footprint)
+      # 
+      # flog.info("Replacing filtered dataset with the new one")
+      # whole_filtered_df(tmp_main_df)
+      # 
+      # if(wkt == all_wkt){
+      #   main_data <- whole_filtered_df()
+      # }else{
+      #   main_data <- whole_filtered_df()           
+      #   default_df <- main_data %>% filter(!is.na(geom_wkt)) %>% 
+      #     dplyr::filter(codesource_area %in% within_areas)
+      #   filtered_default_df(default_df)
+      #   main_data <- filtered_default_df()
       # }
+      # 
+      updates <- apply_filters(df=main_data, list_filters=list_filters, wkt=wkt,within_areas=within_areas)
+      filtered_default_df(updates$filtered_default_df)
+      current_selection_footprint_wkt(updates$current_selection_footprint_wkt)
+      update_current_filters(list_filters_values = list_filters)
+      flog.info("USE CASE 2: TOTO")
+      # print(head(updates$filtered_default_df))
+      print(nrow(updates$filtered_default_df))
+      main_df <- updates$filtered_default_df
       
-      flog.info("Footprint has to be refined from previous one !!!")
-      this_footprint <- tmp_main_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>%
-        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%
-        st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text() # %>% st_simplify()
-      # flog.info("Current footprint for filters is %s: ",whole_footprint)
-      current_selection_footprint_wkt(this_footprint)
-      
-      flog.info("Replacing filtered dataset with the new one")
-      whole_filtered_df(tmp_main_df)
-      
-      if(wkt == all_wkt){
-        main_data <- whole_filtered_df()
-      }else{
-        main_data <- whole_filtered_df()           
-        default_df <- main_data %>% filter(!is.na(geom_wkt)) %>% 
-          dplyr::filter(codesource_area %in% within_areas)
-        filtered_default_df(default_df)
-        main_data <- filtered_default_df()
-      }
-      update_current_filters(list_filters_values = list("dataset"=input$dataset,
-                                                            "species"=input$species,
-                                                            "year"=input$year,
-                                                            "gear_type"=input$species,
-                                                            "unit"=input$unit,
-                                                            "source_authority"=input$species,
-                                                            "gridtype"=input$gridtype,
-                                                            "fishing_fleet"=input$fishing_fleet))
-      
-      main_df <- main_data 
     }else{
       flog.info("--------------------------------------------")
       flog.info("USE CASE 3: Non spatial filters updated => different filters not all included in previous filters => filtering the whole dataset from scratch")
@@ -259,14 +262,14 @@ server <- function(input, output, session) {
           if(!all(input$gridtype == current_gridtype())){current_gridtype(input$gridtype)}
       
       
-      if(all(input$dataset == target_dataset) && 
-         all(input$species == target_species) && 
-         all(input$source_authority == target_source_authority) && 
-         all(input$gear_type == target_gear_type) && 
-         all(input$year == target_year) && 
-         all(input$fishing_fleet == target_fishing_fleet) && 
-         all(input$unit == target_measurement_unit) && 
-         all(input$gridtype == target_gridtype)
+      if(all(input$dataset == list_values_dimensions$dataset) && 
+         all(input$species == list_values_dimensions$species) && 
+         all(input$source_authority == list_values_dimensions$source_authority) && 
+         all(input$gear_type == list_values_dimensions$gear_type) && 
+         all(input$year == list_values_dimensions$year) && 
+         all(input$fishing_fleet == list_values_dimensions$fishing_fleet) && 
+         all(input$unit == list_values_dimensions$measurement_unit) && 
+         all(input$gridtype == list_values_dimensions$gridtype)
          ){
            flog.info("--------------------------------------------")
            flog.info("USE CASE 3: All non spatial filters have just been reset !!")
@@ -375,24 +378,24 @@ server <- function(input, output, session) {
     
     # 
     # flog.info("Check if some filters have been selected")
-    # if(all(input$dataset == target_dataset) && 
-    #    all(input$species == target_species) && 
-    #    all(input$source_authority == target_source_authority) && 
-    #    all(input$gear_type == target_gear_type) && 
-    #    all(input$year == target_year) && 
-    #    all(input$fishing_fleet == target_fishing_fleet) && 
-    #    all(input$gridtype == target_gridtype) && 
-    #    all(input$unit == target_measurement_unit)
+    # if(all(input$dataset == list_values_dimensions$dataset) && 
+    #    all(input$species == list_values_dimensions$species) && 
+    #    all(input$source_authority == list_values_dimensions$source_authority) && 
+    #    all(input$gear_type == list_values_dimensions$gear_type) && 
+    #    all(input$year == list_values_dimensions$year) && 
+    #    all(input$fishing_fleet == list_values_dimensions$fishing_fleet) && 
+    #    all(input$gridtype == list_values_dimensions$gridtype) && 
+    #    all(input$unit == list_values_dimensions$measurement_unit)
     # ){
     #   flog.info("No non spatial filters have been selected => full dataset !!!")
     #   
-    #   flog.info("input$dataset : %s", all(input$dataset == target_dataset))
-    #   flog.info("input$species : %s", all(input$species == target_species))
-    #   flog.info("input$source_authority : %s", all(input$source_authority == target_source_authority))
-    #   flog.info("input$gear_type : %s", all(input$gear_type == target_gear_type))
-    #   flog.info("input$year : %s", all(input$year == target_year))
-    #   flog.info("input$fishing_fleet : %s", all(input$fishing_fleet == target_fishing_fleet))
-    #   flog.info("input$unit : %s", all(input$unit == target_measurement_unit))
+    #   flog.info("input$dataset : %s", all(input$dataset == list_values_dimensions$dataset))
+    #   flog.info("input$species : %s", all(input$species == list_values_dimensions$species))
+    #   flog.info("input$source_authority : %s", all(input$source_authority == list_values_dimensions$source_authority))
+    #   flog.info("input$gear_type : %s", all(input$gear_type == list_values_dimensions$gear_type))
+    #   flog.info("input$year : %s", all(input$year == list_values_dimensions$year))
+    #   flog.info("input$fishing_fleet : %s", all(input$fishing_fleet == list_values_dimensions$fishing_fleet))
+    #   flog.info("input$unit : %s", all(input$unit == list_values_dimensions$measurement_unit))
     #   flog.info("Tests TRUE !!!")
     #   
     #   main_data <- whole_dataset()
