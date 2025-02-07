@@ -51,7 +51,7 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       
       this_wkt <- map_wkt()
       current_selection <- st_sf(st_as_sfc(this_wkt, crs = 4326))
-      whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326)) %>% st_combine()  # %>% st_union() st_convex_hull
+      whole_footprint <- st_sf(st_as_sfc(current_selection_footprint_wkt(), crs = 4326)) #%>% st_combine()  # %>% st_union() st_convex_hull
       
       
       # flog.info("Updating spatial_footprint_1 to fit the new WKT  : %s", this_wkt)
@@ -60,8 +60,10 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       # spatial_footprint_5 <- list_areas  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
       
       if(this_wkt!=all_wkt){
+        flog.info("Calculating centroid : whole_footprint")
         convex_hull <- st_convex_hull(current_selection)
       }else{
+        flog.info("Default centroid :whole_footprint ")
         convex_hull <- st_convex_hull(whole_footprint)
       }
       
@@ -100,14 +102,14 @@ map_leafletServer <- function(id,map_df,map_wkt) {
         # addMouseCoordinates() %>%
         addProviderTiles("CartoDB", "background")   %>%
         addProviderTiles("Esri.OceanBasemap", "background")   %>%
-        addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection") %>%
         # addPolygons(data = spatial_footprint_1,color="blue",fillColor = "transparent", group="footprint1") %>%
         # addPolygons(data = spatial_footprint_5,color="green",fillColor = "transparent", group="footprint5") %>%
         # addPolygons(data = current_fooprint,color="yellow",fillColor = "transparent", group="data_for_filters")  %>%
         # addPolygons(data = remaining_polygons,color="red",fillColor = "transparent", group="remaining")  %>%
         addPolygons(data = all_polygons,color="cyan",fillColor = "transparent", group="all")  %>%
-        addPolygons(data = whole_footprint,color="yellow",fillColor = "transparent", group="data_for_filters")
-      
+        addPolygons(data = whole_footprint,color="yellow",fillColor = "transparent", group="data_for_filters") %>% 
+        addPolygons(data = current_selection,color="red",fillColor = "transparent", group="current_selection")
+        
       flog.info("Adding new layers for each dataset in the selected WKT")
       # Overlay groups
       for(d in datasets){
