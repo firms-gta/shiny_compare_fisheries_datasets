@@ -64,7 +64,7 @@ map_leafletServer <- function(id,map_df,map_wkt) {
         convex_hull <- st_convex_hull(current_selection)
       }else{
         flog.info("Default centroid :whole_footprint ")
-        convex_hull <- st_convex_hull(whole_footprint)
+        convex_hull <- st_convex_hull(all_polygons)
       }
       
       # bbx <- st_bbox(whole_footprint) %>% as.numeric()

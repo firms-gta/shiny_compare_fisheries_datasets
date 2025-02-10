@@ -168,6 +168,7 @@ server <- function(input, output, session) {
           new_data <- main_data %>% filter(!is.na(geom_wkt)) %>% 
             dplyr::filter(codesource_area %in% within_areas)
           filtered_default_df(new_data)
+          # wkt(new_df_footprint)
           main_df <- new_data
         }
       } 
@@ -191,6 +192,7 @@ server <- function(input, output, session) {
       filtered_default_df(updates$filtered_default_df)
       current_selection_footprint_wkt(updates$current_selection_footprint_wkt)
       update_current_filters(list_filters_values = list_filters)
+      whole_filtered_df(updates$whole_filtered_df)
       main_df <- updates$filtered_default_df
     }else{
       flog.info("--------------------------------------------")
@@ -263,6 +265,11 @@ server <- function(input, output, session) {
            filtered_default_df(updates$filtered_default_df)
            current_selection_footprint_wkt(updates$current_selection_footprint_wkt)
            update_current_filters(list_filters_values = list_filters)
+           whole_filtered_df(updates$whole_filtered_df)
+           
+           if(updates$whole_filtered_df==updates$filtered_default_df){
+             map_wkt(updates$current_selection_footprint_wkt)
+           }
            main_df <- updates$filtered_default_df
          }
       }

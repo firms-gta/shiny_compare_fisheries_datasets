@@ -18,36 +18,34 @@ apply_filters <- function(df, list_filters, wkt,within_areas) {
     
     
     flog.info("Footprint of all grouped (non spatial) filtered data")
-    if(nrow(default_df)!=0){
-      new_df_footprint <- new_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>%
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%
-      st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text() #%>% st_simplify() 
-    
+    flog.info("Check number of rows of main df")
+    if(nrow(new_df)!=0){
+      new_df_footprint <- new_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
+        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% 
+        st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text() #%>% st_simplify() 
+      
     if(wkt == all_wkt){
       default_df <- new_df
       }else{
         default_df <- new_df %>% filter(!is.na(geom_wkt)) %>% 
         dplyr::filter(codesource_area %in% within_areas)
-    }
-    
-    flog.info("Check number of rows of main df")
-    if(nrow(default_df)==0){
+        if(nrow(default_df)==0){
+          showModal(modalDialog(
+            title = "Warning",
+            "No data left with current filters, back to default filters!",
+            easyClose = TRUE,
+            footer = NULL
+          ))
+          default_df <- new_df
+        }
+      }
+    } else {
       showModal(modalDialog(
         title = "Warning",
         "No data left with current filters, back to default filters!",
         easyClose = TRUE,
         footer = NULL
       ))
-      default_df <- filtered_default_df()
-    }
-    }else{
-      # showModal(modalDialog(
-      #   title = "Warning",
-      #   "No data left with current filters, back to default filters!",
-      #   easyClose = TRUE,
-      #   footer = NULL
-      # ))
-      
       new_df <- df
       default_df <- filtered_default_df()
       new_df_footprint <- current_selection_footprint_wkt()
@@ -59,6 +57,5 @@ apply_filters <- function(df, list_filters, wkt,within_areas) {
       "current_selection_footprint_wkt" = new_df_footprint,
       "filtered_default_df" = default_df
     )
-    
-  return(list_df)
+    return(list_df)
 }
