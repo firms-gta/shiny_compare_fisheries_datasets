@@ -12,7 +12,7 @@ LABEL org.opencontainers.image.source https://github.com/firms-gta/shiny_compare
 RUN apt update && apt upgrade -y
 
 # Install system libraries of general use with option -y to tells apt-get to assume the answer to all prompts is yes.
-RUN apt install -y \
+RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
     pandoc-citeproc \
