@@ -32,7 +32,54 @@ RUN apt-get update && apt-get install -y \
     libprotobuf-dev \
     protobuf-compiler \
     libjq-dev \
+    librdf0 \
+    librdf0-dev \
     cmake
+
+   
+# general system libraries
+# Note: this includes rdf/redland system libraries
+RUN apt-get update && apt-get install -y \
+    cmake \
+    curl \
+    default-jdk \
+    fonts-roboto \
+    ghostscript \
+    hugo \
+    less \
+    libbz2-dev \
+    libglpk-dev \
+    libgmp3-dev \
+    libfribidi-dev \
+    libharfbuzz-dev \
+    libhunspell-dev \
+    libicu-dev \
+    liblzma-dev \
+    libmagick++-dev \
+    libopenmpi-dev \
+    libpcre2-dev \
+    libssl-dev \
+    libv8-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    libzmq3-dev \
+    lsb-release \
+    qpdf \
+    texinfo \
+    software-properties-common \
+    vim \
+    wget
+    
+RUN install2.r --error --skipinstalled --ncpus -1 redland
+RUN apt-get install -y \
+    libcurl4 \
+    libgit2-dev \
+    libxslt-dev \
+    librdf0 \
+    redland-utils \
+    rasqal-utils \
+    raptor2-utils
+    
 
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean
