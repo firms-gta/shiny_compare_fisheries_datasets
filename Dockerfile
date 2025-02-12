@@ -145,7 +145,7 @@ COPY ./data/DOI.csv ./data/DOI.csv
 COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R 
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
-RUN Rscript update_data.R 
+##RUN Rscript update_data.R 
 
 # Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
 RUN Rscript ./create_or_load_default_dataset.R 
