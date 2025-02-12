@@ -13,12 +13,12 @@ RUN apt update && apt upgrade -y
 
 # Install system libraries of general use with option -y to tells apt-get to assume the answer to all prompts is yes.
 RUN apt install -y \
-    #sudo \
-    #pandoc \
+    sudo \
+    pandoc \
     pandoc-citeproc \
     libssl-dev \
-   #libcurl4-openssl-dev \
-    #libxml2-dev \
+    libcurl4-openssl-dev \
+    libxml2-dev \
     libudunits2-dev \
     libproj-dev \
     libgeos-dev \
