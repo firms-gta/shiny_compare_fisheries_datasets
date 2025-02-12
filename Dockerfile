@@ -32,8 +32,6 @@ RUN apt-get update && apt-get install -y \
     libprotobuf-dev \
     protobuf-compiler \
     libjq-dev \
-    librdf0 \
-    librdf0-dev \
     cmake
 
    
