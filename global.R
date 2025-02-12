@@ -56,7 +56,7 @@ mode="DOI"
 flog.info("Loading data with mode: %s", mode)
 ########################################################## Load data from a list of DOIs ########################################################## 
 list_DOIs <-"data/DOI.csv"
-DOI <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
+DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
 list_dataframes <- load_data(mode=mode)
 whole_dataset(list_dataframes$whole_group_df)
 filters_combinations <- list_dataframes$filters_combinations

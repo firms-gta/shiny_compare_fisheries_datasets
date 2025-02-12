@@ -1,8 +1,6 @@
 extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
   dir <- getwd()
-  require(zen4R)
   options(timeout = 60000) # Global timeout for downloads
-  zenodo <- ZenodoManager$new()
   if (!dir.exists(data_dir)) dir.create(data_dir)
   setwd(data_dir)
   

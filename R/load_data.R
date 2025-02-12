@@ -4,36 +4,38 @@ load_data <- function(mode="DOI"){
   if(mode=="DOI"){
     setwd("data")
     if(!file.exists("gta_dois.parquet")){
+      require(zen4R)
+      zenodo <- ZenodoManager$new()
       # Use the function with lapply for each DOI
-      df_dois <-lapply(1:nrow(list_DOIs), function(i) {
-        this_doi <- list_DOIs$DOI[i]
-        record_id <- gsub(".*\\.", "",list_DOIs$DOI[i])
+      df_dois <-lapply(1:nrow(DOIs), function(i) {
+        this_doi <- DOIs$DOI[i]
+        record_id <- gsub(".*\\.", "",DOIs$DOI[i])
         this_rec <- zenodo$getRecordById(record_id)
         # this_rec <- zenodo$getRecordByConceptDOI(this_doi)
         # this_rec <- zenodo$getRecordById("10037645")
-        list_DOIs$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
-        list_DOIs$title[i] <- gsub("urn:","",this_rec$metadata$title)
-        write_csv(x = list_DOIs,file = "DOIs_enriched.csv")
-        filepath <- paste0("data/", list_DOIs$Filename[i])
-        filename <- gsub("\\..*", "",list_DOIs$Filename[i])
-        file_mime=gsub(".*\\.", "",list_DOIs$Filename[i])
+        DOIs$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
+        DOIs$title[i] <- gsub("urn:","",this_rec$metadata$title)
+        write_csv(x = DOIs,file = "DOIs_enriched.csv")
+        filepath <- paste0("data/", DOIs$Filename[i])
+        filename <- gsub("\\..*", "",DOIs$Filename[i])
+        file_mime=gsub(".*\\.", "",DOIs$Filename[i])
         newname <- paste0(filename,"_",record_id,".",file_mime)
         if (!file.exists(newname) && file_mime =="zip") {
           flog.info("######################### CSV => ZIP DONT EXIST")
           flog.info("Loading dataset: %s Zenodo record", record_id)
-          extract_zenodo_metadata(doi = list_DOIs$DOI[i], filename=list_DOIs$Filename[i],data_dir = ".")
-          unzip(zipfile = list_DOIs$Filename[i],files = c(paste0(filename,".csv")), exdir=".",overwrite = TRUE)
+          extract_zenodo_metadata(doi = DOIs$DOI[i], filename=DOIs$Filename[i],data_dir = ".")
+          unzip(zipfile = DOIs$Filename[i],files = c(paste0(filename,".csv")), exdir=".",overwrite = TRUE)
           file.rename(from = paste0(filename,".csv"),to = newname)
         } else if (!file.exists(newname) && file_mime =="csv") {
           flog.info("######################### CSV FILE DONT EXIST")
           flog.info("Loading dataset: %s Zenodo record", record_id)
-          extract_zenodo_metadata(doi = list_DOIs$DOI[i], filename=gsub(" ","%20", list_DOIs$Filename[i]),data_dir = ".")
-          file.rename(from = list_DOIs$Filename[i],to = newname)
+          extract_zenodo_metadata(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]),data_dir = ".")
+          file.rename(from = DOIs$Filename[i],to = newname)
         }else if (!file.exists(newname) && file_mime =="qs") {
           flog.info("######################### QS FILE DONT EXIST")
           flog.info("Loading dataset: %s Zenodo record", record_id)
-          extract_zenodo_metadata(doi = list_DOIs$DOI[i], filename=gsub(" ","%20", list_DOIs$Filename[i]),data_dir = ".")
-          file.rename(from = list_DOIs$Filename[i],to = newname)
+          extract_zenodo_metadata(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]),data_dir = ".")
+          file.rename(from = DOIs$Filename[i],to = newname)
           flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
           if(!file.exists("gta_geom.RDS")){
             df_distinct_geom <- qread(newname) %>%
