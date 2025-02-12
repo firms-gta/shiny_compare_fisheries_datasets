@@ -1,4 +1,21 @@
-########################################################## Load data from a list of DOIs ########################################################## 
-list_DOIs <-"data/DOI.csv"
-DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
-list_dataframes <- load_data(mode=mode)
+  ########################################################## Load data from a list of DOIs ########################################################## 
+  require(dplyr)
+  require(zen4R)
+  require(here)
+  require(futile.logger)
+  here::i_am("create_or_load_default_dataset.R")
+  source(here::here('R/download_data.R'))
+  source(here::here('R/load_data.R'))
+  source(here::here('R/load_spatial_data.R'))
+  source(here::here('R/load_default_dataset.R'))
+  source(here::here('R/load_grouped_data.R'))
+  source(here::here('R/load_filters_combinations.R'))
+  source(here::here('R/update_current_filters.R'))
+  source(here::here('R/list_areas_within_wkt.R'))
+  source(here::here('R/verify_filesize.R'))
+  source(here::here('R/apply_filters.R'))
+  mode="DOI"
+  here::i_am("create_or_load_default_dataset.R")
+  list_DOIs <-"data/DOI.csv"
+  DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
+  list_dataframes <- load_data(mode=mode)
