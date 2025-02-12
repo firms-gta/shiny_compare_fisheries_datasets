@@ -1,7 +1,7 @@
 load_filters_combinations <- function(df_sf,filename) {
   
   flog.info("Check what are the existing / possible combinations between dimension values (to adapt the values of filters dynamically)")
-  if(!file_exists(filename)){
+  if(!file.exists(filename)){
     filters_combinations <- df_sf  %>% st_drop_geometry() %>% 
       dplyr::group_by(dataset,gridtype,species, year, gear_type, measurement_unit, source_authority, fishing_fleet) %>% dplyr::summarise(count = n())
     flog.info("Filter combinations retrieved and stored.")
