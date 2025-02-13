@@ -76,7 +76,7 @@ load_data <- function(mode="DOI"){
         }          
         this_df <- this_df %>% 
           dplyr::select(c("source_authority","fishing_fleet","time_start","time_end","codesource_area","gear_type","species","fishing_mode","measurement_unit","measurement_value"))  %>%
-          mutate(dataset=gsub(file_mime,"",newname), year=year(time_start))  %>%
+          mutate(dataset=gsub(paste0(".",file_mime),"",newname), year=year(time_start))  %>%
           mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Tons', 't')) %>% 
           mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
           mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
