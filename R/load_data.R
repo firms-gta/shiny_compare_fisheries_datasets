@@ -88,15 +88,20 @@ load_data <- function(mode="DOI"){
       
       df_distinct_geom_spatial <- readRDS("gta_geom.RDS") %>% dplyr::select(-c(count)) 
       
+      flog.info("Add spatial geometries 1")
+      
       # https://github.com/fdiwg/fdi-codelists/raw/main/global/firms/gta/cl_nc_areas.csv
       df_distinct_geom_nominal <- sf::read_sf("cl_nc_areas_simplfied.gpkg") %>% 
         dplyr::rename('codesource_area'= code)   %>% 
         dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
         # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>% 
         dplyr::select(codesource_area,gridtype)
+      flog.info("Add spatial geometries 2")
       
       df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
         dplyr::mutate('ogc_fid'= row_number(codesource_area)) 
+      
+      flog.info("Add spatial geometries 3")
       
       df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
         st_drop_geometry()  %>% dplyr::as_data_frame()
