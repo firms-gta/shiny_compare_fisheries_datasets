@@ -3,6 +3,8 @@
   require(zen4R)
   require(here)
   require(futile.logger)
+  source(here::here('install.R'))
+  flog.info("Loading libraries")
   here::i_am("create_or_load_default_dataset.R")
   source(here::here('R/download_data.R'))
   source(here::here('R/load_data.R'))

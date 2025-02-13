@@ -15,7 +15,7 @@ load_data <- function(mode="DOI"){
         # this_rec <- zenodo$getRecordById("10037645")
         DOIs$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
         DOIs$title[i] <- gsub("urn:","",this_rec$metadata$title)
-        write_csv(x = DOIs,file = "DOIs_enriched.csv")
+        readr::write_csv(x = DOIs,file = "DOIs_enriched.csv")
         filepath <- paste0("data/", DOIs$Filename[i])
         filename <- gsub("\\..*", "",DOIs$Filename[i])
         file_mime=gsub(".*\\.", "",DOIs$Filename[i])
@@ -88,6 +88,7 @@ load_data <- function(mode="DOI"){
       
       df_distinct_geom_spatial <- readRDS("gta_geom.RDS") %>% dplyr::select(-c(count)) 
       
+      # https://github.com/fdiwg/fdi-codelists/raw/main/global/firms/gta/cl_nc_areas.csv
       df_distinct_geom_nominal <- sf::read_sf("cl_nc_areas_simplfied.gpkg") %>% 
         dplyr::rename('codesource_area'= code)   %>% 
         dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
