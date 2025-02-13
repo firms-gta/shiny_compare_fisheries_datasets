@@ -16,6 +16,10 @@
   source(here::here('R/list_areas_within_wkt.R'))
   source(here::here('R/verify_filesize.R'))
   source(here::here('R/apply_filters.R'))
+  flog.info("Loading libraries")
+  flog.info("All libraries loaded successfully.")
+  spatial_processing_mode <- "sf" # "QGIS"
+  sf::sf_use_s2(FALSE)
   mode="DOI"
   here::i_am("create_or_load_default_dataset.R")
   if(!file.exists(here::here("data/list_dataframes.qs"))){
