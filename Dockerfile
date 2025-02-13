@@ -142,7 +142,7 @@ RUN mkdir -p data
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
 COPY ./data/DOI.csv ./data/DOI.csv 
-COPY download_and_process_zenodo_data.R ./download_and_process_zenodo_data.R 
+COPY ./R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R 
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 ##RUN Rscript update_data.R 
