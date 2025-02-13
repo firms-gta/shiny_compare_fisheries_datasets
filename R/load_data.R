@@ -3,7 +3,7 @@ load_data <- function(mode="DOI"){
   flog.info("Loading dataset: %s format", mode)
   if(mode=="DOI"){
     setwd("data")
-    source("R/download_and_process_zenodo_data.R")
+    source(here::here("R/download_and_process_zenodo_data.R"))
     loaded_data <- download_and_process_zenodo_data()
   } else if(mode=="gpkg"){
     flog.info("Loading main data from %s file",mode)
