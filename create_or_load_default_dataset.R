@@ -16,6 +16,11 @@
   source(here::here('R/apply_filters.R'))
   mode="DOI"
   here::i_am("create_or_load_default_dataset.R")
+  if(!file.exists(here::here("data/list_dataframes.qs"))){
   list_DOIs <-"data/DOI.csv"
   DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
   list_dataframes <- load_data(mode=mode)
+  qs::qsave("list_dataframes",here::here("data/list_dataframes.qs"))
+  } else {
+    list_dataframes <- qs::qread(here::here("data/list_dataframes.qs"))
+      }

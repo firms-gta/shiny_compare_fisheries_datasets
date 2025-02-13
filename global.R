@@ -21,7 +21,7 @@ source(here::here('R/update_current_filters.R'))
 source(here::here('R/list_areas_within_wkt.R'))
 source(here::here('R/verify_filesize.R'))
 source(here::here('R/apply_filters.R'))
-
+source(here::here("create_or_load_default_dataset.R"))
 # Initialize variables and reactive values and default WKT for mapping
 reset_all <- FALSE
 
