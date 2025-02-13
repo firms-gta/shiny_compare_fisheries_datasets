@@ -20,7 +20,7 @@
   list_DOIs <-"data/DOI.csv"
   DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
   list_dataframes <- load_data(mode=mode)
-  qs::qsave("list_dataframes",here::here("data/list_dataframes.qs"))
+  qs::qsave(list_dataframes,here::here("data/list_dataframes.qs"))
   } else {
     list_dataframes <- qs::qread(here::here("data/list_dataframes.qs"))
       }
