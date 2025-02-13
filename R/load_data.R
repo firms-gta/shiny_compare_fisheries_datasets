@@ -15,7 +15,7 @@ load_data <- function(mode="DOI"){
         # this_rec <- zenodo$getRecordById("10037645")
         DOIs$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
         DOIs$title[i] <- gsub("urn:","",this_rec$metadata$title)
-        readr::write_csv(x = DOIs,file = "DOIs_enriched.csv")
+        readr::write_csv(x = DOIs,file = "DOIs_enriched.csv") 
         filepath <- paste0("data/", DOIs$Filename[i])
         filename <- gsub("\\..*", "",DOIs$Filename[i])
         file_mime=gsub(".*\\.", "",DOIs$Filename[i])
