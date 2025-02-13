@@ -1,6 +1,6 @@
 load_spatial_data <- function(df_sf,mode) {
   
-  if(!file.exists("data/gta_geom.RDS")){
+  if(!file.exists("data/gta_geom.qs")){
     df_distinct_geom <- qread("data/global_catch_tunaatlasird_level2_14184244.qs") %>%
       dplyr::select(geographic_identifier, GRIDTYPE) %>% 
       dplyr::mutate(ogc_fid = 1) %>% 
@@ -8,7 +8,7 @@ load_spatial_data <- function(df_sf,mode) {
       mutate(ogc_fid=row_number(codesource_area)) %>% 
       dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(count = sum(ogc_fid)) %>% ungroup() %>%  st_set_crs(4326)
     #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
-    saveRDS(df_distinct_geom, "data/gta_geom.RDS")   
+    qs::qsave(df_distinct_geom, "data/gta_geom.qs")   
   } 
     
 if(mode!="DOI"){
@@ -17,9 +17,9 @@ if(mode!="DOI"){
     filter(!is.na(gridtype)) %>% filter(!is.na(geom)) %>%
     dplyr::summarise(ogc_fid = first(ogc_fid)) %>% ungroup() %>% st_as_sf(wkt="geom",crs=4326) 
 }else{
-  # saveRDS(df_distinct_geom, "gta_geom.RDS")
+  # qs::qsave(df_distinct_geom, "gta_geom.qs")
   if(!file.exists("data/gta_geom_new.qs")){
-    df_distinct_geom_spatial <- readRDS("data/gta_geom.RDS") %>% dplyr::select(-c(count)) 
+    df_distinct_geom_spatial <- qs::qread("data/gta_geom.qs") %>% dplyr::select(-c(count)) 
   
   df_distinct_geom_nominal <- sf::read_sf("data/cl_nc_areas_simplfied.gpkg") %>% 
     dplyr::rename('codesource_area'= code)   %>% 
@@ -30,7 +30,7 @@ if(mode!="DOI"){
   df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
     dplyr::mutate('ogc_fid'= row_number(codesource_area)) 
   
-  # saveRDS(df_distinct_geom, "data/gta_geom_new.RDS")  
+  # qs::qsave(df_distinct_geom, "data/gta_geom_new.qs")  
   # arrow::write_parquet(df_distinct_geom, "data/gta_geom_new.parquet")
   qsave(df_distinct_geom, "data/gta_geom_new.qs")
   }else{

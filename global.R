@@ -50,7 +50,7 @@ current_gridtype <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
 flog.info("Reactive values initialized successfully.")
 
-# mode="DOI" | mode="gpkg" | mode="postgres" | mode="RDS" | mode="parquet"
+# mode="DOI" | mode="gpkg" | mode="postgres" | mode="QS" | mode="parquet"
 mode="DOI"
 
 flog.info("Loading data with mode: %s", mode)
