@@ -6,7 +6,6 @@ load_data <- function(mode="DOI"){
     source(here::here("R/download_and_process_zenodo_data.R"))
     gc()
     loaded_data <- download_and_process_zenodo_data()
-    browser()
   } else if(mode=="gpkg"){
     flog.info("Loading main data from %s file",mode)
     gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
@@ -68,21 +67,24 @@ load_data <- function(mode="DOI"){
   }else{
     flog.info("No data loaded !!")
   }
-  
+  df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.csv"))
+  loaded_data <- loaded_data %>%
+    dplyr::left_join((df_distinct_geom_light), by=c('codesource_area'))
+  rm(df_distinct_geom_light)
+  gc()
   flog.info("Loading / storing aggregated data with dimensions only needed by filters")
   whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = "whole_group_df.parquet")
-  browser()
-  # whole_group_df <- whole_group_df %>%
-  #   dplyr::left_join((df_distinct_geom_light), by=c('codesource_area'))
+  #whole group_df cannot be used as it now excludes geom_wkt which is not in the groupping
+  gc()
   
   flog.info("Load non spatial filters combinations  & List all values for non spatial filters")
-  list_filters <- load_filters_combinations(df_sf=whole_group_df, filename = "filters_combinations.parquet")
+  list_filters <- load_filters_combinations(df_sf=loaded_data, filename = "filters_combinations.parquet")
   filters_combinations <- list_filters$filters_combinations
   list_values_dimensions <- list_filters$list_values_dimensions
   rm(list_filters)
   
   flog.info("Load spatial filter data")
-  df_distinct_geom <-  load_spatial_data(df_sf=whole_group_df, mode=mode)
+  df_distinct_geom <-  load_spatial_data(df_sf=loaded_data, mode=mode)
   all_polygons <- df_distinct_geom %>% st_combine() # %>% st_simplify() 
   all_polygons_footprint <- all_polygons %>% st_as_text()
   
@@ -126,7 +128,7 @@ load_data <- function(mode="DOI"){
   
   flog.info("Load default dataset!!")
   # add parameter = list of values ?
-  init_whole_default_df <- load_default_dataset(df=whole_group_df,
+  init_whole_default_df <- load_default_dataset(df=loaded_data,
                                                 filename="default_df.parquet",
                                                 list_filters=list_default_filters)
   # whole_filtered_df(init_whole_default_df)
@@ -159,7 +161,7 @@ load_data <- function(mode="DOI"){
   )
   rm(loaded_data)
   gc()
-  source(here::here("R/clean_and_convert_csv.R"))
-  clean_and_convert_csv(here::here("data"))
+  rm(whole_group_df)
+  gc()
   return(list_df)
 }

@@ -104,12 +104,15 @@ download_and_process_zenodo_data <- function() {
     
     df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
       st_drop_geometry()  %>% dplyr::as_data_frame()
+    qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.csv"))
     rm(df_distinct_geom)
     gc()
     flog.info("Left join with spatial geometries for both nominal and gridded catches")
+    # loaded_data <- loaded_data %>% 
+    #   dplyr::left_join((df_distinct_geom_light %>% dplyr::select(-geom_wkt)), by=c('codesource_area'))
+    # loaded_data$geom_wkt <- loaded_data$codesource_area #hot fix for now # removed as too big
     gc()
     flog.info("Write all binded dataframes into a parquet file")
-    browser()
     arrow::write_parquet(loaded_data, here::here("data/gta_dois.parquet"))
     rm(loaded_data)
     gc()
