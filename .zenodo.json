@@ -66,8 +66,21 @@
       {
       "scheme": "url",
       "identifier": "https://github.com/firms-gta/shiny_compare_tunaatlas_datasests",
-      "relation": "isDerivedFrom",
-      "resource_type": "Software"
+      "relation": "isIdenticalTo",
+      "resource_type": "software"
+      }
+      ],
+      ,
+  "subjects": [
+    {
+      "scheme": "Identifier scheme.",
+      "identifier": "Subjects term identifier.",
+      "term": "Subject term value."
+      },
+          {
+      "scheme": "Identifier scheme.",
+      "identifier": "Subjects term identifier.",
+      "term": "Subject term value."
       }
       ],
   "communities": [
