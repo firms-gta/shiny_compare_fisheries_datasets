@@ -142,13 +142,12 @@ RUN mkdir -p data
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
 COPY ./data/DOI.csv ./data/DOI.csv 
-COPY ./R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R 
+COPY ./create_or_load_default_dataset ./create_or_load_default_dataset
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 ##RUN Rscript update_data.R 
 
-# Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
-RUN Rscript ./R/download_and_process_zenodo_data.R 
+RUN Rscript ./create_or_load_default_dataset.R
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
