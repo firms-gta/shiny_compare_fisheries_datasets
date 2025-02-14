@@ -127,7 +127,6 @@ RUN R -e "renv::restore()"
 
 #FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
 # Copy the rest of the application code
-COPY  . .
 
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
@@ -141,13 +140,15 @@ RUN mkdir -p data
 
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
-COPY ./data/DOI.csv ./data/DOI.csv 
-COPY ./create_or_load_default_dataset.R ./create_or_load_default_dataset.R
+COPY data/DOI.csv ./data/DOI.csv 
+COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 ##RUN Rscript update_data.R 
 
 RUN Rscript ./create_or_load_default_dataset.R
+
+COPY  . .
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
