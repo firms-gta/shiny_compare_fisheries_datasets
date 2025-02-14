@@ -23,7 +23,7 @@ load_filters_combinations <- function(df_sf,filename) {
   # list_values_fishing_fleet <-  unique(filters_combinations$fishing_fleet)
   
   list_values_dimensions = list(
-    "dataset" = unique(filters_combinations$dataset),
+    "dataset" = unique(basename(filters_combinations$dataset)),
     "species" = unique(filters_combinations$species),
     "year" = unique(filters_combinations$year),
     "gear_type" = unique(filters_combinations$gear_type),

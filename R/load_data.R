@@ -5,6 +5,7 @@ load_data <- function(mode="DOI"){
     source(here::here("R/download_and_process_zenodo_data.R"))
     gc()
     loaded_data <- download_and_process_zenodo_data()
+    loaded_data$dataset <- basename(loaded_data$dataset)
   } else if(mode=="gpkg"){
     flog.info("Loading main data from %s file",mode)
     gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
@@ -68,7 +69,8 @@ load_data <- function(mode="DOI"){
   }
   df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.csv"))
   loaded_data <- loaded_data %>%
-    dplyr::left_join((df_distinct_geom_light), by=c('codesource_area'))
+    dplyr::left_join(df_distinct_geom_light, by = c('codesource_area')) %>% 
+    dplyr::mutate(gridtype = ifelse(is.na(gridtype), "NA", gridtype))
   rm(df_distinct_geom_light)
   gc()
   flog.info("Loading / storing aggregated data with dimensions only needed by filters")
@@ -93,8 +95,8 @@ load_data <- function(mode="DOI"){
   flog.info("Set filters values to be applied by default (before user selection)")
   # flog.info("Spatial filter :main WKT : %s", current_wkt())
   default_dataset <- c('global_catch_tunaatlasird_level2_1164128',
-                       'global_catch_tunaatlasird_level2_14184244',
-                       'global_nominal_catch_firms_level0_public_11410529') # c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
+                       'global_catch_tunaatlasird_level2_14184244')#,
+#                       'global_nominal_catch_firms_level0_public_11410529') # c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
   default_species <- c('YFT') # c('YFT','SKJ','BET','SBF','ALB')
   default_year <- c(seq(1:10)+2010) # c(seq(min(list_values_dimensions$year):max(list_values_dimensions$year))+min(list_values_dimensions$year)-2) | c(seq(1950:2021)+1949) | c(seq((max(list_values_dimensions$year)-10):max(list_values_dimensions$year))+max(list_values_dimensions$year)-11)
   default_gear_type <- c('1.1','1.2') #  c('01.1','01.2')
@@ -107,7 +109,6 @@ load_data <- function(mode="DOI"){
   current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
   # current_areas ?
   within_areas <- process_list_areas(df_distinct_geom, wkt=target_wkt, list_gridtype=default_gridtype) 
-  
   list_default_filters = list("dataset"=default_dataset,
                               "species"=default_species,
                               "year"=default_year,
