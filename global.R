@@ -66,15 +66,6 @@ list_values_dimensions <- list_dataframes$list_values_dimensions
 flog.info("All data succesfully loaded")
 setwd(dir)
 
-# main_df(whole_dataset())
-# whole_map_df <- whole_dataset() %>%  dplyr::group_by(geom_wkt, dataset, measurement_unit) %>%
-#   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>% st_as_sf(wkt="geom_wkt",crs=4326)
-# 
-# whole_plot_df <- whole_dataset()  %>% 
-#   dplyr::group_by(dataset, year, gridtype, measurement_unit) %>%
-#   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
-
-
 flog.info("Load spatial filter data")
 df_distinct_geom <-  list_dataframes$df_distinct_geom
 all_polygons <- list_dataframes$all_polygons 

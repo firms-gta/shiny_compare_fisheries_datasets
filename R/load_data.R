@@ -221,6 +221,14 @@ load_data <- function(mode="DOI"){
   # filtered_default_df(default_df)
   flog.info("########################## DEFAULT FILTERED DATA LOADED")
   
+  # Also pre-calculating df for map and plots ?
+  # main_df(whole_dataset())
+  # whole_map_df <- whole_dataset() %>%  dplyr::group_by(geom_wkt, dataset, measurement_unit) %>%
+  #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>% st_as_sf(wkt="geom_wkt",crs=4326)
+  # 
+  # whole_plot_df <- whole_dataset()  %>% 
+  #   dplyr::group_by(dataset, year, gridtype, measurement_unit) %>%
+  #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
   
   
   flog.info("Returns a list of dataframes")
