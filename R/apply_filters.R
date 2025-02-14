@@ -1,4 +1,4 @@
-apply_filters <- function(df, list_filters, wkt,within_areas) {
+apply_filters <- function(df, list_filters, wkt, within_areas) {
   
   flog.info("Applying all non spatial filters")
   new_df <- df  %>% filter(!is.na(geom_wkt)) %>%  
@@ -20,16 +20,24 @@ apply_filters <- function(df, list_filters, wkt,within_areas) {
     flog.info("Footprint of all grouped (non spatial) filtered data")
     flog.info("Check number of rows of main df")
     if(nrow(new_df)!=0){
+      flog.info("Check number of rows of main df : %s", nrow(new_df))
+      
       new_df_footprint <- new_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
         dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% 
         st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text() #%>% st_simplify() 
       
-    if(wkt == all_wkt){
-      default_df <- new_df
+      if(is.null(within_areas) || wkt == all_wkt){
+        # if(wkt == all_wkt){
+          flog.info("there is no spatial filter")
+        default_df <- new_df
       }else{
+        flog.info("there is a spatial filter")
         default_df <- new_df %>% filter(!is.na(geom_wkt)) %>% 
         dplyr::filter(codesource_area %in% within_areas)
+        
         if(nrow(default_df)==0){
+          flog.info("nrow is null")
+          
           showModal(modalDialog(
             title = "Warning",
             "No data left with current filters, back to default filters!",
@@ -38,6 +46,7 @@ apply_filters <- function(df, list_filters, wkt,within_areas) {
           ))
           default_df <- new_df
         }
+        
       }
     } else {
       showModal(modalDialog(

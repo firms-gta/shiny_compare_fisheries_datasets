@@ -122,15 +122,17 @@ server <- function(input, output, session) {
     wkt <- current_wkt()
     map_wkt(wkt)
     # flog.info("Define the rules to update the spatial filtering of list of areas within the WKT !!")
-    if( (wkt != last_wkt() && !(wkt == all_wkt && all(input$gridtype == current_gridtype()))) ||
+    if (wkt == list_default_filters$target_wkt){
+      flog.info("************ Default  within_areas Nothing to do ***************************** !!")
+    } else if( (wkt != last_wkt() && !(wkt == all_wkt && all(input$gridtype == current_gridtype()))) ||
         (wkt==last_wkt() && !all(input$gridtype == current_gridtype())) || 
         !all(input$gridtype == current_gridtype()) ){
       flog.info("************ YES UPDATE within_areas ***************************** !!")
       within_areas <- process_list_areas(df_distinct_geom, wkt=current_wkt(), list_gridtype=input$gridtype) 
     }else{
       flog.info("************ NO UPDATE within_areas ***************************** !!")
-      # within_areas <- NULL ???
-    }
+      within_areas <- NULL
+    } 
     
     list_filters <- list("dataset"=input$dataset,"species"=input$species,"source_authority"=input$source_authority,
                          "gear_type"=input$gear_type,"year"=input$year,"fishing_fleet"=input$fishing_fleet,
@@ -267,9 +269,9 @@ server <- function(input, output, session) {
            update_current_filters(list_filters_values = list_filters)
            whole_filtered_df(updates$whole_filtered_df)
            
-           if(updates$whole_filtered_df==updates$filtered_default_df){
-             map_wkt(updates$current_selection_footprint_wkt)
-           }
+           # if(updates$whole_filtered_df==updates$filtered_default_df){
+           #   map_wkt(updates$current_selection_footprint_wkt)
+           # }
            main_df <- updates$filtered_default_df
          }
       }

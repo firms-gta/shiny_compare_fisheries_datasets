@@ -1,6 +1,7 @@
   ########################################################## Load data from a list of DOIs ########################################################## 
   require(dplyr)
   require(zen4R)
+  require(arrow)
   require(here)
   require(futile.logger)
   source(here::here('install.R'))

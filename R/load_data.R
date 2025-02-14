@@ -181,6 +181,11 @@ load_data <- function(mode="DOI"){
   default_gridtype <- list_values_dimensions$gridtype # c("1deg_x_1deg")
   default_fishing_fleet <- c('EUFRA','EUESP')
   flog.info("Default filters values set.")
+  target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
+  current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
+  # current_areas ?
+  within_areas <- process_list_areas(df_distinct_geom, wkt=target_wkt, list_gridtype=default_gridtype) 
+  
   list_default_filters = list("dataset"=default_dataset,
                               "species"=default_species,
                               "year"=default_year,
@@ -189,15 +194,12 @@ load_data <- function(mode="DOI"){
                               "source_authority"=default_source_authority,
                               "gridtype"=default_gridtype,
                               "fishing_fleet"=default_fishing_fleet,
-                              "target_wkt" = "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
+                              "target_wkt" = "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))",
+                              "within_areas" = within_areas
                               # target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
                               )
   flog.info("Keeping tracks of current selected values for filters to faster data loading.")
 
-  current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))
-  # current_areas ?
-  within_areas <- process_list_areas(df_distinct_geom, wkt=target_wkt, list_gridtype=default_gridtype) 
-  
   # Logging the successful execution of the script up to this point
   flog.info("Initial setup and data retrieval completed successfully.")
   

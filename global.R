@@ -89,6 +89,9 @@ current_wkt(list_default_filters$target_wkt)
 last_wkt(list_default_filters$target_wkt)
 all_wkt <- st_as_text(st_union(df_distinct_geom))
 new_wkt <- all_wkt
+target_wkt <- list_default_filters$target_wkt
+within_areas <- list_default_filters$within_areas
+
 
 default_footprint <- list_dataframes$default_footprint
 default_df <- list_dataframes$default_df
