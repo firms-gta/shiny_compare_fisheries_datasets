@@ -21,11 +21,20 @@ if(mode!="DOI"){
   if(!file.exists(here::here("data/gta_geom_new.qs"))){
     df_distinct_geom_spatial <- qs::qread(here::here("data/gta_geom.qs")) %>% dplyr::select(-c(count)) 
   
-  df_distinct_geom_nominal <- sf::read_sf(here::here("data/cl_nc_areas_simplfied.gpkg")) %>% 
-    dplyr::rename('codesource_area'= code)   %>% 
-    dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
-    # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>% 
-    dplyr::select(codesource_area,gridtype)
+    df_distinct_geom_nominal <- sf::read_sf(here::here("data/cl_nc_areas_simplfied.gpkg")) %>%
+      dplyr::rename(codesource_area = code) %>%
+      dplyr::mutate(geom = st_make_valid(geom)) %>%  
+      dplyr::mutate(geom = st_collection_extract(geom, "POLYGON")) %>%
+      dplyr::mutate(geom = st_centroid(geom)) %>%  
+      dplyr::mutate(geom = st_buffer(geom, dist = 1)) %>%  
+      dplyr::mutate(gridtype = "nominal") %>%
+      dplyr::select(codesource_area, gridtype)
+    
+    # Vérifier si CRS est bien défini
+    if (is.na(st_crs(df_distinct_geom_nominal))) {
+      df_distinct_geom_nominal <- st_set_crs(df_distinct_geom_nominal, 4326)  # ✅ Définit WGS84 si manquant
+    }
+    
   
   df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
     dplyr::mutate('ogc_fid'= row_number(codesource_area)) 

@@ -101,11 +101,14 @@ download_and_process_zenodo_data <- function() {
     flog.info("Add spatial geometries 1")
     
     # https://github.com/fdiwg/fdi-codelists/raw/main/global/firms/gta/cl_nc_areas.csv
-    df_distinct_geom_nominal <- sf::read_sf(here::here("data/cl_nc_areas_simplfied.gpkg")) %>% 
-      dplyr::rename('codesource_area'= code)   %>% 
-      dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
-      # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>%
-      dplyr::select(codesource_area,gridtype)
+    df_distinct_geom_nominal <- sf::read_sf(here::here("data/cl_nc_areas_simplfied.gpkg")) %>%
+      dplyr::rename(codesource_area = code) %>%
+      dplyr::mutate(geom = st_make_valid(geom)) %>%  
+      dplyr::mutate(geom = st_collection_extract(geom, "POLYGON")) %>%
+      dplyr::mutate(geom = st_centroid(geom)) %>%  
+      dplyr::mutate(geom = st_buffer(geom, dist = 1)) %>%  
+      dplyr::mutate(gridtype = "nominal") %>%
+      dplyr::select(codesource_area, gridtype)
     flog.info("Add spatial geometries 2")
     
     df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
