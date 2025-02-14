@@ -1,4 +1,4 @@
-extract_zenodo_metadata <- function(doi, filename, data_dir = here::here("data")) {
+download_data <- function(doi, filename, data_dir = here::here("data")) {
   options(timeout = 60000) # Global timeout for downloads
   if (!dir.exists(data_dir)) dir.create(data_dir, recursive = TRUE)
   

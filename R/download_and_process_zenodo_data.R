@@ -31,7 +31,7 @@ download_and_process_zenodo_data <- function() {
       if (!file.exists(newname) && file_mime =="zip") {
         flog.info("######################### CSV => ZIP DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        extract_zenodo_metadata(doi = DOIs$DOI[i], filename=DOIs$Filename[i],data_dir = here::here("data"))
+        download_data(doi = DOIs$DOI[i], filename=DOIs$Filename[i],data_dir = here::here("data"))
         unzip(zipfile = here::here("data", DOIs$Filename[i]), 
               files = c(paste0(filename,".csv")), 
               exdir=here::here("data"), overwrite = TRUE)
@@ -39,12 +39,12 @@ download_and_process_zenodo_data <- function() {
       } else if (!file.exists(newname) && file_mime =="csv") {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        extract_zenodo_metadata(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]), data_dir = here::here("data"))
+        download_data(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]), data_dir = here::here("data"))
         file.rename(from = here::here("data", DOIs$Filename[i]), to = newname)
       } else if (!file.exists(newname) && file_mime =="qs") {
         flog.info("######################### QS FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        extract_zenodo_metadata(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]), data_dir = here::here("data"))
+        download_data(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]), data_dir = here::here("data"))
         file.rename(from = here::here("data", DOIs$Filename[i]), to = newname)
         flog.info("Store distinct geometries in the dedicated sf object 'df_distinct_geom' to perform faster spatial analysis")
         if(!file.exists(here::here("data/gta_geom.qs"))){
