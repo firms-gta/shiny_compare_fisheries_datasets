@@ -29,7 +29,7 @@ load_data <- function(mode="DOI"){
     feather::write_feather(transform_df_sf,"gta.feather")
     # df_feather <- feather::read_feather("gta.feather") %>% st_as_sf(wkt="geom", crs = 4326)
     
-    arrow::write_parquet(transform_df_sf, "gta.parquet")
+    arrow::write_parquet(transform_df_sf, here::here("data/gta.parquet"))
     # reloaded_data = arrow::read_parquet("gta.parquet") %>% st_as_sf(wkt="geom", crs = 4326)
   }else if(mode=="feather"){
     # feather::write_feather(loaded_data,"gta.feather")
@@ -39,11 +39,11 @@ load_data <- function(mode="DOI"){
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
   }else if(mode=="parquet"){
-    if(!file.exists("gta.parquet")){
+    if(!file.exists(here::here("data/gta.parquet"))){
       loaded_data <- load_data(mode="postgres")
-      arrow::write_parquet(loaded_data, "gta.parquet")    
+      arrow::write_parquet(loaded_data, here::here("data/gta.parquet"))    
     }
-    loaded_data <- arrow::read_parquet("gta.parquet")
+    loaded_data <- arrow::read_parquet(here::here("data/gta.parquet"))
     # tt <- df_parquet %>% filter(!is.na(geom)) %>% st_as_sf(wkt="geom", crs = 4326)
     # class(df_parquet)
   }else if(mode=="postgres"){
@@ -73,12 +73,12 @@ load_data <- function(mode="DOI"){
   rm(df_distinct_geom_light)
   gc()
   flog.info("Loading / storing aggregated data with dimensions only needed by filters")
-  whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = "whole_group_df.parquet")
+  whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = here::here("data/whole_group_df.parquet"))
   #whole group_df cannot be used as it now excludes geom_wkt which is not in the groupping
   gc()
   
   flog.info("Load non spatial filters combinations  & List all values for non spatial filters")
-  list_filters <- load_filters_combinations(df_sf=loaded_data, filename = "filters_combinations.parquet")
+  list_filters <- load_filters_combinations(df_sf=loaded_data, filename = here::here("data/filters_combinations.parquet"))
   filters_combinations <- list_filters$filters_combinations
   list_values_dimensions <- list_filters$list_values_dimensions
   rm(list_filters)
