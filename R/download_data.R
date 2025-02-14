@@ -1,24 +1,24 @@
-extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
+extract_zenodo_metadata <- function(doi, filename, data_dir = here::here("data")) {
   dir <- getwd()
   options(timeout = 60000) # Global timeout for downloads
-  if (!dir.exists(data_dir)) dir.create(data_dir)
-  setwd(data_dir)
+  if (!dir.exists(data_dir)) dir.create(data_dir, recursive = TRUE)
   
   success <- FALSE
   attempts <- 3
   attempt <- 1
-  record_id <- gsub(".*\\.", "",doi)
+  record_id <- gsub(".*\\.", "", doi)
   
   while (!success && attempt <= attempts) {
     tryCatch({
       # export DCMI metadata from Zenodo ??
-      zen4R::export_zenodo(doi = doi, filename = paste0("metadata_",record_id), format = "DublinCore")
+      zen4R::export_zenodo(doi = doi, filename = here::here(data_dir, paste0("metadata_", record_id)), format = "DublinCore")
+      
       # Download the specific file
       # zen4R::download_zenodo(doi = resource, files = file, path = dirname(path), sandbox = if(!is.null(software)) software$sandbox else FALSE)
       zen4R::download_zenodo(doi = doi, files = filename, parallel_handler = parLapply, cl = makeCluster(12))
       
       # Check if the file was downloaded
-      if (file.exists(filename)) {
+      if (file.exists(here::here(data_dir, filename))) {
         success <- TRUE
         message(sprintf("File '%s' downloaded successfully", filename))
       } else {
@@ -30,5 +30,4 @@ extract_zenodo_metadata <- function(doi, filename, data_dir = "data") {
     })
     attempt <- attempt + 1
   }
-  setwd(dir)
 }
