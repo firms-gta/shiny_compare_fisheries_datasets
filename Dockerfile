@@ -140,19 +140,20 @@ RUN mkdir -p data
 
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
-COPY data/DOI.csv ./data/DOI.csv 
+# COPY data/DOI.csv ./data/DOI.csv 
 
-COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
+# COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
+# COPY R/extract_zenodo_metadata.R ./R/extract_zenodo_metadata.R
 
 # Exécuter le script avec sourcing avant l'appel de la fonction
-RUN Rscript -e "source('./R/download_and_process_zenodo_data.R'); download_and_process_zenodo_data()"
+# RUN Rscript -e "source('./R/download_and_process_zenodo_data.R'); source(./R/extract_zenodo_metadata.R); download_and_process_zenodo_data()"
 
-COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
+# COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 ##RUN Rscript update_data.R 
 COPY  . .
-RUN Rscript ./create_or_load_default_dataset.R
+# RUN Rscript ./create_or_load_default_dataset.R
 
 
 
