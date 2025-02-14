@@ -7,7 +7,7 @@ if (file.exists(filename)) {
   
 } else {
   flog.info("writting  default parquet dataset (pre_filtered): %s", filename)
-  init_whole_default_df <- df  %>% filter(!is.na(geom_wkt)) %>%  
+  init_whole_default_df <- df  %>% dplyr::filter(!is.na(geom_wkt)) %>%  
     dplyr::filter(
       # codesource_area %in% within_areas,
       dataset %in% list_filters$dataset,

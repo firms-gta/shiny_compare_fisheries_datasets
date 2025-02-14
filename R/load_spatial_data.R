@@ -1,6 +1,6 @@
 load_spatial_data <- function(df_sf,mode) {
   
-  if(!file.exists("data/gta_geom.qs")){
+  if(!file.exists(here::here("data/gta_geom.qs"))){
     df_distinct_geom <- qread("data/global_catch_tunaatlasird_level2_14184244.qs") %>%
       dplyr::select(geographic_identifier, GRIDTYPE) %>% 
       dplyr::mutate(ogc_fid = 1) %>% 
@@ -18,10 +18,10 @@ if(mode!="DOI"){
     dplyr::summarise(ogc_fid = first(ogc_fid)) %>% ungroup() %>% st_as_sf(wkt="geom",crs=4326) 
 }else{
   # qs::qsave(df_distinct_geom, "gta_geom.qs")
-  if(!file.exists("data/gta_geom_new.qs")){
-    df_distinct_geom_spatial <- qs::qread("data/gta_geom.qs") %>% dplyr::select(-c(count)) 
+  if(!file.exists(here::here("data/gta_geom_new.qs"))){
+    df_distinct_geom_spatial <- qs::qread(here::here("data/gta_geom.qs")) %>% dplyr::select(-c(count)) 
   
-  df_distinct_geom_nominal <- sf::read_sf("cl_nc_areas_simplfied.gpkg") %>% 
+  df_distinct_geom_nominal <- sf::read_sf(here::here("data/cl_nc_areas_simplfied.gpkg")) %>% 
     dplyr::rename('codesource_area'= code)   %>% 
     dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
     # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>% 
@@ -32,10 +32,10 @@ if(mode!="DOI"){
   
   # qs::qsave(df_distinct_geom, "data/gta_geom_new.qs")  
   # arrow::write_parquet(df_distinct_geom, "data/gta_geom_new.parquet")
-  qsave(df_distinct_geom, "data/gta_geom_new.qs")
+  qsave(df_distinct_geom, here::here("data/gta_geom_new.qs"))
   }else{
     # df_distinct_geom <- arrow::read_parquet("gta_geom_new.parquet") 
-    df_distinct_geom <- qread("gta_geom_new.qs") 
+    df_distinct_geom <- qread(here::here("data/gta_geom_new.qs"))
   }
   
   # df_distinct_geom_nominal <- read.csv("cl_nc_areas.csv") %>% sf::st_as_sf(wkt="geom_wkt",crs=4326)   %>% 
