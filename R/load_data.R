@@ -4,7 +4,9 @@ load_data <- function(mode="DOI"){
   if(mode=="DOI"){
     setwd("data")
     source(here::here("R/download_and_process_zenodo_data.R"))
+    gc()
     loaded_data <- download_and_process_zenodo_data()
+    browser()
   } else if(mode=="gpkg"){
     flog.info("Loading main data from %s file",mode)
     gpkg_file <- "~/blue-cloud-dataspace/GlobalFisheriesAtlas/data_shiny_apps/Global_Tuna_Atlas.gpkg"
@@ -69,9 +71,9 @@ load_data <- function(mode="DOI"){
   
   flog.info("Loading / storing aggregated data with dimensions only needed by filters")
   whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = "whole_group_df.parquet")
-  
-  whole_group_df <- whole_group_df %>%
-    dplyr::left_join((df_distinct_geom_light), by=c('codesource_area'))
+  browser()
+  # whole_group_df <- whole_group_df %>%
+  #   dplyr::left_join((df_distinct_geom_light), by=c('codesource_area'))
   
   flog.info("Load non spatial filters combinations  & List all values for non spatial filters")
   list_filters <- load_filters_combinations(df_sf=whole_group_df, filename = "filters_combinations.parquet")

@@ -22,7 +22,5 @@
   sf::sf_use_s2(FALSE)
   mode="DOI"
   here::i_am("create_or_load_default_dataset.R")
-  list_DOIs <-"data/DOI.csv"
-  DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
   list_dataframes <- load_data(mode=mode)
   gc()

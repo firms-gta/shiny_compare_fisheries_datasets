@@ -1,5 +1,7 @@
 download_and_process_zenodo_data <- function() {
-  if(!file.exists("gta_dois.parquet")){
+  list_DOIs <- here::here("data/DOI.csv")
+  DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
+  if(!file.exists(here::here("data/gta_dois.parquet"))){
     require(zen4R)
     zenodo <- ZenodoManager$new()
     # Use the function with lapply for each DOI
@@ -33,7 +35,7 @@ download_and_process_zenodo_data <- function() {
         extract_zenodo_metadata(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]),data_dir = ".")
         file.rename(from = DOIs$Filename[i],to = newname)
         flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
-        if(!file.exists("gta_geom.qs")){
+        if(!file.exists(here::here("data/gta_geom.qs"))){
           df_distinct_geom <- qread(newname) %>%
             dplyr::select(geographic_identifier, GRIDTYPE) %>% 
             dplyr::mutate(ogc_fid = 1) %>% 
@@ -41,18 +43,17 @@ download_and_process_zenodo_data <- function() {
             mutate(ogc_fid=row_number(codesource_area)) %>% 
             dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(count = sum(ogc_fid)) %>% ungroup() %>%  st_set_crs(4326)
           #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
-          qs::qsave(df_distinct_geom, "gta_geom.qs")   
+          qs::qsave(df_distinct_geom, here::here("data/gta_geom.qs"))   
         }
       }
-      flog.info("Dataset  %s downloaded successfully from Zenodo.", newname)
+      source("https://raw.githubusercontent.com/firms-gta/tunaatlas_pie_map_shiny/refs/heads/main/download_GTA_data.R")
+      flog.info("Dataset  %s downloaded successfully from Zenodo or retrieved", newname)
       
       this_df <- switch (file_mime,
                          "csv" =  read.csv(newname),
                          "zip" =  read.csv(newname),
                          "qs" =  qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_data_frame()
       )
-      
-      # print(colnames(this_df))
       
       if(any(grepl("geographic_identifier",colnames(this_df)))){
         flog.info("Renaming geographic_identifier column")
@@ -77,12 +78,13 @@ download_and_process_zenodo_data <- function() {
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))
+      
     })
     loaded_data <- do.call(rbind, df_dois)
-    
+    gc()
     flog.info("Add spatial geometries for both nominal and gridded catches")
     
-    df_distinct_geom_spatial <- qs::qread("gta_geom.qs") %>% dplyr::select(-c(count)) 
+    df_distinct_geom_spatial <- qs::qread(here::here("data/gta_geom.qs")) %>% dplyr::select(-c(count)) 
     
     flog.info("Add spatial geometries 1")
     
@@ -96,19 +98,24 @@ download_and_process_zenodo_data <- function() {
     
     df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
       dplyr::mutate('ogc_fid'= row_number(codesource_area)) 
-    
+    rm(df_distinct_geom_nominal)
+    gc()
     flog.info("Add spatial geometries 3")
     
     df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
       st_drop_geometry()  %>% dplyr::as_data_frame()
-    
+    rm(df_distinct_geom)
+    gc()
     flog.info("Left join with spatial geometries for both nominal and gridded catches")
-    rm(list = ls())
     gc()
     flog.info("Write all binded dataframes into a parquet file")
-    arrow::write_parquet(loaded_data, "gta_dois.parquet")
-    
+    browser()
+    arrow::write_parquet(loaded_data, here::here("data/gta_dois.parquet"))
+    rm(loaded_data)
+    gc()
+    rm(list = ls())
+    gc()
   }
   #read all DOIs data from parquet file
-  loaded_data <- arrow::read_parquet("gta_dois.parquet")
+  loaded_data <- arrow::read_parquet(here::here("data/gta_dois.parquet"))
   return(loaded_data)}
