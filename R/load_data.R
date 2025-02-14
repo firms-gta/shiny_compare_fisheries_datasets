@@ -2,7 +2,6 @@ load_data <- function(mode="DOI"){
   loaded_data <- list()
   flog.info("Loading dataset: %s format", mode)
   if(mode=="DOI"){
-    setwd("data")
     source(here::here("R/download_and_process_zenodo_data.R"))
     gc()
     loaded_data <- download_and_process_zenodo_data()

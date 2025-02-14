@@ -8,7 +8,7 @@ download_and_process_zenodo_data <- function() {
            }
            library(pkg, character.only = TRUE)
          })
-
+  
   list_DOIs <- here::here("data/DOI.csv")
   DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
   if(!file.exists(here::here("data/gta_dois.parquet"))){
@@ -23,28 +23,30 @@ download_and_process_zenodo_data <- function() {
       # this_rec <- zenodo$getRecordById("10037645")
       DOIs$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
       DOIs$title[i] <- gsub("urn:","",this_rec$metadata$title)
-      readr::write_csv(x = DOIs,file = "DOIs_enriched.csv") 
-      filepath <- paste0("data/", DOIs$Filename[i])
+      readr::write_csv(x = DOIs,file = here::here("data/DOIs_enriched.csv")) 
+      filepath <- here::here("data", DOIs$Filename[i])
       filename <- gsub("\\..*", "",DOIs$Filename[i])
       file_mime=gsub(".*\\.", "",DOIs$Filename[i])
-      newname <- paste0(filename,"_",record_id,".",file_mime)
+      newname <- here::here("data", paste0(filename,"_",record_id,".",file_mime))
       if (!file.exists(newname) && file_mime =="zip") {
         flog.info("######################### CSV => ZIP DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        extract_zenodo_metadata(doi = DOIs$DOI[i], filename=DOIs$Filename[i],data_dir = ".")
-        unzip(zipfile = DOIs$Filename[i],files = c(paste0(filename,".csv")), exdir=".",overwrite = TRUE)
-        file.rename(from = paste0(filename,".csv"),to = newname)
+        extract_zenodo_metadata(doi = DOIs$DOI[i], filename=DOIs$Filename[i],data_dir = here::here("."))
+        unzip(zipfile = here::here("data", DOIs$Filename[i]), 
+              files = c(paste0(filename,".csv")), 
+              exdir=here::here("."), overwrite = TRUE)
+        file.rename(from = here::here(filename,".csv"), to = newname)
       } else if (!file.exists(newname) && file_mime =="csv") {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        extract_zenodo_metadata(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]),data_dir = ".")
-        file.rename(from = DOIs$Filename[i],to = newname)
-      }else if (!file.exists(newname) && file_mime =="qs") {
+        extract_zenodo_metadata(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]), data_dir = here::here("."))
+        file.rename(from = here::here("data", DOIs$Filename[i]), to = newname)
+      } else if (!file.exists(newname) && file_mime =="qs") {
         flog.info("######################### QS FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        extract_zenodo_metadata(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]),data_dir = ".")
-        file.rename(from = DOIs$Filename[i],to = newname)
-        flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
+        extract_zenodo_metadata(doi = DOIs$DOI[i], filename=gsub(" ","%20", DOIs$Filename[i]), data_dir = here::here("."))
+        file.rename(from = here::here("data", DOIs$Filename[i]), to = newname)
+        flog.info("Store distinct geometries in the dedicated sf object 'df_distinct_geom' to perform faster spatial analysis")
         if(!file.exists(here::here("data/gta_geom.qs"))){
           df_distinct_geom <- qread(newname) %>%
             dplyr::select(geographic_identifier, GRIDTYPE) %>% 
@@ -56,7 +58,7 @@ download_and_process_zenodo_data <- function() {
           qs::qsave(df_distinct_geom, here::here("data/gta_geom.qs"))   
         }
       }
-
+      
       flog.info("Dataset  %s downloaded successfully from Zenodo or retrieved", newname)
       
       this_df <- switch (file_mime,
@@ -99,10 +101,10 @@ download_and_process_zenodo_data <- function() {
     flog.info("Add spatial geometries 1")
     
     # https://github.com/fdiwg/fdi-codelists/raw/main/global/firms/gta/cl_nc_areas.csv
-    df_distinct_geom_nominal <- sf::read_sf("cl_nc_areas_simplfied.gpkg") %>% 
+    df_distinct_geom_nominal <- sf::read_sf(here::here("data/cl_nc_areas_simplfied.gpkg")) %>% 
       dplyr::rename('codesource_area'= code)   %>% 
       dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
-      # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>% 
+      # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>%
       dplyr::select(codesource_area,gridtype)
     flog.info("Add spatial geometries 2")
     
@@ -118,9 +120,9 @@ download_and_process_zenodo_data <- function() {
     rm(df_distinct_geom)
     gc()
     flog.info("Left join with spatial geometries for both nominal and gridded catches")
-    # loaded_data <- loaded_data %>% 
+    # loaded_data <- loaded_data %>%
     #   dplyr::left_join((df_distinct_geom_light %>% dplyr::select(-geom_wkt)), by=c('codesource_area'))
-    # loaded_data$geom_wkt <- loaded_data$codesource_area #hot fix for now # removed as too big
+    # loaded_data$geom_wkt <- loaded_data$codesource_area #hot fix for now # removed as too big 
     gc()
     flog.info("Write all binded dataframes into a parquet file")
     arrow::write_parquet(loaded_data, here::here("data/gta_dois.parquet"))
@@ -131,4 +133,5 @@ download_and_process_zenodo_data <- function() {
   }
   #read all DOIs data from parquet file
   loaded_data <- arrow::read_parquet(here::here("data/gta_dois.parquet"))
-  return(loaded_data)}
+  return(loaded_data)
+}
