@@ -148,7 +148,7 @@ COPY ./R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data
 ##RUN Rscript update_data.R 
 
 # Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
-RUN Rscript ./download_and_process_zenodo_data.R 
+RUN Rscript ./R/download_and_process_zenodo_data.R 
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
