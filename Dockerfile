@@ -145,7 +145,7 @@ COPY data/DOI.csv ./data/DOI.csv
 COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
 
 # Exécuter le script avec sourcing avant l'appel de la fonction
-CMD Rscript -e "source('./R/download_and_process_zenodo_data.R'); download_and_process_zenodo_data()"
+RUN Rscript -e "source('./R/download_and_process_zenodo_data.R'); download_and_process_zenodo_data()"
 
 COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 
