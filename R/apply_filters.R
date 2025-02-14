@@ -1,4 +1,7 @@
-apply_filters <- function(df, list_filters, wkt, within_areas) {
+apply_filters <- function(df, list_filters) {
+  
+  wkt <- list_filters$wkt
+  within_areas <- list_filters$within_areas
   
   flog.info("Applying all non spatial filters")
   new_df <- df  %>% filter(!is.na(geom_wkt)) %>%  

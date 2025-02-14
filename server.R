@@ -118,12 +118,12 @@ server <- function(input, output, session) {
     # main_df <- observeEvent(current_wkt() , {
     
     flog.info("Set WKT !!")
-    req(current_wkt())
     wkt <- current_wkt()
     map_wkt(wkt)
     # flog.info("Define the rules to update the spatial filtering of list of areas within the WKT !!")
-    if (wkt == list_default_filters$target_wkt){
+    if (wkt == list_default_filters$wkt){
       flog.info("************ Default  within_areas Nothing to do ***************************** !!")
+      within_areas <- list_default_filters$within_areas
     } else if( (wkt != last_wkt() && !(wkt == all_wkt && all(input$gridtype == current_gridtype()))) ||
         (wkt==last_wkt() && !all(input$gridtype == current_gridtype())) || 
         !all(input$gridtype == current_gridtype()) ){
@@ -136,7 +136,7 @@ server <- function(input, output, session) {
     
     list_filters <- list("dataset"=input$dataset,"species"=input$species,"source_authority"=input$source_authority,
                          "gear_type"=input$gear_type,"year"=input$year,"fishing_fleet"=input$fishing_fleet,
-                         "gridtype"=input$gridtype,"unit"=input$unit)
+                         "gridtype"=input$gridtype,"unit"=input$unit,"wkt"= wkt,"within_areas"=within_areas)
     
     flog.info("Check if filters are the same or if they have been updated")
     if(all(input$dataset == current_dataset()) && 
@@ -190,7 +190,7 @@ server <- function(input, output, session) {
      
       flog.info("Starting from previous dataset to refine / subset it with new values")
       main_data <- whole_filtered_df()
-      updates <- apply_filters(df=main_data, list_filters=list_filters, wkt=wkt,within_areas=within_areas)
+      updates <- apply_filters(df=main_data, list_filters=list_filters)
       filtered_default_df(updates$filtered_default_df)
       current_selection_footprint_wkt(updates$current_selection_footprint_wkt)
       update_current_filters(list_filters_values = list_filters)
@@ -263,7 +263,7 @@ server <- function(input, output, session) {
            flog.info("USE CASE 3: Not a full reset / just few additional filters not present in the previous filters")
            flog.info("USE CASE 3: => filtering the whole dataset / all grouped data")
            flog.info("--------------------------------------------")
-           updates <- apply_filters(df=main_data, list_filters=list_filters, wkt=wkt,within_areas=within_areas)
+           updates <- apply_filters(df=main_data, list_filters=list_filters)
            filtered_default_df(updates$filtered_default_df)
            current_selection_footprint_wkt(updates$current_selection_footprint_wkt)
            update_current_filters(list_filters_values = list_filters)

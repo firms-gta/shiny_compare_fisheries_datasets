@@ -70,19 +70,16 @@ flog.info("Load spatial filter data")
 df_distinct_geom <-  list_dataframes$df_distinct_geom
 all_polygons <- list_dataframes$all_polygons 
 all_polygons_footprint <- list_dataframes$all_polygons_footprint
-  
-
 list_default_filters <- list_dataframes$list_default_filters
 init_whole_default_df <- list_dataframes$init_whole_default_df
 
 update_current_filters(list_filters_values = list_default_filters)
-current_wkt(list_default_filters$target_wkt)
-last_wkt(list_default_filters$target_wkt)
+current_wkt(list_default_filters$wkt)
+last_wkt(list_default_filters$wkt)
 all_wkt <- st_as_text(st_union(df_distinct_geom))
 new_wkt <- all_wkt
-target_wkt <- list_default_filters$target_wkt
+target_wkt <- list_default_filters$wkt
 within_areas <- list_default_filters$within_areas
-
 
 default_footprint <- list_dataframes$default_footprint
 default_df <- list_dataframes$default_df

@@ -194,7 +194,7 @@ load_data <- function(mode="DOI"){
                               "source_authority"=default_source_authority,
                               "gridtype"=default_gridtype,
                               "fishing_fleet"=default_fishing_fleet,
-                              "target_wkt" = "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))",
+                              "wkt" = target_wkt,
                               "within_areas" = within_areas
                               # target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
                               )
@@ -205,20 +205,16 @@ load_data <- function(mode="DOI"){
   
   flog.info("Load default dataset!!")
   # add parameter = list of values ?
-  init_whole_default_df <- load_default_dataset(df=whole_group_df,
-                                                filename="default_df.parquet",
-                                                list_filters=list_default_filters)
-  # whole_filtered_df(init_whole_default_df)
+  updates <- load_default_dataset(df=whole_group_df,
+                                  filename="default_df.parquet",
+                                  list_filters=list_default_filters)
   
-  # add function to calculate the footprint of a df ?
-  default_footprint <- init_whole_default_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
-    dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%  
-    st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine() %>% st_as_text() # %>% st_simplify()
+  init_whole_default_df <- updates$whole_filtered_df
+  default_footprint <- updates$current_selection_footprint_wkt
   # flog.info("Current footprint for filters is %s: ",whole_footprint)
   # current_selection_footprint_wkt(default_footprint)
   
-  default_df <- init_whole_default_df  %>% filter(!is.na(geom_wkt)) %>% dplyr::filter(codesource_area %in% within_areas)
-  # filtered_default_df(default_df)
+  default_df <- updates$filtered_default_df
   flog.info("########################## DEFAULT FILTERED DATA LOADED")
   
   # Also pre-calculating df for map and plots ?
@@ -240,9 +236,9 @@ load_data <- function(mode="DOI"){
     "all_polygons" = all_polygons,
     "all_polygons_footprint" = all_polygons_footprint,
     "list_default_filters"=list_default_filters,
-    "init_whole_default_df"=init_whole_default_df,
-    "default_footprint"=default_footprint,
-    "default_df"=default_df
+    "init_whole_default_df"= init_whole_default_df,
+    "default_footprint"= default_footprint,
+    "default_df"= default_df
   )
   
   return(list_df)
