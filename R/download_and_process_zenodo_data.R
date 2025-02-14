@@ -1,4 +1,14 @@
 download_and_process_zenodo_data <- function() {
+  
+  lapply(c("here", "readr", "arrow", "qs", "sf", "dplyr", 
+           "zen4R", "futile.logger", "lubridate", "stringr"), 
+         function(pkg) {
+           if (!requireNamespace(pkg, quietly = TRUE)) {
+             install.packages(pkg)
+           }
+           library(pkg, character.only = TRUE)
+         })
+
   list_DOIs <- here::here("data/DOI.csv")
   DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
   if(!file.exists(here::here("data/gta_dois.parquet"))){
@@ -46,7 +56,7 @@ download_and_process_zenodo_data <- function() {
           qs::qsave(df_distinct_geom, here::here("data/gta_geom.qs"))   
         }
       }
-      source("https://raw.githubusercontent.com/firms-gta/tunaatlas_pie_map_shiny/refs/heads/main/download_GTA_data.R")
+
       flog.info("Dataset  %s downloaded successfully from Zenodo or retrieved", newname)
       
       this_df <- switch (file_mime,

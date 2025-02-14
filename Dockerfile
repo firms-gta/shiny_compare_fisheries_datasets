@@ -141,14 +141,20 @@ RUN mkdir -p data
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
 COPY data/DOI.csv ./data/DOI.csv 
+
+COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
+
+# Exécuter le script avec sourcing avant l'appel de la fonction
+CMD Rscript -e "source('./R/download_and_process_zenodo_data.R'); download_and_process_zenodo_data()"
+
 COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 ##RUN Rscript update_data.R 
-
+COPY  . .
 RUN Rscript ./create_or_load_default_dataset.R
 
-COPY  . .
+
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
