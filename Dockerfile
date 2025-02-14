@@ -153,4 +153,4 @@ RUN Rscript ./create_or_load_default_dataset.R
 EXPOSE 3838
   
 # Define the entry point to run the Shiny app
-CMD ["R", "-e", "shiny::runApp('/root/shiny_compare_tunaatlas_datasests'"]
+CMD ["R", "-e", "shiny::runApp('/root/shiny_compare_tunaatlas_datasests')"]
