@@ -2,7 +2,7 @@ map_leafletUI <- function(id) {
   ns <- NS(id)
   tagList(
     leafletOutput(ns("map"),width="100%", height="100%"),
-    textInput(ns("yourWKT"),"Draw paste a spatial WKT",width="98%"),
+    # textInput(ns("yourWKT"),"Draw paste a spatial WKT",width="98%"),
     verbatimTextOutput("verbatimWKT", placeholder = TRUE),
     
     tags$br(),

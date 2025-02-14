@@ -21,7 +21,7 @@ if(mode!="DOI"){
   if(!file.exists("data/gta_geom_new.qs")){
     df_distinct_geom_spatial <- qs::qread("data/gta_geom.qs") %>% dplyr::select(-c(count)) 
   
-  df_distinct_geom_nominal <- sf::read_sf("data/cl_nc_areas_simplfied.gpkg") %>% 
+  df_distinct_geom_nominal <- sf::read_sf("cl_nc_areas_simplfied.gpkg") %>% 
     dplyr::rename('codesource_area'= code)   %>% 
     dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
     # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>% 
@@ -34,16 +34,13 @@ if(mode!="DOI"){
   # arrow::write_parquet(df_distinct_geom, "data/gta_geom_new.parquet")
   qsave(df_distinct_geom, "data/gta_geom_new.qs")
   }else{
-    # df_distinct_geom <- arrow::read_parquet("data/gta_geom_new.parquet") 
-    df_distinct_geom <- qread("data/gta_geom_new.qs") 
-    
-    
+    # df_distinct_geom <- arrow::read_parquet("gta_geom_new.parquet") 
+    df_distinct_geom <- qread("gta_geom_new.qs") 
   }
   
-  # df_distinct_geom_nominal <- read.csv("data/cl_nc_areas.csv") %>% sf::st_as_sf(wkt="geom_wkt",crs=4326)   %>% 
+  # df_distinct_geom_nominal <- read.csv("cl_nc_areas.csv") %>% sf::st_as_sf(wkt="geom_wkt",crs=4326)   %>% 
   #   dplyr::mutate('geom'=st_bbox(),'codesource_area'=geographic_identifier)
   # arrow::write_parquet(df_distinct_geom, "gta_geom.parquet")
-  
 }
   
   return(df_distinct_geom)
