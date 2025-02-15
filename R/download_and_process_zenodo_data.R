@@ -35,7 +35,8 @@ download_and_process_zenodo_data <- function() {
         unzip(zipfile = here::here("data", DOIs$Filename[i]), 
               files = c(paste0(filename,".csv")), 
               exdir=here::here("data"), overwrite = TRUE)
-        file.rename(from = here::here(filename,".csv"), to = newname)
+        file.rename(from = here::here(file.path("data",paste0(filename,".csv"))),
+                    to = here::here(file.path("data", paste0(tools::file_path_sans_ext(newname), ".csv"))))
       } else if (!file.exists(newname) && file_mime =="csv") {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
