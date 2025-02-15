@@ -39,27 +39,42 @@ download_and_process_zenodo_data <- function() {
         flog.info("######################### CSV => ZIP DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
         
+        # Télécharger le fichier ZIP
         download_data(doi = DOIs$DOI[i], filename = DOIs$Filename[i], data_dir = DATA_DIR)
         
-        zip_path <- here::here("data", DOIs$Filename[i])
-        extracted_csv <- here::here("data", paste0(filename, ".csv"))
-        target_csv <- here::here("data", paste0(tools::file_path_sans_ext(newname), ".csv"))
+        # Définition des chemins
+        zip_path <- file.path(DATA_DIR, DOIs$Filename[i])
+        extracted_csv <- file.path(DATA_DIR, paste0(filename, ".csv"))
+        target_csv <- file.path(DATA_DIR, paste0(tools::file_path_sans_ext(newname), ".csv"))
         
+        # Vérifier que le fichier ZIP a bien été téléchargé
         if (file.exists(zip_path)) {
           flog.info("Unzipping file %s", zip_path)
-          unzip(zipfile = zip_path, files = paste0(filename, ".csv"), exdir = here::here("data"), overwrite = TRUE)
+          
+          # Extraction sécurisée avec vérification
+          unzip(zipfile = zip_path, exdir = DATA_DIR, overwrite = TRUE)
+          
+          # Vérifier que le fichier extrait existe bien
+          extracted_files <- list.files(DATA_DIR, full.names = TRUE)
+          flog.info("Extracted files: %s", paste(extracted_files, collapse = ", "))
           
           if (file.exists(extracted_csv)) {
             flog.info("Renaming extracted CSV from %s to %s", extracted_csv, target_csv)
-            file.copy(from = extracted_csv, to = target_csv, overwrite = TRUE)
-            file.remove(extracted_csv) # Supprime l'ancien fichier après copie
+            file.rename(from = extracted_csv, to = target_csv)
+            
+            # Vérifier si la copie a réussi
+            if (file.exists(target_csv)) {
+              flog.info("File successfully moved to %s", target_csv)
+              file.remove(zip_path)  # Optionnel : Supprimer le fichier ZIP après extraction
+            } else {
+              flog.warn("Failed to move extracted CSV to %s", target_csv)
+            }
           } else {
             flog.warn("Extraction failed, file %s does not exist!", extracted_csv)
           }
         } else {
           flog.warn("ZIP file %s does not exist!", zip_path)
         }
-        
       } else if (!file.exists(newname) && file_mime == "csv") {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
