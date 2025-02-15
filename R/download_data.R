@@ -3,7 +3,7 @@ download_data <- function(doi, filename, data_dir = here::here("data")) {
   if (!dir.exists(data_dir)) dir.create(data_dir, recursive = TRUE)
   
   success <- FALSE
-  attempts <- 1
+  attempts <- 3
   attempt <- 1
   record_id <- gsub(".*\\.", "", doi)
   destfile <- file.path(data_dir, filename)
