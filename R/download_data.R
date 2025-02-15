@@ -1,7 +1,7 @@
 download_data <- function(doi, filename, data_dir = here::here("data")) {
   options(timeout = 60000) # Global timeout for downloads
   if (!dir.exists(data_dir)) dir.create(data_dir, recursive = TRUE)
-  
+  require(here)
   success <- FALSE
   attempts <- 3
   attempt <- 1
@@ -14,7 +14,7 @@ download_data <- function(doi, filename, data_dir = here::here("data")) {
       zen4R::export_zenodo(doi = doi, filename = here::here(data_dir, paste0("metadata_", record_id)), format = "DublinCore")
       
       message(sprintf("Attempt %d: Downloading file '%s'", attempt, filename))
-      zen4R::download_zenodo(doi = doi, files = filename, parallel_handler = parLapply, cl = makeCluster(12))
+      zen4R::download_zenodo(doi = doi, path = data_dir, files = filename, parallel_handler = parLapply, cl = makeCluster(12))
       
       if (file.exists(destfile)) {
         success <- TRUE
