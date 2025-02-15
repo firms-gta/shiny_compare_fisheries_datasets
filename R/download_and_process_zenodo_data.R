@@ -30,54 +30,38 @@ download_and_process_zenodo_data <- function() {
       newname <- here::here("data", paste0(filename,"_",record_id,".",file_mime))
       DATA_DIR <- here::here("data")  # Utilisation exclusive de here
       
-      # Vérification et création du dossier si besoin
       if (!dir.exists(DATA_DIR)) {
         dir.create(DATA_DIR, recursive = TRUE, showWarnings = FALSE)
       }
       
       if (!file.exists(newname) && file_mime == "zip") {
-        flog.info("######################### ZIP FILE NOT FOUND - STARTING DOWNLOAD")
-        flog.info("Loading dataset: %s from Zenodo", record_id)
+        flog.info("######################### CSV => ZIP DONT EXIST")
+        flog.info("Loading dataset: %s Zenodo record", record_id)
         
-        # Télécharger le fichier ZIP
-        download_data(doi = DOIs$DOI[i], filename = DOIs$Filename[i], data_dir = DATA_DIR)
+        zip_path <- file.path(DATA_DIR, DOIs$Filename[i])
+        extracted_csv <- file.path(DATA_DIR, paste0(filename, ".csv"))
+        target_csv <- file.path(DATA_DIR, paste0(filename, "_", record_id, ".csv"))
         
-        # Définition des chemins corrects
-        zip_path_original <- file.path(DATA_DIR, DOIs$Filename[i])  # Nom initial du ZIP
-        zip_path_target <- file.path(DATA_DIR, paste0(filename, "_", record_id, ".zip"))  # Nom cible
-        extracted_csv <- file.path(DATA_DIR, paste0(filename, ".csv"))  # CSV extrait
-        target_csv <- file.path(DATA_DIR, paste0(filename, "_", record_id, ".csv"))  # Nom final CSV
-        
-        # Vérifier et renommer le fichier ZIP téléchargé
-        if (file.exists(zip_path_original)) {
-          flog.info("Renaming ZIP file from %s to %s", zip_path_original, zip_path_target)
-          
-          if (file.rename(zip_path_original, zip_path_target)) {
-            flog.info("ZIP file successfully renamed to %s", zip_path_target)
+        # Vérifier si le CSV extrait existe déjà avant de télécharger le ZIP
+        if (!file.exists(target_csv)) {
+          if (!file.exists(zip_path)) {
+            flog.info("Downloading dataset: %s Zenodo record", record_id)
+            download_data(doi = DOIs$DOI[i], filename = DOIs$Filename[i], data_dir = DATA_DIR)
           } else {
-            flog.warn("Failed to rename ZIP file to %s", zip_path_target)
+            flog.info("ZIP file already exists: %s", zip_path)
           }
-        } else {
-          flog.warn("Downloaded ZIP file %s not found!", zip_path_original)
-        }
-        
-        # Vérifier que le fichier ZIP renommé existe avant de l'extraire
-        if (file.exists(zip_path_target)) {
-          flog.info("Unzipping file %s", zip_path_target)
           
-          unzip(zipfile = zip_path_target, exdir = DATA_DIR, overwrite = TRUE)
+          flog.info("Unzipping file: %s", zip_path)
+          unzip(zipfile = zip_path, exdir = DATA_DIR, overwrite = TRUE)
           
-          # Vérifier les fichiers extraits
           extracted_files <- list.files(DATA_DIR, full.names = TRUE)
           flog.info("Extracted files: %s", paste(extracted_files, collapse = ", "))
           
-          # Vérifier et renommer le fichier CSV extrait
           if (file.exists(extracted_csv)) {
             flog.info("Renaming extracted CSV from %s to %s", extracted_csv, target_csv)
-            
             if (file.rename(from = extracted_csv, to = target_csv)) {
-              flog.info("CSV file successfully moved to %s", target_csv)
-              # file.remove(zip_path_target)  # Décommente si tu veux supprimer le ZIP après extraction
+              flog.info("File successfully moved to %s", target_csv)
+              # file.remove(zip_path)  # Supprimer le ZIP si nécessaire
             } else {
               flog.warn("Failed to move extracted CSV to %s", target_csv)
             }
@@ -85,21 +69,22 @@ download_and_process_zenodo_data <- function() {
             flog.warn("Extraction failed, file %s does not exist!", extracted_csv)
           }
         } else {
-          flog.warn("ZIP file %s does not exist!", zip_path_target)
+          flog.info("Target CSV already exists: %s. Skipping extraction.", target_csv)
         }
+        
       } else if (!file.exists(newname) && file_mime == "csv") {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
         
         download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", DOIs$Filename[i]), data_dir = DATA_DIR)
         
-        from_path <- here::here("data", DOIs$Filename[i])
+        from_path <- file.path(DATA_DIR, DOIs$Filename[i])
         to_path <- newname
         
         if (file.exists(from_path)) {
           flog.info("Copying file from %s to %s", from_path, to_path)
           file.copy(from = from_path, to = to_path, overwrite = TRUE)
-          file.remove(from_path) # Supprime l'ancien fichier après copie
+          file.remove(from_path)
         } else {
           flog.warn("File %s does not exist!", from_path)
         }
@@ -110,20 +95,20 @@ download_and_process_zenodo_data <- function() {
         
         download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", DOIs$Filename[i]), data_dir = DATA_DIR)
         
-        from_path <- here::here("data", DOIs$Filename[i])
+        from_path <- file.path(DATA_DIR, DOIs$Filename[i])
         to_path <- newname
         
         if (file.exists(from_path)) {
           flog.info("Copying QS file from %s to %s", from_path, to_path)
           file.copy(from = from_path, to = to_path, overwrite = TRUE)
-          file.remove(from_path) # Supprime l'ancien fichier après copie
+          file.remove(from_path)
         } else {
           flog.warn("File %s does not exist!", from_path)
         }
         
         flog.info("Store distinct geometries in the dedicated sf object 'df_distinct_geom' to perform faster spatial analysis")
         
-        if (!file.exists(here::here("data/gta_geom.qs"))) {
+        if (!file.exists(file.path(DATA_DIR, "gta_geom.qs"))) {
           df_distinct_geom <- qread(to_path) %>%
             dplyr::select(geographic_identifier, GRIDTYPE) %>% 
             dplyr::mutate(ogc_fid = 1) %>% 
@@ -134,17 +119,17 @@ download_and_process_zenodo_data <- function() {
             ungroup() %>%  
             st_set_crs(4326)
           
-          qs::qsave(df_distinct_geom, here::here("data/gta_geom.qs"))
+          qs::qsave(df_distinct_geom, file.path(DATA_DIR, "gta_geom.qs"))
         }
       }
       
+      flog.info("Dataset %s downloaded successfully from Zenodo or retrieved", newname)
       
-      flog.info("Dataset  %s downloaded successfully from Zenodo or retrieved", newname)
-      
-      this_df <- switch (file_mime,
-                         "csv" =  read.csv(newname),
-                         # "zip" =  read.csv(newname),
-                         "qs" =  qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_data_frame()
+      # Correction pour éviter de lire un ZIP comme un CSV
+      this_df <- switch(file_mime,
+                        "csv" = read.csv(newname),
+                        "zip" = read.csv(target_csv),  # On lit le CSV extrait et renommé
+                        "qs" = qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_tibble()
       )
       
       if(any(grepl("geographic_identifier",colnames(this_df)))){
