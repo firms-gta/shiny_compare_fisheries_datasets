@@ -36,33 +36,48 @@ download_and_process_zenodo_data <- function() {
       }
       
       if (!file.exists(newname) && file_mime == "zip") {
-        flog.info("######################### CSV => ZIP DONT EXIST")
-        flog.info("Loading dataset: %s Zenodo record", record_id)
+        flog.info("######################### ZIP FILE NOT FOUND - STARTING DOWNLOAD")
+        flog.info("Loading dataset: %s from Zenodo", record_id)
         
         # Télécharger le fichier ZIP
         download_data(doi = DOIs$DOI[i], filename = DOIs$Filename[i], data_dir = DATA_DIR)
         
         # Définition des chemins corrects
-        zip_path <- file.path(DATA_DIR, DOIs$Filename[i])
-        extracted_csv <- file.path(DATA_DIR, paste0(filename, ".csv"))
-        target_csv <- file.path(DATA_DIR, paste0(filename, "_", record_id, ".csv"))  # ✅ Correction ici
+        zip_path_original <- file.path(DATA_DIR, DOIs$Filename[i])  # Nom initial du ZIP
+        zip_path_target <- file.path(DATA_DIR, paste0(filename, "_", record_id, ".zip"))  # Nom cible
+        extracted_csv <- file.path(DATA_DIR, paste0(filename, ".csv"))  # CSV extrait
+        target_csv <- file.path(DATA_DIR, paste0(filename, "_", record_id, ".csv"))  # Nom final CSV
         
-        # Vérifier que le fichier ZIP existe avant de l'extraire
-        if (file.exists(zip_path)) {
-          flog.info("Unzipping file %s", zip_path)
+        # Vérifier et renommer le fichier ZIP téléchargé
+        if (file.exists(zip_path_original)) {
+          flog.info("Renaming ZIP file from %s to %s", zip_path_original, zip_path_target)
           
-          unzip(zipfile = zip_path, exdir = DATA_DIR, overwrite = TRUE)
+          if (file.rename(zip_path_original, zip_path_target)) {
+            flog.info("ZIP file successfully renamed to %s", zip_path_target)
+          } else {
+            flog.warn("Failed to rename ZIP file to %s", zip_path_target)
+          }
+        } else {
+          flog.warn("Downloaded ZIP file %s not found!", zip_path_original)
+        }
+        
+        # Vérifier que le fichier ZIP renommé existe avant de l'extraire
+        if (file.exists(zip_path_target)) {
+          flog.info("Unzipping file %s", zip_path_target)
           
-          # Vérifier que le fichier extrait existe
+          unzip(zipfile = zip_path_target, exdir = DATA_DIR, overwrite = TRUE)
+          
+          # Vérifier les fichiers extraits
           extracted_files <- list.files(DATA_DIR, full.names = TRUE)
           flog.info("Extracted files: %s", paste(extracted_files, collapse = ", "))
           
+          # Vérifier et renommer le fichier CSV extrait
           if (file.exists(extracted_csv)) {
             flog.info("Renaming extracted CSV from %s to %s", extracted_csv, target_csv)
             
             if (file.rename(from = extracted_csv, to = target_csv)) {
-              flog.info("File successfully moved to %s", target_csv)
-              # file.remove(zip_path)  # ✅ Supprime le ZIP si tout s'est bien passé
+              flog.info("CSV file successfully moved to %s", target_csv)
+              # file.remove(zip_path_target)  # Décommente si tu veux supprimer le ZIP après extraction
             } else {
               flog.warn("Failed to move extracted CSV to %s", target_csv)
             }
@@ -70,10 +85,9 @@ download_and_process_zenodo_data <- function() {
             flog.warn("Extraction failed, file %s does not exist!", extracted_csv)
           }
         } else {
-          flog.warn("ZIP file %s does not exist!", zip_path)
+          flog.warn("ZIP file %s does not exist!", zip_path_target)
         }
-      }
-      else if (!file.exists(newname) && file_mime == "csv") {
+      } else if (!file.exists(newname) && file_mime == "csv") {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
         
@@ -129,7 +143,7 @@ download_and_process_zenodo_data <- function() {
       
       this_df <- switch (file_mime,
                          "csv" =  read.csv(newname),
-                         "zip" =  read.csv(newname),
+                         # "zip" =  read.csv(newname),
                          "qs" =  qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_data_frame()
       )
       
