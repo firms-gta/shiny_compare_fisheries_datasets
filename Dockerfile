@@ -155,7 +155,7 @@ COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 COPY  . .
 RUN Rscript ./create_or_load_default_dataset.R
 
-
+RUN Rscript -e "source('R/clean_data_folder.R'); clean_data_folder()"
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
