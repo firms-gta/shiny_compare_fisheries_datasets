@@ -152,17 +152,21 @@ COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 ##RUN Rscript update_data.R 
-COPY  . .
+COPY --chown=shiny:shiny . /root/shiny_compare_tunaatlas_datasests/
+RUN rm -rf /root/shiny_compare_tunaatlas_datasests/data
+
 RUN Rscript ./create_or_load_default_dataset.R
 
-RUN find /data -type f ! \( \
-     -name "whole_group_df.parquet" \
-     -o -name "filters_combinations.parquet" \
-     -o -name "df_distinct_geom_light.csv" \
-     -o -name "default_df.parquet" \
-     -o -name "DOI.csv" \
-     -o -name "gta.parquet" \
-   \) -delete && \
+RUN if [ -d "/root/shiny_compare_tunaatlas_datasests/data" ]; then \
+      find /root/shiny_compare_tunaatlas_datasests/data -type f ! \( \
+        -name "whole_group_df.parquet" \
+        -o -name "filters_combinations.parquet" \
+        -o -name "df_distinct_geom_light.csv" \
+        -o -name "default_df.parquet" \
+        -o -name "DOI.csv" \
+        -o -name "gta.parquet" \
+      \) -delete; \
+    fi && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
     
 # Expose port 3838 for the Shiny app
