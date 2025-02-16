@@ -162,6 +162,7 @@ RUN if [ -d "./data" ]; then \
         -o -name "df_distinct_geom_light.csv" \
         -o -name "default_df.parquet" \
         -o -name "DOI.csv" \
+        -o -name "gta_dois.parquet" \
         -o -name "gta.parquet" \
       \) -delete; \
     fi && \
