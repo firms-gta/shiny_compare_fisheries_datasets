@@ -155,18 +155,18 @@ COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 COPY  . .
 RUN Rscript ./create_or_load_default_dataset.R
 
-RUN if [ -d "./data" ]; then \
-      find ./data -type f ! \( \
-        -name "whole_group_df.parquet" \
-        -o -name "filters_combinations.parquet" \
-        -o -name "df_distinct_geom_light.csv" \
-        -o -name "default_df.parquet" \
-        -o -name "DOI.csv" \
-        -o -name "gta_dois.parquet" \
-        -o -name "gta.parquet" \
-      \) -delete; \
-    fi && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#RUN if [ -d "./data" ]; then \
+#      find ./data -type f ! \( \
+#        -name "whole_group_df.parquet" \
+#        -o -name "filters_combinations.parquet" \
+#        -o -name "df_distinct_geom_light.csv" \
+#        -o -name "default_df.parquet" \
+#        -o -name "DOI.csv" \
+#        -o -name "gta_dois.parquet" \
+#        -o -name "gta.parquet" \
+#      \) -delete; \
+#    fi && \
+#    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
