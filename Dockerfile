@@ -171,6 +171,6 @@ RUN Rscript ./create_or_load_default_dataset.R
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
-
+RUN hotfix.R
 # Define the entry point to run the Shiny app
 CMD ["R", "-e", "shiny::runApp('/root/shiny_compare_tunaatlas_datasests', host = '0.0.0.0', port = 3838)"]
