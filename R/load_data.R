@@ -67,7 +67,7 @@ load_data <- function(mode="DOI"){
   }else{
     flog.info("No data loaded !!")
   }
-  df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.csv"))
+  df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.qs"))
   loaded_data <- loaded_data %>%
     dplyr::left_join(df_distinct_geom_light, by = c('codesource_area')) %>% 
     dplyr::mutate(gridtype = ifelse(is.na(gridtype), "NA", gridtype))

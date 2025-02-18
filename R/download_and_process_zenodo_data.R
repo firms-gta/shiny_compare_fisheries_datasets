@@ -184,7 +184,7 @@ download_and_process_zenodo_data <- function() {
     
     df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
       st_drop_geometry()  %>% dplyr::as_data_frame()
-    qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.csv"))
+    qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.qs"))
     rm(df_distinct_geom)
     gc()
     flog.info("Left join with spatial geometries for both nominal and gridded catches")
