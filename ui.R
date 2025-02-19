@@ -113,16 +113,21 @@ ui <- fluidPage(
                                         # actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map"), 
                                         #              style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large;
                                         #                                                                                    font-weight: bold;"),
-                                        
+                                        tags$br(),
                                         actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map"), 
                                                      style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large; font-weight: bold;"),
                                         tags$br(),
+                                        tags$br(),
                                         map_leafletUI("other"),
+                                        tags$br(),
+                                        tags$br(),
+                                        
                                         actionButton(inputId ="resetAllFilters", label = "Remove all filters", icon("map"), 
                                                      style="color: #fff; background-color: #91c9b9; border-color: #2e6da4;font-size: xx-large;
                                                                                                                            font-weight: bold;"),
-                                       
-                                         actionButton(inputId = "submit",label = "Apply filters !", icon("paper-plane"), 
+                                        # includeHTML(&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;),
+                                        # tags$,
+                                        actionButton(inputId = "submit",label = "Apply filters !", icon("paper-plane"), 
                                                      style="color: #fff; background-color: #d63638; border-color: #2e6da4;font-size: xx-large;
                                                      font-weight: bold;"),
                                         # actionButton(inputId="applytWkt", label="Select features within this WKT"),

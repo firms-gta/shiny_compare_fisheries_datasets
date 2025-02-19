@@ -3,13 +3,14 @@ map_leafletUI <- function(id) {
   tagList(
     leafletOutput(ns("map"),width="100%", height="100%"),
     # textInput(ns("yourWKT"),"Draw paste a spatial WKT",width="98%"),
-    verbatimTextOutput("verbatimWKT", placeholder = TRUE),
-    
-    tags$br(),
-    tags$br(),
-    # map_proxy_UI(ns("other")),
-    DT::DTOutput(ns("DT_query_data_map")),
-    DT::DTOutput(ns("DT_data_footprint"))
+    verbatimTextOutput("verbatimWKT", placeholder = TRUE)
+    # ,
+    # 
+    # tags$br(),
+    # tags$br(),
+    # # map_proxy_UI(ns("other")),
+    # DT::DTOutput(ns("DT_query_data_map")),
+    # DT::DTOutput(ns("DT_data_footprint"))
   )
 }
 

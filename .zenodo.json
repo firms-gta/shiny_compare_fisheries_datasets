@@ -1,9 +1,10 @@
 {
   "title": "Global Tuna Atlas Shiny app: comparison of datasets",
-  "description": "This is a generic Shiny app which can display any data complying with fisheries data complying with the CWP format. This app is meant to display and compare the contents of different fisheries datasets : e.g. multiple versions of the same datasest with different levels of processing (raw, raised data..) or datasets collected in different areas. This Shiny app has been developped and is hosted in the same <a href=\"https://blue-cloud.d4science.org/group/globalfisheriesatlas\">Virtual Lab<\/a> provided by <a href=\"https://blue-cloud.d4science.org\">Blue-Cloud 2026<\/a> project which implements best practices for Open Science and FAIR data management.",
+  "description": "This is a generic Shiny app which can display any fisheries data complying complying with the CWP format. This app is meant to display and compare the contents of different fisheries datasets : e.g. multiple versions of the same datasest with different levels of processing (raw, raised data..) or datasets collected in different areas. This Shiny app has been developped and is hosted in the same <a href=\"https://blue-cloud.d4science.org/group/globalfisheriesatlas\">Virtual Lab<\/a> provided by <a href=\"https://blue-cloud.d4science.org\">Blue-Cloud 2026<\/a> project which implements best practices for Open Science and FAIR data management.",
   "license": "CC-BY-4.0",
   "upload_type": "software",
   "access_right": "open",
+  "notes": "Specific versions of this app can be found in the \"Versions\" list on the right side of this page.<br>See the code  <a href=\"https://github.com/firms-gta/shiny_compare_tunaatlas_datasests\">on GitHub</a>.",
   "creators": [
     {
       "name": "Barde, Julien",
@@ -61,6 +62,24 @@
       "identifier": "https://dx.doi.org/10.5281/zenodo.5746041",
       "relation": "isSupplementTo",
       "resource_type": "dataset"
+      },
+      {
+      "scheme": "url",
+      "identifier": "https://github.com/firms-gta/shiny_compare_tunaatlas_datasests",
+      "relation": "isIdenticalTo",
+      "resource_type": "software"
+      }
+      ],
+  "subjects": [
+    {
+      "scheme": "Identifier scheme.",
+      "identifier": "Subjects term identifier.",
+      "term": "Subject term value."
+      },
+          {
+      "scheme": "Identifier scheme.",
+      "identifier": "Subjects term identifier.",
+      "term": "Subject term value."
       }
       ],
   "communities": [
