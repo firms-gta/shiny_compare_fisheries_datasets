@@ -127,7 +127,6 @@ RUN R -e "renv::restore()"
 
 #FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
 # Copy the rest of the application code
-COPY  . .
 
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
@@ -141,17 +140,37 @@ RUN mkdir -p data
 
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
-COPY ./data/DOI.csv ./data/DOI.csv 
-COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R 
+COPY data/DOI.csv ./data/DOI.csv 
+
+COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
+COPY R/download_data.R ./R/download_data.R
+COPY data/cl_nc_areas_simplfied.gpkg ./data/cl_nc_areas_simplfied.gpkg
+# Exécuter le script avec sourcing avant l'appel de la fonction
+RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
+
+COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 ##RUN Rscript update_data.R 
+COPY  . .
+RUN Rscript ./create_or_load_default_dataset.R
 
-# Create the default dataset from DOI and GTA data loading to make launching faster (use of qs for loading and data.table for tidying) 
-RUN Rscript ./create_or_load_default_dataset.R 
+#RUN if [ -d "./data" ]; then \
+#      find ./data -type f ! \( \
+#        -name "whole_group_df.parquet" \
+#        -o -name "filters_combinations.parquet" \
+#        -o -name "df_distinct_geom_light.csv" \
+#        -o -name "default_df.parquet" \
+#        -o -name "DOI.csv" \
+#        -o -name "gta_dois.parquet" \
+#        -o -name "gta.parquet" \
+#      \) -delete; \
+#    fi && \
+#    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
-  
+RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
+
 # Define the entry point to run the Shiny app
-CMD ["R", "-e", "shiny::runApp('/root/shiny_compare_tunaatlas_datasests'"]
+CMD ["R", "-e", "shiny::runApp('/root/shiny_compare_tunaatlas_datasests', host = '0.0.0.0', port = 3838)"]
