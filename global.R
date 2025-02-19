@@ -8,6 +8,8 @@ flog.info("Loading libraries")
 flog.info("All libraries loaded successfully.")
 spatial_processing_mode <- "sf" # "QGIS"
 sf::sf_use_s2(FALSE)
+all_wkt <- ""
+within_areas <- NULL
 
 # loadSupport(  ) ??
 futile.logger::flog.info("Load zenodo download function")

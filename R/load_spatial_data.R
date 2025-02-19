@@ -20,14 +20,24 @@ if(mode!="DOI"){
   # saveRDS(df_distinct_geom, "gta_geom.RDS")
   if(!file.exists("gta_geom_new.qs")){
     df_distinct_geom_spatial <- readRDS("gta_geom.RDS") %>% dplyr::select(-c(count)) 
-  
-  df_distinct_geom_nominal <- sf::read_sf("cl_nc_areas_simplfied.gpkg") %>% 
-    dplyr::rename('codesource_area'= code)   %>% 
-    dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=1),'gridtype'="nominal")  %>% 
-    # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>% 
-    dplyr::select(codesource_area,gridtype)
-  
-  df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
+    
+    # 
+    # df_distinct_geom_nominal <- read.csv("https://github.com/fdiwg/fdi-codelists/raw/main/global/firms/gta/cl_nc_areas.csv") %>%
+    # sf::st_as_sf(wkt="geom_wkt",crs=4326)  %>% st_simplify()
+    if(!file.exists("cl_nc_areas_simplfied.gpkg")){
+      df_distinct_geom_nominal <- read_csv("https://github.com/fdiwg/fdi-codelists/raw/main/global/firms/gta/cl_nc_areas.csv") %>% 
+      sf::st_as_sf(wkt="geom_wkt",crs=4326)  %>% st_simplify(dTolerance = 0.5)
+    st_write(df_distinct_geom_nominal,dsn = "cl_nc_areas_simplfied.gpkg")
+    }else{
+      df_distinct_geom_nominal <- sf::read_sf("cl_nc_areas_simplfied.gpkg")
+      }
+    df_distinct_geom_nominal <- df_distinct_geom_nominal %>% 
+      dplyr::rename('codesource_area'= code)   %>% 
+      dplyr::mutate(geom=st_buffer(st_centroid(geom),dist=10000),'gridtype'="nominal")  %>% 
+      # dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom)),EWKT = TRUE) %>% 
+      dplyr::select(codesource_area,gridtype)
+    
+    df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
     dplyr::mutate('ogc_fid'= row_number(codesource_area)) 
   
   # saveRDS(df_distinct_geom, "gta_geom_new.RDS")  
