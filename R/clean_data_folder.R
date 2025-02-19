@@ -9,13 +9,16 @@
 #'
 #' @examples
 #' clean_data_folder()
-clean_data_folder <- function(data_path = here::here("data")) {
+clean_data_folder <- function(data_path = here::here("data"), removeall_data = FALSE) {
+  if(removeall_data){
   # Fichiers à conserver
   keep_files <- c("whole_group_df.parquet",
                   "filters_combinations.parquet",
                   "df_distinct_geom_light.csv",
                   "default_df.parquet",
-                  "DOI.csv")
+                  "DOI.csv",
+                  "gta_dois.parquet",
+                  "gta.parquet")
   
   # Lister les fichiers dans le dossier
   files <- list.files(data_path, full.names = TRUE)
@@ -29,5 +32,9 @@ clean_data_folder <- function(data_path = here::here("data")) {
     message(length(files_to_delete), " fichiers supprimés.")
   } else {
     message("Aucun fichier à supprimer.")
+  }
+  } else {
+    message("Not removing data")
+    
   }
 }
