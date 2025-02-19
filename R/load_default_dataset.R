@@ -11,5 +11,5 @@ if (file.exists(filename)) {
   init_whole_default_df <- updates$whole_filtered_df
   arrow::write_parquet(init_whole_default_df, filename)
 }
-  return(updates)
+  return(init_whole_default_df)
 }

@@ -1,6 +1,6 @@
 if(exists(here::here("data/df_distinct_geom_light.csv"))){
   unlink(here::here("data/df_distinct_geom_light.csv"))
-
+}
 df_distinct_geom_spatial <- qs::qread(here::here("data/gta_geom.qs")) %>% dplyr::select(-c(count)) 
 
 flog.info("Add spatial geometries 1")
@@ -28,4 +28,3 @@ qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.qs"))
 rm(df_distinct_geom)
 gc()
 
-}

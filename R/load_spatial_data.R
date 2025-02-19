@@ -1,7 +1,7 @@
 load_spatial_data <- function(df_sf,mode) {
   
   if(!file.exists(here::here("data/gta_geom.qs"))){
-    df_distinct_geom <- qread("data/global_catch_tunaatlasird_level2_14184244.qs") %>%
+    df_distinct_geom <- qread(here::here("data/global_catch_tunaatlasird_level2_14184244.qs")) %>%
       dplyr::select(geographic_identifier, GRIDTYPE) %>% 
       dplyr::mutate(ogc_fid = 1) %>% 
       dplyr::rename(codesource_area=geographic_identifier,gridtype=GRIDTYPE,geom=geom_wkt) %>%

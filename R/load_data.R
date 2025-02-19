@@ -67,13 +67,17 @@ load_data <- function(mode="DOI"){
   }else{
     flog.info("No data loaded !!")
   }
+  
+  flog.info("Load spatial filter data")
+  df_distinct_geom <-  load_spatial_data(df_sf=loaded_data, mode=mode)
+  all_polygons <- df_distinct_geom %>% st_combine() # %>% st_simplify() 
+  all_polygons_footprint <- all_polygons %>% st_as_text()
   df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.qs"))
   loaded_data <- loaded_data %>%
-    dplyr::left_join(df_distinct_geom_light, by = c('codesource_area')) %>% 
-    dplyr::mutate(gridtype = ifelse(is.na(gridtype), "NA", gridtype))
+    dplyr::left_join((df_distinct_geom_light %>% dplyr::select(-geom_wkt)
+                      ), by=c('codesource_area'))
+  loaded_data$geom_wkt <- loaded_data$codesource_area #hot fix for now # removed as too big
   rm(df_distinct_geom_light)
-  gc()
-  flog.info("Loading / storing aggregated data with dimensions only needed by filters")
   whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = here::here("data/whole_group_df.parquet"))
   #whole group_df cannot be used as it now excludes geom_wkt which is not in the groupping
   gc()
@@ -83,11 +87,7 @@ load_data <- function(mode="DOI"){
   filters_combinations <- list_filters$filters_combinations
   list_values_dimensions <- list_filters$list_values_dimensions
   rm(list_filters)
-  
-  flog.info("Load spatial filter data")
-  df_distinct_geom <-  load_spatial_data(df_sf=loaded_data, mode=mode)
-  all_polygons <- df_distinct_geom %>% st_combine() # %>% st_simplify() 
-  all_polygons_footprint <- all_polygons %>% st_as_text()
+
   
   
   # possible_values / selected_values / current_values
@@ -128,7 +128,6 @@ load_data <- function(mode="DOI"){
   
   flog.info("Load default dataset!!")
   # add parameter = list of values ?
-
   updates <- load_default_dataset(df=whole_group_df,
                                   filename="default_df.parquet",
                                   list_filters=list_default_filters)

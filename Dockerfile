@@ -144,6 +144,7 @@ COPY data/DOI.csv ./data/DOI.csv
 
 COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
 COPY R/download_data.R ./R/download_data.R
+COPY R/hotfix.R ./R/hotfix.R
 COPY data/cl_nc_areas_simplfied.gpkg ./data/cl_nc_areas_simplfied.gpkg
 # Exécuter le script avec sourcing avant l'appel de la fonction
 RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
