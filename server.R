@@ -167,7 +167,7 @@ server <- function(input, output, session) {
           flog.info("USE CASE 1: Spatial filters => new WKT applied to filter the whole dataset !!")
           flog.info("--------------------------------------------")
           flog.info("Listing remaining areas within the new WKT: %s", wkt)
-          new_data <- main_data %>% filter(!is.na(geom_wkt)) %>% 
+          new_data <- main_data %>% filter(!is.na(codesource_area)) %>% 
             dplyr::filter(codesource_area %in% within_areas)
           filtered_default_df(new_data)
           # wkt(new_df_footprint)
@@ -249,7 +249,7 @@ server <- function(input, output, session) {
            whole_filtered_df(main_data)
            
            if(wkt != all_wkt){
-             default_df <- main_data %>% filter(!is.na(geom_wkt)) %>% 
+             default_df <- main_data %>% filter(!is.na(codesource_area)) %>% 
                dplyr::filter(codesource_area %in% within_areas)
              filtered_default_df(default_df)
              main_data <- default_df
@@ -328,13 +328,15 @@ server <- function(input, output, session) {
     # }
     # map_df <- main_df  %>% dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>%
     #   dplyr::mutate(geom=st_as_text(st_sfc(geom_wkt),EWKT = TRUE))
-    
-    map_df <- main_df %>% 
+    df_distinct_geom_light <- qs::qread("data/df_distinct_geom_light.qs")
+    map_df <- main_df %>%
+      dplyr::left_join((df_distinct_geom_light ), by=c('codesource_area'))%>% 
       dplyr::group_by(geom_wkt, dataset, measurement_unit) %>%
       # dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, year, measurement_unit) %>%
       dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup() %>% st_as_sf(wkt="geom_wkt",crs=4326)
     # flog.info("Number of rows of map data : %s", nrow(map_df))
-    
+    rm(df_distinct_geom_light)
+    gc()
     # flog.info("Main data number rows: %s", nrow(map_df))
     # # https://shiny.posit.co/r/reference/shiny/latest/modaldialog
     # if(nrow(map_df)==0)
@@ -346,7 +348,7 @@ server <- function(input, output, session) {
     #   ))else{
     #     map_df
     #   }
-    
+    map_df
     
   })
   
