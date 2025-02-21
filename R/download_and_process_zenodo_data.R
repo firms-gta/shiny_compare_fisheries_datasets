@@ -159,7 +159,7 @@ download_and_process_zenodo_data <- function() {
       #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
       qs::qsave(df_distinct_geom, here::here("data/gta_geom.qs"))   
     }
-  source(here::here("hotfix.R"))
+  source(here::here("R/hotfix.R"))
   #read all DOIs data from parquet file
   loaded_data <- arrow::read_parquet(here::here("data/gta_dois.parquet"))
   
