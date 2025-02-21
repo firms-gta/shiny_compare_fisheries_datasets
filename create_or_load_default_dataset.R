@@ -4,6 +4,8 @@
   require(arrow)
   require(futile.logger)
   require(here)
+  all_wkt <- ""
+  within_areas <- NULL
   here::i_am("create_or_load_default_dataset.R")
   source(here::here('install.R'))
   flog.info("Loading libraries")
