@@ -25,10 +25,13 @@ apply_filters <- function(df, list_filters) {
     if(nrow(new_df)!=0){
       flog.info("Check number of rows of main df : %s", nrow(new_df))
       df_distinct_geom_light <- qs::qread("data/df_distinct_geom_light.qs")
-      new_df_footprint <- new_df%>%
-        dplyr::left_join((df_distinct_geom_light ), by=c('codesource_area'))  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
-        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% 
-        st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text() #%>% st_simplify() 
+      new_df_footprint <- new_df %>%
+        dplyr::left_join(df_distinct_geom_light, by = "codesource_area") %>%
+        dplyr::group_by(codesource_area, geom_wkt) %>%
+        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), .groups = "drop") %>%
+        filter(!is.na(geom_wkt)) %>%  # Exclure les géométries NULL
+        st_as_sf(wkt = "geom_wkt", crs = 4326)
+
       rm(df_distinct_geom_light)
       if(is.null(within_areas) || wkt == all_wkt){
         # if(wkt == all_wkt){
@@ -63,7 +66,6 @@ apply_filters <- function(df, list_filters) {
       default_df <- filtered_default_df()
       new_df_footprint <- current_selection_footprint_wkt()
     }
-    
     # flog.info("Returns a list of dataframes")
     list_df = list(
       "whole_filtered_df" = new_df,

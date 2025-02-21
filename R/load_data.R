@@ -78,12 +78,13 @@ load_data <- function(mode="DOI"){
                       ), by=c('codesource_area'))
   loaded_data$geom_wkt <- loaded_data$codesource_area #hot fix for now # removed as too big
   rm(df_distinct_geom_light)
-  whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = here::here("data/whole_group_df.parquet"))
+  
+  loaded_data$gridtype <- ifelse(is.na(loaded_data$gridtype), "NA", loaded_data$gridtype)
+  whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = "whole_group_df.qs")
   #whole group_df cannot be used as it now excludes geom_wkt which is not in the groupping
   gc()
-  
   flog.info("Load non spatial filters combinations  & List all values for non spatial filters")
-  list_filters <- load_filters_combinations(df_sf=loaded_data, filename = here::here("data/filters_combinations.parquet"))
+  list_filters <- load_filters_combinations(df_sf=loaded_data, filename = "filters_combinations.qs")
   filters_combinations <- list_filters$filters_combinations
   list_values_dimensions <- list_filters$list_values_dimensions
   rm(list_filters)
@@ -99,7 +100,7 @@ load_data <- function(mode="DOI"){
 #                       'global_nominal_catch_firms_level0_public_11410529') # c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
   default_species <- c('YFT') # c('YFT','SKJ','BET','SBF','ALB')
   default_year <- c(seq(1:10)+2010) # c(seq(min(list_values_dimensions$year):max(list_values_dimensions$year))+min(list_values_dimensions$year)-2) | c(seq(1950:2021)+1949) | c(seq((max(list_values_dimensions$year)-10):max(list_values_dimensions$year))+max(list_values_dimensions$year)-11)
-  default_gear_type <- c('1.1','1.2') #  c('01.1','01.2')
+  default_gear_type <- list_values_dimensions$gear_type #  c('01.1','01.2')
   default_unit <- c('t')
   default_source_authority <- unique(list_values_dimensions$source_authority)
   default_gridtype <- list_values_dimensions$gridtype # c("1deg_x_1deg")
@@ -125,11 +126,10 @@ load_data <- function(mode="DOI"){
 
   # Logging the successful execution of the script up to this point
   flog.info("Initial setup and data retrieval completed successfully.")
-  
   flog.info("Load default dataset!!")
   # add parameter = list of values ?
   updates <- load_default_dataset(df=whole_group_df,
-                                  filename="default_df.parquet",
+                                  filename="default_df.qs",
                                   list_filters=list_default_filters)
 
   
@@ -137,7 +137,6 @@ load_data <- function(mode="DOI"){
   default_footprint <- updates$current_selection_footprint_wkt
   # flog.info("Current footprint for filters is %s: ",whole_footprint)
   # current_selection_footprint_wkt(default_footprint)
-  
   default_df <- updates$filtered_default_df
   flog.info("########################## DEFAULT FILTERED DATA LOADED")
   
