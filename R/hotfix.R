@@ -34,7 +34,8 @@ df_distinct_geom_light <- df_distinct_geom_light %>%
     tryCatch(st_as_sfc(.x, crs=4326), error = function(e) NA)
   }))
 
-df_distinct_geom_light <- df_distinct_geom_light %>% dplyr::filter(!is.na(geometry))
+df_distinct_geom_light <- df_distinct_geom_light %>% dplyr::filter(!is.na(geometry))%>% 
+  st_drop_geometry() %>% dplyr::select(-geometry)  %>% dplyr::as_data_frame()
 qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.qs"))
 rm(df_distinct_geom)
 gc()

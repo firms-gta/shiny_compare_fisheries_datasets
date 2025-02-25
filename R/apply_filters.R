@@ -24,15 +24,17 @@ apply_filters <- function(df, list_filters) {
     flog.info("Check number of rows of main df")
     if(nrow(new_df)!=0){
       flog.info("Check number of rows of main df : %s", nrow(new_df))
-      df_distinct_geom_light <- qs::qread("data/df_distinct_geom_light.qs")
+      if(!exists("df_distinct_geom_light")){
+      df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.qs"))
+      }
       new_df_footprint <- new_df %>%
-        dplyr::left_join(df_distinct_geom_light, by = "codesource_area") %>%
-        dplyr::group_by(codesource_area, geom_wkt) %>%
-        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), .groups = "drop") %>%
-        filter(!is.na(geom_wkt)) %>%  # Exclure les géométries NULL
+        dplyr::group_by(codesource_area) %>%
+        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), .groups = "drop") %>% 
+        dplyr::left_join(df_distinct_geom_light%>% dplyr::select(c(codesource_area, geom_wkt)), by = "codesource_area") %>%
+        ungroup() %>% 
+        dplyr::filter(!is.na(geom_wkt)) %>%  
         st_as_sf(wkt = "geom_wkt", crs = 4326)
 
-      rm(df_distinct_geom_light)
       if(is.null(within_areas) || wkt == all_wkt){
         # if(wkt == all_wkt){
           flog.info("there is no spatial filter")

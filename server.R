@@ -328,26 +328,17 @@ server <- function(input, output, session) {
     # map_df <- main_df  %>% dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>%
     #   dplyr::mutate(geom=st_as_text(st_sfc(geom_wkt),EWKT = TRUE))
     if(!exists("df_distinct_geom_light")){
-    df_distinct_geom_light <- qs::qread("data/df_distinct_geom_light.qs")
+    df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.qs"))
 
     
     }
     
     map_df <- main_df %>%
-      dplyr::left_join(df_distinct_geom_light, by=c('codesource_area')) %>%
-      dplyr::group_by(geom_wkt, dataset, measurement_unit) %>%
+      dplyr::group_by(dataset, measurement_unit, codesource_area) %>%
       dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% 
-      ungroup()
-    
-    map_df <- map_df %>%
-      dplyr::mutate(geom_wkt = as.character(geom_wkt)) 
-    
-    map_df <- map_df %>%
-      dplyr::mutate(geometry = purrr::map(geom_wkt, ~ {
-        tryCatch(st_as_sfc(.x, crs=4326), error = function(e) NA)
-      })) %>%
-      dplyr::filter(!is.na(geometry))  %>%
-      st_as_sf(wkt="geom_wkt", crs=4326) #hotfix for now
+      dplyr::left_join(df_distinct_geom_light %>% dplyr::select(c(codesource_area, geom_wkt)), by=c('codesource_area')) %>%
+      ungroup() %>%
+      st_as_sf(wkt="geom_wkt", crs=4326) 
     
     # map_df <- main_df %>%
     #   dplyr::left_join((df_distinct_geom_light ), by=c('codesource_area'))%>% 
