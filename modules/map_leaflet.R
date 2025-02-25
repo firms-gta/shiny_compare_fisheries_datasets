@@ -59,7 +59,6 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       # spatial_footprint_1 <- list_areas  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% st_combine() #%>% st_convex_hull(
       # flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", this_wkt)
       # spatial_footprint_5 <- list_areas  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
-      
       if(this_wkt!=all_wkt){
         flog.info("Calculating centroid : whole_footprint")
         convex_hull <- st_convex_hull(current_selection)

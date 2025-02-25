@@ -3,6 +3,9 @@ dir <- getwd()
 require(parallel)
 require(here)
 require(futile.logger)
+require(markdown)
+require(plotly)
+require(leaflet.extras)
 source(here::here('install.R'))
 flog.info("Loading libraries")
 flog.info("All libraries loaded successfully.")
@@ -10,7 +13,6 @@ spatial_processing_mode <- "sf" # "QGIS"
 sf::sf_use_s2(FALSE)
 all_wkt <- ""
 within_areas <- NULL
-
 # loadSupport(  ) ??
 futile.logger::flog.info("Load zenodo download function")
 source(here::here('R/download_data.R'))
@@ -52,7 +54,7 @@ current_gridtype <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
 flog.info("Reactive values initialized successfully.")
 
-# mode="DOI" | mode="gpkg" | mode="postgres" | mode="RDS" | mode="parquet"
+# mode="DOI" | mode="gpkg" | mode="postgres" | mode="QS" | mode="parquet"
 mode="DOI"
 
 flog.info("Loading data with mode: %s", mode)
@@ -68,9 +70,9 @@ list_values_dimensions <- list_dataframes$list_values_dimensions
 flog.info("All data succesfully loaded")
 setwd(dir)
 
-flog.info("Load spatial filter data")
+
 df_distinct_geom <-  list_dataframes$df_distinct_geom
-all_polygons <- list_dataframes$all_polygons 
+all_polygons <- list_dataframes$all_polygons
 all_polygons_footprint <- list_dataframes$all_polygons_footprint
 list_default_filters <- list_dataframes$list_default_filters
 init_whole_default_df <- list_dataframes$init_whole_default_df
