@@ -31,7 +31,7 @@ load_filters_combinations <- function(df_sf,filename) {
     "source_authority" = unique(filters_combinations$source_authority),
     "gridtype" = unique(filters_combinations$gridtype) ,
     "fishing_fleet" = unique(filters_combinations$fishing_fleet)
-  )
+    )
   
   
   flog.info("Returns a list of dataframe + velues for dimensions")

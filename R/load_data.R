@@ -69,27 +69,36 @@ load_data <- function(mode="DOI"){
   }
   
   flog.info("Load spatial filter data")
-  df_distinct_geom <-  load_spatial_data(df_sf=loaded_data, mode=mode)
+  all_codesource_area <- unique(loaded_data$codesource_area)
+  df_distinct_geom <-  load_spatial_data(codesource_area=all_codesource_area, mode=mode)
   all_polygons <- df_distinct_geom %>% st_combine() # %>% st_simplify() 
   all_polygons_footprint <- all_polygons %>% st_as_text()
-  df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.qs"))
-  loaded_data <- loaded_data %>%
-    dplyr::left_join((df_distinct_geom_light %>% dplyr::select(-geom_wkt)
-                      ), by=c('codesource_area'))
-  loaded_data$geom_wkt <- loaded_data$codesource_area #hot fix for now # removed as too big
-  rm(df_distinct_geom_light)
   
+  # if(!file.exists(here::here("data/df_distinct_geom_light.qs"))){
+  #   df_distinct_geom <- load_spatial_data(codesource_area=NULL,mode)
+  #   df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
+  #     st_drop_geometry()  %>% dplyr::as_data_frame()
+  #   qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.qs"))
+  #   # rm(df_distinct_geom)
+  #   # gc()
+  # }
+  # df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.qs"))
+  flog.info("Left join to turn all data in sf data object")
+  loaded_data <- loaded_data %>%
+    dplyr::left_join(df_distinct_geom, by=c('codesource_area'))
+  # loaded_data$geom_wkt <- loaded_data$codesource_area #hot fix for now # removed as too big
+  # rm(df_distinct_geom_light)
   loaded_data$gridtype <- ifelse(is.na(loaded_data$gridtype), "NA", loaded_data$gridtype)
+  
+  flog.info("Aggregating all data to get a lighter dataset and keep only dimensions used as filters in the UI")
   whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = "whole_group_df.qs")
   #whole group_df cannot be used as it now excludes geom_wkt which is not in the groupping
   gc()
   flog.info("Load non spatial filters combinations  & List all values for non spatial filters")
-  list_filters <- load_filters_combinations(df_sf=loaded_data, filename = "filters_combinations.qs")
+  list_filters <- load_filters_combinations(df_sf=whole_group_df, filename = "filters_combinations.qs")
   filters_combinations <- list_filters$filters_combinations
   list_values_dimensions <- list_filters$list_values_dimensions
   rm(list_filters)
-
-  
   
   # possible_values / selected_values / current_values
   flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
@@ -123,9 +132,9 @@ load_data <- function(mode="DOI"){
                               # target_wkt <- "POLYGON ((-10.195313 49.15297,33.222656 49.15297,33.222656 35.46067,-10.195313 35.46067,-10.195313 49.15297))"
                               )
   flog.info("Keeping tracks of current selected values for filters to faster data loading.")
-
   # Logging the successful execution of the script up to this point
   flog.info("Initial setup and data retrieval completed successfully.")
+  
   flog.info("Load default dataset!!")
   # add parameter = list of values ?
   updates <- load_default_dataset(df=whole_group_df,
@@ -150,7 +159,7 @@ load_data <- function(mode="DOI"){
   #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
   
   
-  flog.info("Returns a list of dataframes")
+  flog.info("Returns all datasets and lists within a list")
   list_df = list(
     "whole_group_df" = whole_group_df,
     "filters_combinations" = filters_combinations,

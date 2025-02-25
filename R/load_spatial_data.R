@@ -1,33 +1,39 @@
-load_spatial_data <- function(df_sf,mode) {
+load_spatial_data <- function(codesource_area=NULL,mode) {
   
   if(!file.exists(here::here("data/gta_geom.qs"))){
-    df_distinct_geom <- qread(here::here("data/global_catch_tunaatlasird_level2_14184244.qs")) %>%
-      dplyr::select(geographic_identifier, GRIDTYPE) %>% 
-      dplyr::mutate(ogc_fid = 1) %>% 
-      dplyr::rename(codesource_area=geographic_identifier,gridtype=GRIDTYPE,geom=geom_wkt) %>%
-      mutate(ogc_fid=row_number(codesource_area)) %>% 
-      dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(count = sum(ogc_fid)) %>% ungroup() %>%  st_set_crs(4326)
-    #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
-    qs::qsave(df_distinct_geom, "data/gta_geom.qs")   
-  } 
+    df_distinct_geom_spatial <- read_csv("https://github.com/fdiwg/fdi-codelists/raw/refs/heads/main/global/cwp/cl_areal_grid.csv") %>% 
+      dplyr::mutate(codesource_area = as.character(code)) %>% 
+      dplyr::select(codesource_area,GRIDTYPE,geom_wkt) %>% 
+      dplyr::rename('gridtype' = GRIDTYPE,geom=geom_wkt)  %>% 
+      dplyr::mutate('gridtype' = case_when(gridtype == '1deg_x_1deg' ~ '1deg_x_1deg',
+                                           gridtype == '5deg_x_5deg' ~ '5deg_x_5deg',
+                                           TRUE ~ 'others')) %>%
+      st_as_sf(wkt="geom", crs=4326)
+    if(!is.null(codesource_area)){
+      df_distinct_geom_spatial <- df_distinct_geom_spatial  %>% dplyr::filter(codesource_area %in% codesource_area)
+    }
+    qsave(df_distinct_geom_spatial, here::here("data/gta_geom.qs"))
+    }
     
 if(mode!="DOI"){
   flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
-  df_distinct_geom <- df_sf %>% as.data.frame() %>% dplyr::group_by(codesource_area,gridtype,geom) %>%
+  df_distinct_geom <- df_sf %>% as.data.frame() %>% 
+    dplyr::filter(codesource_area %in% codesource_area) %>% 
+    dplyr::group_by(codesource_area,gridtype,geom) %>%
     filter(!is.na(gridtype)) %>% filter(!is.na(geom)) %>%
     dplyr::summarise(ogc_fid = first(ogc_fid)) %>% ungroup() %>% st_as_sf(wkt="geom",crs=4326) 
 }else{
   # saveRDS(df_distinct_geom, "gta_geom.RDS")
   if(!file.exists(here::here("data/gta_geom_new.qs"))){
-    df_distinct_geom_spatial <- qs::qread(here::here("data/gta_geom.qs")) %>% dplyr::select(-c(count)) 
+    df_distinct_geom_spatial <- qs::qread(here::here("data/gta_geom.qs"))
     
-    if(!file.exists("cl_nc_areas_simplfied.gpkg")){
+    if(!file.exists(here::here("data/cl_nc_areas_simplfied.gpkg"))){
       df_distinct_geom_nominal <- read_csv("https://github.com/fdiwg/fdi-codelists/raw/main/global/firms/gta/cl_nc_areas.csv") %>% 
         dplyr::mutate('geom'=geom_wkt)  %>%
         sf::st_as_sf(wkt="geom",crs=4326)  %>% st_simplify(dTolerance = 0.5) 
-      st_write(df_distinct_geom_nominal,dsn = "cl_nc_areas_simplfied.gpkg")
+      st_write(df_distinct_geom_nominal,dsn = here::here("data/cl_nc_areas_simplfied.gpkg"))
     }else{
-      df_distinct_geom_nominal <- sf::read_sf("cl_nc_areas_simplfied.gpkg")
+      df_distinct_geom_nominal <- sf::read_sf(here::here("data/cl_nc_areas_simplfied.gpkg"))
       }
     df_distinct_geom_nominal <- df_distinct_geom_nominal %>% st_centroid() %>% 
       st_buffer(units::set_units(1, degree))  %>% 

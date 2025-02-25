@@ -142,6 +142,7 @@ download_and_process_zenodo_data <- function() {
       
     })
     loaded_data <- do.call(rbind, df_dois)
+    
     gc()
     arrow::write_parquet(loaded_data, here::here("data/gta_dois.parquet"))
     rm(loaded_data)
@@ -149,17 +150,20 @@ download_and_process_zenodo_data <- function() {
     rm(list = ls())
     gc()
   }
-    if(!file.exists(here::here("data/gta_geom.qs"))){
-      df_distinct_geom <- qread(here::here("data/global_catch_tunaatlasird_level2_14184244.qs")) %>%
-        dplyr::select(geographic_identifier, GRIDTYPE) %>% 
-        dplyr::mutate(ogc_fid = 1) %>% 
-        dplyr::rename(codesource_area=geographic_identifier,gridtype=GRIDTYPE,geom=geom_wkt) %>%
-        mutate(ogc_fid=row_number(codesource_area)) %>% 
-        dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(count = sum(ogc_fid)) %>% ungroup() %>%  st_set_crs(4326)
-      #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
-      qs::qsave(df_distinct_geom, here::here("data/gta_geom.qs"))   
-    }
-  source(here::here("R/hotfix.R"))
+  
+  # if(!file.exists(here::here("data/df_distinct_geom_light.qs"))){
+  #   df_distinct_geom <- load_spatial_data(df_sf=NULL,mode)
+  #   df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
+  #     st_drop_geometry()  %>% dplyr::as_data_frame()
+  #   qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.qs"))
+  #   # rm(df_distinct_geom)
+  #   # gc()
+  # }
+  # else{
+  #   df_distinct_geom_light <-  qs::read(here::here("data/df_distinct_geom_light.qs"))
+  # }
+  # loaded_data <- loaded_data %>% dplyr::left_join((df_distinct_geom_light), by=c('codesource_area'))
+  # source(here::here("R/hotfix.R"))
   #read all DOIs data from parquet file
   loaded_data <- arrow::read_parquet(here::here("data/gta_dois.parquet"))
   

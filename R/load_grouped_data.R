@@ -1,4 +1,3 @@
-
 load_grouped_data <- function(df_sf, filename) {
   
 if (file.exists(here::here(file.path("data",filename)))) {
