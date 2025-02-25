@@ -1,16 +1,17 @@
 load_spatial_data <- function(codesource_area=NULL,mode) {
-  
+  this_areas <- codesource_area
   if(!file.exists(here::here("data/gta_geom.qs"))){
     df_distinct_geom_spatial <- read_csv("https://github.com/fdiwg/fdi-codelists/raw/refs/heads/main/global/cwp/cl_areal_grid.csv") %>% 
       dplyr::mutate(codesource_area = as.character(code)) %>% 
       dplyr::select(codesource_area,GRIDTYPE,geom_wkt) %>% 
-      dplyr::rename('gridtype' = GRIDTYPE,geom=geom_wkt)  %>% 
+      dplyr::rename('gridtype' = GRIDTYPE, geom=geom_wkt)  %>% 
       dplyr::mutate('gridtype' = case_when(gridtype == '1deg_x_1deg' ~ '1deg_x_1deg',
                                            gridtype == '5deg_x_5deg' ~ '5deg_x_5deg',
                                            TRUE ~ 'others')) %>%
       st_as_sf(wkt="geom", crs=4326)
-    if(!is.null(codesource_area)){
-      df_distinct_geom_spatial <- df_distinct_geom_spatial  %>% dplyr::filter(codesource_area %in% codesource_area)
+    
+    if(!is.null(this_areas)){
+      df_distinct_geom_spatial <- df_distinct_geom_spatial  %>% dplyr::filter(codesource_area %in% this_areas)
     }
     qsave(df_distinct_geom_spatial, here::here("data/gta_geom.qs"))
     }
@@ -18,7 +19,7 @@ load_spatial_data <- function(codesource_area=NULL,mode) {
 if(mode!="DOI"){
   flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
   df_distinct_geom <- df_sf %>% as.data.frame() %>% 
-    dplyr::filter(codesource_area %in% codesource_area) %>% 
+    dplyr::filter(codesource_area %in% this_areas) %>% 
     dplyr::group_by(codesource_area,gridtype,geom) %>%
     filter(!is.na(gridtype)) %>% filter(!is.na(geom)) %>%
     dplyr::summarise(ogc_fid = first(ogc_fid)) %>% ungroup() %>% st_as_sf(wkt="geom",crs=4326) 
