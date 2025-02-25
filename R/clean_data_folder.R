@@ -9,7 +9,8 @@
 #'
 #' @examples
 #' clean_data_folder()
-clean_data_folder <- function(data_path = here::here("data")) {
+clean_data_folder <- function(data_path = here::here("data"), removeall_data = FALSE) {
+  if(removeall_data){
   # Fichiers à conserver
   keep_files <- c("whole_group_df.parquet",
                   "filters_combinations.parquet",
@@ -29,5 +30,9 @@ clean_data_folder <- function(data_path = here::here("data")) {
     message(length(files_to_delete), " fichiers supprimés.")
   } else {
     message("Aucun fichier à supprimer.")
+  }
+  } else {
+    message("Not removing data")
+    
   }
 }
