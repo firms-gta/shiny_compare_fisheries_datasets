@@ -4,7 +4,7 @@ apply_filters <- function(df, list_filters) {
   within_areas <- list_filters$within_areas
   
   flog.info("Applying all non spatial filters")
-  new_df <- df  %>% filter(!is.na(geom_wkt)) %>%  
+  new_df <- df  %>% filter(!is.na(codesource_area)) %>%  
       dplyr::filter(
         # codesource_area %in% within_areas,
         dataset %in% list_filters$dataset,
@@ -16,7 +16,7 @@ apply_filters <- function(df, list_filters) {
         measurement_unit %in% list_filters$unit,
         gridtype %in% list_filters$gridtype
       ) %>% 
-      dplyr::group_by(codesource_area, gridtype, geom_wkt, dataset, source_authority, species, gear_type, fishing_fleet, year, measurement_unit) %>% 
+      dplyr::group_by(codesource_area, gridtype, dataset, source_authority, species, gear_type, fishing_fleet, year, measurement_unit) %>% 
       dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% ungroup()
     
     
@@ -24,18 +24,24 @@ apply_filters <- function(df, list_filters) {
     flog.info("Check number of rows of main df")
     if(nrow(new_df)!=0){
       flog.info("Check number of rows of main df : %s", nrow(new_df))
-      
-      new_df_footprint <- new_df  %>% dplyr::group_by(codesource_area, geom_wkt) %>% 
-        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% 
-        st_as_sf(wkt="geom_wkt",crs=4326) %>% st_combine()  %>% st_as_text() #%>% st_simplify() 
-      
+      if(!exists("df_distinct_geom_light")){
+      df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.qs"))
+      }
+      new_df_footprint <- new_df %>%
+        dplyr::group_by(codesource_area) %>%
+        dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE), .groups = "drop") %>% 
+        dplyr::left_join(df_distinct_geom_light%>% dplyr::select(c(codesource_area, geom_wkt)), by = "codesource_area") %>%
+        ungroup() %>% 
+        dplyr::filter(!is.na(geom_wkt)) %>%  
+        st_as_sf(wkt = "geom_wkt", crs = 4326)
+
       if(is.null(within_areas) || wkt == all_wkt){
         # if(wkt == all_wkt){
           flog.info("there is no spatial filter")
         default_df <- new_df
       }else{
         flog.info("there is a spatial filter")
-        default_df <- new_df %>% filter(!is.na(geom_wkt)) %>% 
+        default_df <- new_df %>% filter(!is.na(codesource_area)) %>% 
         dplyr::filter(codesource_area %in% within_areas)
         
         if(nrow(default_df)==0){
@@ -62,7 +68,6 @@ apply_filters <- function(df, list_filters) {
       default_df <- filtered_default_df()
       new_df_footprint <- current_selection_footprint_wkt()
     }
-    
     # flog.info("Returns a list of dataframes")
     list_df = list(
       "whole_filtered_df" = new_df,

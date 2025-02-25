@@ -34,14 +34,12 @@ download_and_process_zenodo_data <- function() {
         dir.create(DATA_DIR, recursive = TRUE, showWarnings = FALSE)
       }
       
-      if (!file.exists(newname) && file_mime == "zip") {
+      if (file_mime == "zip") {
         flog.info("######################### CSV => ZIP DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        
         zip_path <- file.path(DATA_DIR, DOIs$Filename[i])
         extracted_csv <- file.path(DATA_DIR, paste0(filename, ".csv"))
         target_csv <- file.path(DATA_DIR, paste0(filename, "_", record_id, ".csv"))
-        
         # Vérifier si le CSV extrait existe déjà avant de télécharger le ZIP
         if (!file.exists(target_csv)) {
           if (!file.exists(zip_path)) {
@@ -108,23 +106,9 @@ download_and_process_zenodo_data <- function() {
         
         flog.info("Store distinct geometries in the dedicated sf object 'df_distinct_geom' to perform faster spatial analysis")
         
-        if (!file.exists(file.path(DATA_DIR, "gta_geom.qs"))) {
-          df_distinct_geom <- qread(to_path) %>%
-            dplyr::select(geographic_identifier, GRIDTYPE) %>% 
-            dplyr::mutate(ogc_fid = 1) %>% 
-            dplyr::rename(codesource_area = geographic_identifier, gridtype = GRIDTYPE, geom = geom_wkt) %>%
-            mutate(ogc_fid = row_number(codesource_area)) %>% 
-            dplyr::group_by(codesource_area, gridtype, geom) %>% 
-            dplyr::summarise(count = sum(ogc_fid)) %>% 
-            ungroup() %>%  
-            st_set_crs(4326)
-          
-          qs::qsave(df_distinct_geom, file.path(DATA_DIR, "gta_geom.qs"))
-        }
       }
       
       flog.info("Dataset %s downloaded successfully from Zenodo or retrieved", newname)
-      
       # Correction pour éviter de lire un ZIP comme un CSV
       this_df <- switch(file_mime,
                         "csv" = read.csv(newname),
@@ -159,47 +143,25 @@ download_and_process_zenodo_data <- function() {
     })
     loaded_data <- do.call(rbind, df_dois)
     gc()
-    flog.info("Add spatial geometries for both nominal and gridded catches")
-    
-    df_distinct_geom_spatial <- qs::qread(here::here("data/gta_geom.qs")) %>% dplyr::select(-c(count)) 
-    
-    flog.info("Add spatial geometries 1")
-    
-    # https://github.com/fdiwg/fdi-codelists/raw/main/global/firms/gta/cl_nc_areas.csv
-    df_distinct_geom_nominal <- sf::read_sf(here::here("data/cl_nc_areas_simplfied.gpkg")) %>%
-      dplyr::rename(codesource_area = code) %>%
-      dplyr::mutate(geom = st_make_valid(geom)) %>%  
-      dplyr::mutate(geom = st_collection_extract(geom, "POLYGON")) %>%
-      dplyr::mutate(geom = st_centroid(geom)) %>%  
-      dplyr::mutate(geom = st_buffer(geom, dist = 1)) %>%  
-      dplyr::mutate(gridtype = "nominal") %>%
-      dplyr::select(codesource_area, gridtype)
-    flog.info("Add spatial geometries 2")
-    
-    df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
-      dplyr::mutate('ogc_fid'= row_number(codesource_area)) 
-    rm(df_distinct_geom_nominal)
-    gc()
-    flog.info("Add spatial geometries 3")
-    
-    df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
-      st_drop_geometry()  %>% dplyr::as_data_frame()
-    qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.qs"))
-    rm(df_distinct_geom)
-    gc()
-    flog.info("Left join with spatial geometries for both nominal and gridded catches")
-    # loaded_data <- loaded_data %>%
-    #   dplyr::left_join((df_distinct_geom_light %>% dplyr::select(-geom_wkt)), by=c('codesource_area'))
-    # loaded_data$geom_wkt <- loaded_data$codesource_area #hot fix for now # removed as too big 
-    gc()
-    flog.info("Write all binded dataframes into a parquet file")
     arrow::write_parquet(loaded_data, here::here("data/gta_dois.parquet"))
     rm(loaded_data)
     gc()
     rm(list = ls())
     gc()
   }
+    if(!file.exists(here::here("data/gta_geom.qs"))){
+      df_distinct_geom <- qread(here::here("data/global_catch_tunaatlasird_level2_14184244.qs")) %>%
+        dplyr::select(geographic_identifier, GRIDTYPE) %>% 
+        dplyr::mutate(ogc_fid = 1) %>% 
+        dplyr::rename(codesource_area=geographic_identifier,gridtype=GRIDTYPE,geom=geom_wkt) %>%
+        mutate(ogc_fid=row_number(codesource_area)) %>% 
+        dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(count = sum(ogc_fid)) %>% ungroup() %>%  st_set_crs(4326)
+      #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
+      qs::qsave(df_distinct_geom, here::here("data/gta_geom.qs"))   
+    }
+  source(here::here("R/hotfix.R"))
   #read all DOIs data from parquet file
   loaded_data <- arrow::read_parquet(here::here("data/gta_dois.parquet"))
+  
   return(loaded_data)
 }

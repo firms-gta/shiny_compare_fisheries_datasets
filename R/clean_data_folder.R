@@ -15,10 +15,8 @@ clean_data_folder <- function(data_path = here::here("data"), removeall_data = F
   keep_files <- c("whole_group_df.parquet",
                   "filters_combinations.parquet",
                   "df_distinct_geom_light.csv",
-                  "default_df.parquet",
-                  "DOI.csv",
-                  "gta_dois.parquet",
-                  "gta.parquet")
+                  # "default_df.parquet",
+                  "DOI.csv")
   
   # Lister les fichiers dans le dossier
   files <- list.files(data_path, full.names = TRUE)

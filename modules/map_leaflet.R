@@ -59,7 +59,6 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       # spatial_footprint_1 <- list_areas  %>% dplyr::filter(gridtype == '1deg_x_1deg') %>% st_combine() #%>% st_convex_hull(
       # flog.info("Updating spatial_footprint_5 to fit the new WKT  : %s", this_wkt)
       # spatial_footprint_5 <- list_areas  %>% dplyr::filter(gridtype == '5deg_x_5deg') %>% st_combine() #%>% st_convex_hull(
-      
       if(this_wkt!=all_wkt){
         flog.info("Calculating centroid : whole_footprint")
         convex_hull <- st_convex_hull(current_selection)
@@ -116,7 +115,7 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       for(d in datasets){
         flog.info("Adding one layer for each selected dataset : %s", print(datasets))
         flog.info("Adding one layer for each selected dataset : %s",d)
-        this_layer <- data_map %>% filter(dataset %in% d)
+        this_layer <- data_map %>% dplyr::filter(dataset %in% d)
         flog.info("Number of lines : %s", nrow(this_layer))
         
         map <- map  %>% 
@@ -309,7 +308,9 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       }else{
         flog.info("SF checking if remaining data in the new polygon just drawn !!")
         # disjoint_WKT <- new_selection %>% dplyr::filter(sf::st_crosses(., whole_footprint, sparse = FALSE))
-        disjoint_WKT <- new_selection %>% dplyr::filter(sf::st_disjoint(., whole_footprint, sparse = FALSE))
+        disjoint_WKT <- new_selection %>% 
+          dplyr::filter(apply(sf::st_disjoint(., whole_footprint, sparse = FALSE), 1, all))
+        
       }
       
       disjoint <- sf::st_as_sf(disjoint_WKT)
