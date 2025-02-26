@@ -32,6 +32,8 @@ RUN apt-get update && apt-get install -y \
     libprotobuf-dev \
     protobuf-compiler \
     libjq-dev \
+    rasqal-utils \
+    raptor2-utils \
     cmake
 
    
@@ -64,7 +66,8 @@ RUN apt-get update && apt-get install -y \
     texinfo \
     software-properties-common \
     vim \
-    wget
+    dos2unix \
+    wget 
     
 RUN install2.r --error --skipinstalled --ncpus -1 redland
 RUN apt-get install -y \
@@ -79,9 +82,6 @@ RUN apt-get install -y \
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean
 
-
-RUN R -e "install.packages(c('here', 'qs', 'dplyr', 'sf', 'futile.logger', 'purrr', 'tibble', 'readr', 'arrow', 'zen4R', 'lubridate', 'stringr', 'downloader', 'parallel'), repos='http://cran.r-project.org')"
-
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 
@@ -94,14 +94,36 @@ RUN mkdir -p data
 
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
+#bien verifier que derniere ligne est vide
 COPY data/DOI.csv ./data/DOI.csv 
 
-COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
-COPY R/download_data.R ./R/download_data.R
-COPY R/hotfix.R ./R/hotfix.R
-COPY data/cl_nc_areas_simplfied.gpkg ./data/cl_nc_areas_simplfied.gpkg
-# Exécuter le script avec sourcing avant l'appel de la fonction
-RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
+RUN dos2unix /data/DOI.csv && cat -A ./data/DOI.csv
+
+# Télécharger les fichiers depuis Zenodo
+RUN echo "Début du téléchargement des fichiers..." \
+    && bash -c "tail -n +2 ./data/DOI.csv | tr -d '\r' | while IFS=',' read -r DOI FILE; do \
+        echo 'DOI: $DOI, FILE: $FILE'; \
+        RECORD_ID=\$(echo \"\$DOI\" | awk -F '/' '{print \$NF}' | sed 's/zenodo\\.//'); \
+        echo 'Téléchargement de $FILE depuis Zenodo (Record ID: $RECORD_ID)'; \
+        wget -c --retry-connrefused --waitretry=5 --timeout=600 --tries=1 -O \"/data/\$FILE\" \"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
+        if [ \$? -eq 0 ]; then \
+            echo 'Fichier téléchargé : /data/\$FILE'; \
+            FILENAME=\$(echo \"\$FILE\" | sed 's/\..*//'); \
+            FILE_MIME=\$(echo \"\$FILE\" | sed 's/.*\.//'); \
+            NEWNAME=\"/data/\${FILENAME}_\${RECORD_ID}.\${FILE_MIME}\"; \
+            echo 'Renommage : mv /data/\$FILE \$NEWNAME'; \
+            if mv \"/data/\$FILE\" \"\$NEWNAME\"; then \
+                echo 'Fichier renommé : '\$NEWNAME; \
+            else \
+                echo 'Échec du renommage de : /data/\$FILE -> \$NEWNAME'; \
+                ls -lh /data/; \
+            fi; \
+        else \
+            echo 'Erreur lors du téléchargement de $FILE (Record ID: $RECORD_ID)'; \
+        fi; \
+    done" \
+    && echo "Tous les fichiers ont été traités !"
+
 
 # Install R core package dependencies (we might specify the version of renv package)
 RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
@@ -131,9 +153,6 @@ RUN if [ -z "${RENV_LOCK_HASH}" ]; then \
 # Make a directory in the container
 RUN mkdir -p ${RENV_PATHS_ROOT}
 
-# Set the working directory
-WORKDIR /root/shiny_compare_tunaatlas_datasests
-
 # Copy renv configuration and lockfile
 COPY renv.lock ./
 COPY .Rprofile ./
@@ -145,11 +164,21 @@ COPY renv/settings.json renv/settings.json
 # see documentation for Multi-stage builds => https://cran.r-project.org/web/packages/renv/vignettes/docker.html
 RUN mkdir renv/.cache
 ENV RENV_PATHS_CACHE=renv/.cache
-
 # Restore renv packages
 RUN R -e "renv::restore()"
 
 #FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
+
+# Exécuter le script avec sourcing avant l'appel de la fonction
+
+COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
+COPY R/download_data.R ./R/download_data.R
+COPY R/hotfix.R ./R/hotfix.R
+COPY data/cl_nc_areas_simplfied.gpkg ./data/cl_nc_areas_simplfied.gpkg
+COPY data/DOI.csv ./data/DOI.csv 
+RUN ls -lh data/ && cat data/DOI.csv
+
+RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
 
 COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 
@@ -170,6 +199,9 @@ RUN Rscript ./create_or_load_default_dataset.R
 #      \) -delete; \
 #    fi && \
 #    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Set the working directory
+WORKDIR /root/shiny_compare_tunaatlas_datasests
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
