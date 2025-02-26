@@ -9,11 +9,11 @@ download_and_process_zenodo_data <- function() {
            library(pkg, character.only = TRUE)
          })
   
-  list_DOIs <- here::here("data/DOI.csv")
-  DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
   if(!file.exists(here::here("data/gta_dois.parquet"))){
     require(zen4R)
     zenodo <- ZenodoManager$new()
+    list_DOIs <- here::here("data/DOI.csv")
+    DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
     # Use the function with lapply for each DOI
     df_dois <-lapply(1:nrow(DOIs), function(i) {
       this_doi <- DOIs$DOI[i]

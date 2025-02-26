@@ -333,9 +333,15 @@ server <- function(input, output, session) {
     
     map_df <- main_df %>%
       dplyr::group_by(codesource_area, dataset, measurement_unit) %>%
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% 
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%
       ungroup() %>%
-      dplyr::left_join(df_distinct_geom, by=c('codesource_area')) %>% st_sf()
+      dplyr::left_join(df_distinct_geom, by=c('codesource_area'))  %>% st_sf()
+    
+    # map_df <- main_df %>%
+    #   dplyr::group_by(codesource_area, dataset, measurement_unit) %>%
+    #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%
+    #   ungroup()
+    # map_df <- df_distinct_geom %>% dplyr::right_join(map_df, by=c('codesource_area')) %>% st_sf()
     # 
     # map_df <- map_df %>%
     #   dplyr::mutate(geom_wkt = as.character(geom_wkt)) 
