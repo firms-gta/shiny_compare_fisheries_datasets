@@ -1,7 +1,7 @@
 download_and_process_zenodo_data <- function() {
   sf::sf_use_s2(FALSE)
   lapply(c("here", "readr", "arrow", "qs", "sf", "dplyr", 
-           "zen4R", "futile.logger", "lubridate", "stringr"), 
+           "zen4R", "parallel","futile.logger", "lubridate", "stringr"), 
          function(pkg) {
            if (!requireNamespace(pkg, quietly = TRUE)) {
              install.packages(pkg)
