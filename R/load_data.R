@@ -72,7 +72,7 @@ load_data <- function(mode="DOI"){
   
   flog.info("Load spatial filter data")
   all_codesource_area <- unique(loaded_data$codesource_area)
-  df_distinct_geom <-  load_spatial_data(codesource_area=all_codesource_area, mode=mode)
+  df_distinct_geom <<-  load_spatial_data(codesource_area=all_codesource_area, mode=mode)
   all_polygons <- df_distinct_geom %>% st_combine() # %>% st_simplify() 
   all_polygons_footprint <- all_polygons %>% st_as_text()
   
