@@ -83,7 +83,11 @@ load_data <- function(mode="DOI"){
   # loaded_data$gridtype <- ifelse(is.na(loaded_data$gridtype), "NA", loaded_data$gridtype)
   
   flog.info("Aggregating all data to get a lighter dataset and keep only dimensions used as filters in the UI")
-  whole_group_df <- load_grouped_data(df_sf=loaded_data, filename = "whole_group_df.qs")
+  whole_group_df_tmp <- load_grouped_data(df_sf=loaded_data, filename = "whole_group_df.qs")
+  whole_group_df <- whole_group_df_tmp %>% 
+    filter(!is.na(codesource_area))  %>%    
+    dplyr::left_join((df_distinct_geom %>% as_tibble() %>% dplyr::select(-c(geom,ogc_fid))), by=c('codesource_area'))
+  
   #whole group_df cannot be used as it now excludes geom_wkt which is not in the groupping
   gc()
   flog.info("Load non spatial filters combinations  & List all values for non spatial filters")
