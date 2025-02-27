@@ -7,12 +7,9 @@ require(leaflet.extras)
 source(here::here('install.R'))
 flog.info("Loading libraries")
 flog.info("All libraries loaded successfully.")
-spatial_processing_mode <- "sf" # "QGIS"
+futile.logger::flog.info("Turn s2 off for sf => avoid issues")
 sf::sf_use_s2(FALSE)
-all_wkt <- ""
-within_areas <- NULL
-# loadSupport(  ) ??
-futile.logger::flog.info("Load zenodo download function")
+futile.logger::flog.info("Load functions")
 source(here::here('R/download_data.R'))
 source(here::here('R/load_data.R'))
 source(here::here('R/load_spatial_data.R'))
@@ -24,8 +21,11 @@ source(here::here('R/list_areas_within_wkt.R'))
 source(here::here('R/verify_filesize.R'))
 source(here::here('R/apply_filters.R'))
 # Initialize variables and reactive values and default WKT for mapping
+flog.info("Initialize variables")
 reset_all <- FALSE
-
+spatial_processing_mode <- "sf" # "QGIS"
+all_wkt <- ""
+within_areas <- NULL
 flog.info("Initialize reactive values")
 
 whole_dataset <- reactiveVal()
@@ -50,7 +50,6 @@ current_unit <- reactiveVal()
 current_gridtype <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
 flog.info("Reactive values initialized successfully.")
-
 # mode="DOI" | mode="gpkg" | mode="postgres" | mode="QS" | mode="parquet"
 mode="DOI"
 
