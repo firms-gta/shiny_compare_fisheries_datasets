@@ -79,6 +79,21 @@ RUN apt-get install -y \
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean
 
+# Set the working directory
+WORKDIR /root/shiny_compare_tunaatlas_datasests
+
+# Create data repository to copy DOI.csv, a file listing the dataset to download from zenodo
+RUN mkdir -p data 
+# Copy the CSV containing the data to download
+# Copy the script downloading the data from the CSV
+COPY data/DOI.csv ./data/DOI.csv
+# Add files downloaded from Zenodo DOIs => https://docs.docker.com/reference/dockerfile/#add
+ADD https://zenodo.org/record/5747175/files/global_catch_firms_level0_view.zip ./data/global_catch_firms_level0_view.zip
+ADD https://zenodo.org/record/11410529/files/global_nominal_catch_firms_level0_public.csv ./data/global_nominal_catch_firms_level0_public.csv
+ADD https://zenodo.org/record/14184244/files/global_catch_tunaatlasird_level2.qs ./data/global_catch_tunaatlasird_level2_14184244.qs
+ADD https://zenodo.org/record/1164128/files/global_catch_tunaatlasird_level2.csv ./data/global_catch_tunaatlasird_level2_1164128.csv
+ADD https://zenodo.org/record/11460074/files/global_catch_firms_level0_public.csv ./data/global_catch_firms_level0_public_11460074.csv
+# Could also try wget -L -O global_catch_firms_level0_public.csv "https://zenodo.org/record/11460074/files/global_catch_firms_level0_public.csv"
 
 RUN R -e "install.packages(c('here', 'qs', 'dplyr', 'sf', 'futile.logger', 'purrr', 'tibble', 'readr', 'arrow', 'zen4R', 'lubridate', 'stringr', 'downloader', 'parallel'), repos='http://cran.r-project.org')"
 
@@ -139,22 +154,9 @@ RUN R -e "renv::restore()"
 COPY  . .
 
 
-# Create data repository to copy DOI.csv, a file listing the dataset to download from zenodo
-RUN mkdir -p data 
-# Copy the CSV containing the data to download
-# Copy the script downloading the data from the CSV
-COPY data/DOI.csv ./data/DOI.csv
-ADD https://zenodo.org/record/5747175/files/global_catch_firms_level0_view.zip?download=1 ./data
-ADD https://zenodo.org/record/11410529/files/global_nominal_catch_firms_level0_public.csv?download=1 ./data
-ADD https://zenodo.org/record/14184244/files/global_catch_tunaatlasird_level2.qs?download=1 ./data
-ADD https://zenodo.org/record/1164128/files/global_catch_tunaatlasird_level2.csv?download=1 ./data
-ADD https://zenodo.org/record/11460074/files/global_catch_firms_level0_public.csv?download=1 ./data
-
 # Echo the DOI_CSV_HASH for debugging and to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
 ARG DOI_CSV_HASH
 RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}" > /tmp/doi_csv_hash.txt
-
-
 
 # COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
 # COPY R/download_data.R ./R/download_data.R
