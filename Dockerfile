@@ -144,6 +144,11 @@ RUN mkdir -p data
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
 COPY data/DOI.csv ./data/DOI.csv
+ADD https://zenodo.org/record/5747175/files/global_catch_firms_level0_view.zip?download=1 ./data
+ADD https://zenodo.org/record/11410529/files/global_nominal_catch_firms_level0_public.csv?download=1 ./data
+ADD https://zenodo.org/record/14184244/files/global_catch_tunaatlasird_level2.qs?download=1 ./data
+ADD https://zenodo.org/record/1164128/files/global_catch_tunaatlasird_level2.csv?download=1 ./data
+ADD https://zenodo.org/record/11460074/files/global_catch_firms_level0_public.csv?download=1 ./data
 
 # Echo the DOI_CSV_HASH for debugging and to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
 ARG DOI_CSV_HASH
