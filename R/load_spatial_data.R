@@ -1,4 +1,4 @@
-load_spatial_data <- function(codesource_area=NULL,mode) {
+load_spatial_data <- function(codesource_area=NULL,mode="DOI") {
   this_areas <- codesource_area
   if(!file.exists(here::here("data/gta_geom.qs"))){
     df_distinct_geom_spatial <- read_csv("https://github.com/fdiwg/fdi-codelists/raw/refs/heads/main/global/cwp/cl_areal_grid.csv") %>% 
@@ -15,16 +15,14 @@ load_spatial_data <- function(codesource_area=NULL,mode) {
     }
     qsave(df_distinct_geom_spatial, here::here("data/gta_geom.qs"))
     }
-    
-if(mode!="DOI"){
+  if(mode!="DOI"){
   flog.info("Store distinct geometries in the dedicaded sf object 'df_distinct_geom' to perform faster spatial analysis")
   df_distinct_geom <- df_sf %>% as.data.frame() %>% 
     dplyr::filter(codesource_area %in% this_areas) %>% 
     dplyr::group_by(codesource_area,gridtype,geom) %>%
     filter(!is.na(gridtype)) %>% filter(!is.na(geom)) %>%
     dplyr::summarise(ogc_fid = first(ogc_fid)) %>% ungroup() %>% st_as_sf(wkt="geom",crs=4326) 
-}else{
-  # saveRDS(df_distinct_geom, "gta_geom.RDS")
+  }else{
   if(!file.exists(here::here("data/gta_geom_new.qs"))){
     df_distinct_geom_spatial <- qs::qread(here::here("data/gta_geom.qs"))
     
@@ -45,20 +43,10 @@ if(mode!="DOI"){
     
     df_distinct_geom <- rbind(df_distinct_geom_spatial,df_distinct_geom_nominal)  %>% 
     dplyr::mutate('ogc_fid'= row_number(codesource_area)) 
-    
-  
-  # qs::qsave(df_distinct_geom, "data/gta_geom_new.qs")  
-  # arrow::write_parquet(df_distinct_geom, "data/gta_geom_new.parquet")
-  qsave(df_distinct_geom, here::here("data/gta_geom_new.qs"))
-  }else{
-    # df_distinct_geom <- arrow::read_parquet("gta_geom_new.parquet") 
-    df_distinct_geom <- qread(here::here("data/gta_geom_new.qs"))
-  }
-  
-  # df_distinct_geom_nominal <- read.csv("cl_nc_areas.csv") %>% sf::st_as_sf(wkt="geom_wkt",crs=4326)   %>% 
-  #   dplyr::mutate('geom'=st_bbox(),'codesource_area'=geographic_identifier)
-  # arrow::write_parquet(df_distinct_geom, "gta_geom.parquet")
-}
-  
+    qsave(df_distinct_geom, here::here("data/gta_geom_new.qs"))
+    }else{
+      df_distinct_geom <- qread(here::here("data/gta_geom_new.qs"))
+    }
+    }
   return(df_distinct_geom)
-}
+  }

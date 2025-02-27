@@ -25,12 +25,10 @@ apply_filters <- function(df, list_filters) {
     if(nrow(new_df)!=0){
       flog.info("Check number of rows of main df : %s", nrow(new_df))
 
-      df_distinct_geom <-  load_spatial_data(codesource_area=NULL, mode="DOI")
-
+      # df_distinct_geom <-  load_spatial_data(codesource_area=NULL, mode="DOI")
       new_df_footprint <- df_distinct_geom %>% dplyr::filter(codesource_area %in% unique(new_df$codesource_area))  %>% 
         st_combine()  %>% st_as_text() #%>% st_simplify()
       
-      rm(df_distinct_geom_light)
       if(is.null(within_areas) || wkt == all_wkt){
         # if(wkt == all_wkt){
           flog.info("there is no spatial filter")

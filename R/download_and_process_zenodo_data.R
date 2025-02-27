@@ -151,19 +151,6 @@ download_and_process_zenodo_data <- function() {
     gc()
   }
   
-  # if(!file.exists(here::here("data/df_distinct_geom_light.qs"))){
-  #   df_distinct_geom <- load_spatial_data(df_sf=NULL,mode)
-  #   df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
-  #     st_drop_geometry()  %>% dplyr::as_data_frame()
-  #   qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.qs"))
-  #   # rm(df_distinct_geom)
-  #   # gc()
-  # }
-  # else{
-  #   df_distinct_geom_light <-  qs::read(here::here("data/df_distinct_geom_light.qs"))
-  # }
-  # loaded_data <- loaded_data %>% dplyr::left_join((df_distinct_geom_light), by=c('codesource_area'))
-  # source(here::here("R/hotfix.R"))
   #read all DOIs data from parquet file
   loaded_data <- arrow::read_parquet(here::here("data/gta_dois.parquet"))
   

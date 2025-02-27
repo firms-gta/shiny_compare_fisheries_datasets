@@ -85,24 +85,6 @@ RUN R -e "install.packages(c('here', 'qs', 'dplyr', 'sf', 'futile.logger', 'purr
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 
-# Echo the DOI_CSV_HASH for debugging and to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
-ARG DOI_CSV_HASH
-RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}" > /tmp/doi_csv_hash.txt
-
-# Create data repository to copy DOI.csv, a file listing the dataset to download from zenodo
-RUN mkdir -p data 
-
-# Copy the CSV containing the data to download
-# Copy the script downloading the data from the CSV
-COPY data/DOI.csv ./data/DOI.csv 
-
-COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
-COPY R/download_data.R ./R/download_data.R
-COPY R/hotfix.R ./R/hotfix.R
-COPY data/cl_nc_areas_simplfied.gpkg ./data/cl_nc_areas_simplfied.gpkg
-# Exécuter le script avec sourcing avant l'appel de la fonction
-RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
-
 # Install R core package dependencies (we might specify the version of renv package)
 RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
@@ -151,12 +133,34 @@ RUN R -e "renv::restore()"
 
 #FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
 
-COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
-
 # Run the data update script Downloading the data (cached if DOI.csv did not change).
 ##RUN Rscript update_data.R 
+# Copy the rest of the application code
 COPY  . .
+
+
+# Create data repository to copy DOI.csv, a file listing the dataset to download from zenodo
+RUN mkdir -p data 
+# Copy the CSV containing the data to download
+# Copy the script downloading the data from the CSV
+COPY data/DOI.csv ./data/DOI.csv
+
+# Echo the DOI_CSV_HASH for debugging and to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
+ARG DOI_CSV_HASH
+RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}" > /tmp/doi_csv_hash.txt
+
+
+
+# COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
+# COPY R/download_data.R ./R/download_data.R
+# COPY R/hotfix.R ./R/hotfix.R
+# COPY data/cl_nc_areas_simplfied.gpkg ./data/cl_nc_areas_simplfied.gpkg
+# Exécuter le script avec sourcing avant l'appel de la fonction
+# RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
+# COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
+
 RUN Rscript ./create_or_load_default_dataset.R
+
 
 #RUN if [ -d "./data" ]; then \
 #      find ./data -type f ! \( \
@@ -173,6 +177,7 @@ RUN Rscript ./create_or_load_default_dataset.R
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
+# Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 
 # Define the entry point to run the Shiny app

@@ -1,3 +1,4 @@
+########################################################## Load data from a list of DOIs ########################################################## 
 load_data <- function(mode="DOI"){
   if(!file.exists(here::here("data/list_dataframes.qs"))){
     loaded_data <- list()
@@ -75,20 +76,10 @@ load_data <- function(mode="DOI"){
   all_polygons <- df_distinct_geom %>% st_combine() # %>% st_simplify() 
   all_polygons_footprint <- all_polygons %>% st_as_text()
   
-  # if(!file.exists(here::here("data/df_distinct_geom_light.qs"))){
-  #   df_distinct_geom <- load_spatial_data(codesource_area=NULL,mode)
-  #   df_distinct_geom_light <- df_distinct_geom %>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom))) %>% 
-  #     st_drop_geometry()  %>% dplyr::as_data_frame()
-  #   qs::qsave(df_distinct_geom_light, here::here("data/df_distinct_geom_light.qs"))
-  #   # rm(df_distinct_geom)
-  #   # gc()
-  # }
-  # df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.qs"))
   flog.info("Left join to turn all data in sf data object")
   # loaded_data <- loaded_data %>%
-  #   dplyr::left_join((df_distinct_geom %>% as.tibble() %>% dplyr::select(-c(geom,ogc_fid))), by=c('codesource_area'))
+  #   dplyr::left_join((df_distinct_geom %>% as_tibble() %>% dplyr::select(-c(geom,ogc_fid))), by=c('codesource_area'))
   # # loaded_data$geom_wkt <- loaded_data$codesource_area #hot fix for now # removed as too big
-  # # rm(df_distinct_geom_light)
   # loaded_data$gridtype <- ifelse(is.na(loaded_data$gridtype), "NA", loaded_data$gridtype)
   
   flog.info("Aggregating all data to get a lighter dataset and keep only dimensions used as filters in the UI")

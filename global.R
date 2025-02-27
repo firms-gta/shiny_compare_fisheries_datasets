@@ -1,5 +1,3 @@
-# rm(list = ls())
-dir <- getwd()
 require(parallel)
 require(here)
 require(futile.logger)
@@ -25,7 +23,6 @@ source(here::here('R/update_current_filters.R'))
 source(here::here('R/list_areas_within_wkt.R'))
 source(here::here('R/verify_filesize.R'))
 source(here::here('R/apply_filters.R'))
-source(here::here("create_or_load_default_dataset.R"))
 # Initialize variables and reactive values and default WKT for mapping
 reset_all <- FALSE
 
@@ -58,19 +55,13 @@ flog.info("Reactive values initialized successfully.")
 mode="DOI"
 
 flog.info("Loading data with mode: %s", mode)
-# ########################################################## Load data from a list of DOIs ########################################################## 
-# list_DOIs <-"data/DOI.csv"
-# DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
-# list_dataframes <- load_data(mode=mode)
+flog.info("Loading ist of data from other script : list_dataframes.")
+source(here::here("create_or_load_default_dataset.R"))
 whole_dataset(list_dataframes$whole_group_df)
 filters_combinations <- list_dataframes$filters_combinations
 list_values_dimensions <- list_dataframes$list_values_dimensions
 # flog.info("nrow(whole_group_df) %s: ",nrow(whole_dataset()))
-# whole_dataset(df_sf)
 flog.info("All data succesfully loaded")
-setwd(dir)
-
-
 df_distinct_geom <-  list_dataframes$df_distinct_geom
 all_polygons <- list_dataframes$all_polygons
 all_polygons_footprint <- list_dataframes$all_polygons_footprint
