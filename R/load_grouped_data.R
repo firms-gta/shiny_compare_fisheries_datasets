@@ -7,12 +7,9 @@ if (file.exists(here::here(file.path("data",filename)))) {
 } else {
   flog.info("writting  default parquet dataset (pre_filtered): %s", filename)
   all_codesource_area <- unique(df_sf$codesource_area)
-  df_distinct_geom <-  load_spatial_data(codesource_area=all_codesource_area, mode="DOI")
   whole_group_df <- df_sf  %>% 
     dplyr::group_by(codesource_area, dataset, source_authority, species, gear_type, fishing_fleet, year, measurement_unit) %>%   
-    dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>% ungroup() %>% 
-    filter(!is.na(codesource_area))  %>%    
-    dplyr::left_join((df_distinct_geom %>% as_tibble() %>% dplyr::select(-c(geom,ogc_fid))), by=c('codesource_area'))
+    dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE))  %>% ungroup() 
   
   qs::qsave(whole_group_df, here::here(file.path("data",filename)))
   
