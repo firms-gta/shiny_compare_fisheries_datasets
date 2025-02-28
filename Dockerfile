@@ -54,6 +54,29 @@ RUN apt-get update && apt-get install -y \
     libv8-dev \
     libjq-dev 
    
+
+RUN apt-get update && apt-get install -y \
+    sudo \
+    pandoc \
+    pandoc-citeproc \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libxml2-dev \
+    libudunits2-dev \
+    libproj-dev \
+    libgeos-dev \
+    libgdal-dev \
+    libv8-dev \
+    libsodium-dev \
+    libsecret-1-dev \
+    git \
+    libnetcdf-dev \
+    curl \
+    libprotobuf-dev \
+    protobuf-compiler \
+    libjq-dev \
+    cmake
+   
 # general system libraries
 # Note: this includes rdf/redland system libraries
 RUN apt-get update && apt-get install -y \
