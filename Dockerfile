@@ -1,7 +1,4 @@
 FROM rocker/shiny:4.4.0
-#FROM rocker/shiny:latest
-#FROM rocker/r-ver:4.4.0
-#FROM rocker/r-ver:latest
 
 LABEL org.opencontainers.image.authors="julien.barde@ird.fr" org.opencontainers.image.authors="bastien.grasset@ird.fr"
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
@@ -70,6 +67,7 @@ RUN apt-get update && apt-get install -y \
     wget 
     
 RUN install2.r --error --skipinstalled --ncpus -1 redland
+
 RUN apt-get install -y \
     libcurl4 \
     libgit2-dev \
@@ -142,24 +140,28 @@ RUN if [ -z "${RENV_LOCK_HASH}" ]; then \
 # Create the renv cache directory
 RUN mkdir -p ${RENV_PATHS_ROOT}
 
-# Install renv package that records the packages used in the shiny app
-RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
-
 # Copy renv configuration and lockfile
 COPY renv.lock ./
 COPY renv/activate.R renv/
 COPY renv/settings.json renv/
 
+# Install renv package that records the packages used in the shiny app
+RUN R -e "lockfile <- jsonlite::fromJSON('renv.lock'); renv_version <- lockfile$Packages[['renv']]$Version; install.packages('renv', repos='https://cran.r-project.org/', type='source', version=renv_version)"
+
 # Restore renv packages
 RUN R -e "renv::activate()" 
 # Used to setup the environment (with the path cache)
 RUN R -e "renv::restore()" 
+RUN R -e "renv::repair()" 
 
-COPY  . .
-
-RUN R -e "installed <- installed.packages()[, 'Package']; print(installed)"
+COPY . .
+RUN ls -la
+RUN cd renv/library && ls -la
+RUN cd data && ls -la
 
 RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
+
+RUN cd data && ls -la
 
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
