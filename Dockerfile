@@ -127,7 +127,7 @@ RUN mkdir -p data
 COPY data/DOI.csv ./data/DOI.csv
 # Add files downloaded from Zenodo DOIs => https://docs.docker.com/reference/dockerfile/#add
 ADD https://zenodo.org/record/5747175/files/global_catch_firms_level0_view.zip ./data/global_catch_firms_level0_view.zip
-ADD https://zenodo.org/record/11410529/files/global_nominal_catch_firms_level0_public.csv ./data/global_nominal_catch_firms_level0_public.csv
+ADD https://zenodo.org/record/11410529/files/global_nominal_catch_firms_level0_public.csv ./data/global_nominal_catch_firms_level0_public_11410529.csv
 ADD https://zenodo.org/record/14184244/files/global_catch_tunaatlasird_level2.qs ./data/global_catch_tunaatlasird_level2_14184244.qs
 ADD https://zenodo.org/record/1164128/files/global_catch_tunaatlasird_level2.csv ./data/global_catch_tunaatlasird_level2_1164128.csv
 ADD https://zenodo.org/record/11460074/files/global_catch_firms_level0_public.csv ./data/global_catch_firms_level0_public_11460074.csv
