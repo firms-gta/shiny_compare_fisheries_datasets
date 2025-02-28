@@ -21,7 +21,7 @@ Currently the shiny app use the renv package to record state of the packages use
 
 ```
 docker pull ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest
-docker run --name shiny_compare_datasets -p 3839:3838 ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests
+docker run --name shiny_compare_datasets -p 3838:3838 ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests
 ```
 
 And then point your browser to http://localhost:3839

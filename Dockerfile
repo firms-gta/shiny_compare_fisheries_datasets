@@ -12,7 +12,44 @@ LABEL org.opencontainers.image.source https://github.com/firms-gta/shiny_compare
 RUN apt update && apt upgrade -y
 
 # Install system libraries of general use with option -y to tells apt-get to assume the answer to all prompts is yes.
+
+
+
 RUN apt-get update && apt-get install -y \
+    make \
+    libnode-dev \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+    sudo \
+
+"make \
+libnode-dev \
+libxml2-dev \
+cmake"
+"libcurl4-openssl-dev"
+ "libssl-dev"
+ "libx11-dev"
+ "libcairo2-dev"
+ "libfontconfig1-dev"
+ "libfreetype6-dev"
+ 
+ "zlib1g-dev"           "libjq-dev"            "libsecret-1-dev"      "pandoc"               "libpng-dev"          
+ "libprotobuf-dev"      "protobuf-compiler"    "libprotoc-dev"        "libqgis-dev \     libjpeg-dev"         
+ "libtiff-dev \     librdf0-dev \     git"                  "libgdal-dev \     gdal-bin"            
+ "libgeos-dev \     libproj-dev \     libsqlite3-dev"       "libsodium-dev"        "libicu-dev"          
+ "libfribidi-dev"       "libharfbuzz-dev"      "libudunits2-dev"     
     sudo \
     pandoc \
     pandoc-citeproc \
