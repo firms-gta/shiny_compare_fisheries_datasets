@@ -13,6 +13,7 @@ RUN apt update && apt upgrade -y
 
 # Install system libraries of general use with option -y to tells apt-get to assume the answer to all prompts is yes.
 
+
 # System depencies listed with getsysreqs R package
 RUN apt-get update && apt-get install -y \
     make \
@@ -55,7 +56,10 @@ RUN apt-get update && apt-get install -y \
     
 RUN install2.r --error --skipinstalled --ncpus -1 redland
 RUN apt-get install -y \
+    libcurl4 \
+    libgit2-dev \
     libxslt-dev \
+    librdf0 \
     redland-utils \
     rasqal-utils \
     raptor2-utils
