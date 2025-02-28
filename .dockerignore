@@ -1,3 +1,5 @@
+renv/library/
 data/
-!data/cl_nc_areas_simplfied.gpkg
 !data/DOI.csv
+!data/cl_nc_areas_simplfied.gpkg
+
