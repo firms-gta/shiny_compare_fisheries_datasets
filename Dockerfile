@@ -14,45 +14,72 @@ RUN apt update && apt upgrade -y
 # Install system libraries of general use with option -y to tells apt-get to assume the answer to all prompts is yes.
 
 
-# System depencies listed with getsysreqs R package
+
 RUN apt-get update && apt-get install -y \
     make \
     libnode-dev \
     libxml2-dev \
-    cmake \ 
-    libcurl4-openssl-dev \ 
-    libssl-dev \ 
-    libx11-dev \ 
-    libcairo2-dev \ 
-    libfontconfig1-dev \ 
-    libfreetype6-dev \ 
-    zlib1g-dev \ 
+    cmake \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libx11-dev \
+    libcairo2-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    zlib1g-dev \
     libjq-dev \
     libsecret-1-dev \
     pandoc \
     libpng-dev \
-    libprotobuf-dev \ 
-    protobuf-compiler \ 
-    libprotoc-dev \ 
-    libqgis-dev \ 
-    libjpeg-dev \ 
-    libtiff-dev \ 
-    librdf0-dev \ 
-    git \ 
-    libgdal-dev \ 
-    gdal-bin \ 
-    libgeos-dev \ 
-    libproj-dev \ 
-    libsqlite3-dev \ 
-    libsodium-dev \ 
+    libprotobuf-dev \
+    protobuf-compiler \
+    libprotoc-dev \
+    libqgis-dev \
+    libjpeg-dev \
+    libtiff-dev \
+    librdf0-dev \
+    git \
+    libgdal-dev \
+    gdal-bin \
+    libgeos-dev \
+    libproj-dev \
+    libsqlite3-dev \
+    libsodium-dev \
     libicu-dev \
-    libfribidi-dev \ 
-    libharfbuzz-dev \ 
-    libudunits2-dev      
-    
+    libfribidi-dev \
+    libharfbuzz-dev \
+    libudunits2-dev \
+    libcurl4-openssl-dev \
+    libv8-dev \
+    libjq-dev 
    
 # general system libraries
 # Note: this includes rdf/redland system libraries
+RUN apt-get update && apt-get install -y \
+    default-jdk \
+    fonts-roboto \
+    ghostscript \
+    hugo \
+    less \
+    libbz2-dev \
+    libglpk-dev \
+    libgmp3-dev \
+    libfribidi-dev \
+    libharfbuzz-dev \
+    libhunspell-dev \
+    libicu-dev \
+    liblzma-dev \
+    libmagick++-dev \
+    libopenmpi-dev \
+    libpcre2-dev \
+    libxslt1-dev \
+    libzmq3-dev \
+    lsb-release \
+    qpdf \
+    texinfo \
+    software-properties-common \
+    vim \
+    wget
     
 RUN install2.r --error --skipinstalled --ncpus -1 redland
 RUN apt-get install -y \
