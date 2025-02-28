@@ -156,6 +156,11 @@ RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/downlo
 
 RUN cd data && ls -la
 
+RUN Rscript -e "source('create_or_load_default_dataset.R')"
+
+COPY . . 
+# attention copy . . invalide le cache 
+# après avoir run ça il faut recopier les nouvelles choses créées dans .data non ? 
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 
