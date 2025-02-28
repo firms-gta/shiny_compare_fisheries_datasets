@@ -16,6 +16,7 @@ RUN apt update && apt upgrade -y
 
 
 RUN apt-get update && apt-get install -y \
+    sudo \
     make \
     libnode-dev \
     libxml2-dev \
