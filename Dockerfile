@@ -95,30 +95,23 @@ COPY data/DOI.csv ./data/DOI.csv
 RUN dos2unix ./data/DOI.csv && cat -A ./data/DOI.csv
 
 # Télécharger les fichiers depuis Zenodo
-RUN echo "Début du téléchargement des fichiers..." \
+RUN echo "📥 Début du téléchargement des fichiers..." \
     && bash -c "tail -n +2 ./data/DOI.csv | tr -d '\r' | while IFS=',' read -r DOI FILE; do \
-        echo 'DOI: $DOI, FILE: $FILE'; \
         RECORD_ID=\$(echo \"\$DOI\" | awk -F '/' '{print \$NF}' | sed 's/zenodo\\.//'); \
-        echo 'Téléchargement de $FILE depuis Zenodo (Record ID: $RECORD_ID)'; \
-        wget -c --retry-connrefused --waitretry=5 --timeout=600 --tries=1 -O \"./data/\$FILE\" \"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
-        if [ \$? -eq 0 ]; then \
-            echo 'Fichier téléchargé : ./data/\$FILE'; \
-            FILENAME=\$(echo \"\$FILE\" | sed 's/\..*//'); \
-            FILE_MIME=\$(echo \"\$FILE\" | sed 's/.*\.//'); \
-            NEWNAME=\"./data/\${FILENAME}_\${RECORD_ID}.\${FILE_MIME}\"; \
-            echo 'Renommage : mv ./data/\$FILE \$NEWNAME'; \
-            if mv \"./data/\$FILE\" \"\$NEWNAME\"; then \
-                echo 'Fichier renommé : '\$NEWNAME; \
-            else \
-                echo 'Échec du renommage de : ./data/\$FILE -> \$NEWNAME'; \
-                ls -lh ./data/; \
-            fi; \
+        FILE_PATH=\"./data/\$FILE\"; \
+        NEWNAME=\"./data/\${FILE%.*}_\${RECORD_ID}.\${FILE##*.}\"; \
+        URL=\"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
+        
+        echo \"📥 Téléchargement de \$FILE (Record ID: \$RECORD_ID)\"; \
+        
+        if wget -nv --retry-connrefused --waitretry=5 --timeout=600 --tries=1 -O \"\$FILE_PATH\" \"\$URL\"; then \
+            mv \"\$FILE_PATH\" \"\$NEWNAME\"; \
+            echo \"✅ Fichier téléchargé et renommé : \$NEWNAME\"; \
         else \
-            echo 'Erreur lors du téléchargement de $FILE (Record ID: $RECORD_ID)'; \
+            echo \"⚠️ Échec du téléchargement avec wget, ajout du fichier pour ADD\"; \
+            echo \"\$DOI,\$FILE\" >> ./data/DOI_failed.csv; \
         fi; \
-    done" \
-    && echo "Tous les fichiers ont été traités !"
-
+    done"
 
 ARG RENV_PATHS_ROOT=/root/.cache/R/renv
 ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
