@@ -1,4 +1,5 @@
-FROM rocker/shiny:4.4.0
+FROM rocker/r-ver:4.2.3
+#FROM rocker/shiny:4.4.0
 #FROM rocker/shiny:latest
 #FROM rocker/r-ver:4.4.0
 #FROM rocker/r-ver:latest
@@ -102,7 +103,7 @@ RUN cd ./data && ls -la
 
 #RUN R -e "install.packages(c('here', 'qs', 'dplyr', 'sf', 'futile.logger', 'purrr', 'tibble', 'readr', 'arrow', 'zen4R', 'lubridate', 'stringr', 'downloader', 'parallel'), repos='http://cran.r-project.org')"
 # Install R core package dependencies (we might specify the version of renv package)
-RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
+#RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
 # FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache AS base
 # Set environment variables for renv cache, see doc https://docs.docker.com/build/cache/backends/
@@ -129,7 +130,8 @@ RUN if [ -z "${RENV_LOCK_HASH}" ]; then \
 # Make a directory in the container
 RUN mkdir -p ${RENV_PATHS_ROOT}
 
-
+# Install renv package that records the packages used in the shiny app
+RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
 # Copy renv configuration and lockfile
 COPY renv.lock ./
@@ -147,7 +149,7 @@ ENV RENV_PATHS_CACHE=renv/.cache
 RUN R -e "renv::activate()" 
 # Used to setup the environment (with the path cache)
 RUN R -e "renv::restore()" 
-RUN R -e "renv::repair()" 
+#RUN R -e "renv::repair()" 
 
 #FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
 
