@@ -24,7 +24,7 @@ docker pull ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest
 docker run --name shiny_compare_datasets -p 3838:3838 ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests
 ```
 
-And then point your browser to http://localhost:3839
+And then point your browser to http://localhost:3838
 
 Note: In case of having an alreday existing shiny_compare_tunaatlas_datasests app running on docker, and in order to update the docker app, it will be required to stop and remove the container prior to run the above commands to pull & run the app:
 
