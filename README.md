@@ -3,17 +3,22 @@
 Shiny app to display and compare the contents of fisheries data : e.g. multiple versions of the same datasest with different levels of processing (raw, raised data..) or datasets collected in different areas.
 
 
-
-![Screenshot from 2021-10-18 09-37-38.png](./doc/Screenshot_from_2021-10-18_09-37-38.png)
-
-
 # Prequesite
 
 This app is first been built on top of a database but is meant to become more generic to display the content of any dataset as long as its structure is compliant with CWP format for fisheries data.  See details here : https://github.com/fdiwg 
 
-## Running the app from rstudio
+## Default dataset
 
-To run the app from you RStudio, launch the app.R file.
+
+![DOI logo](https://upload.wikimedia.org/wikipedia/commons/1/11/DOI_logo.svg)
+
+This app can be customized to visualize, explore and compare any fisheries data complying with the CWP format. However, by default, inputs fisheries data are provided by the Global Tuna Atlas datasets which have been assigned the following DOIs on Zenodo :
+ - Level 0 datasets officially endorsed by FIRMS [FIRMS](https://zenodo.org/search?q=metadata.creators.person_or_org.name%3A%22FIRMS%20Global%20Tuna%20Atlas%20Technical%20Working%20Group%22&l=list&p=1&s=10&sort=bestmatch).
+  - Upper levels of processing expected by scientists prepared by [IRD](https://zenodo.org/records/14184244).
+
+## Running the app from Rstudio
+
+To run the app from you RStudio, launch the app.R file. You can freely access the RStudio server which has been used to build this app by becoming a member of the [Global Fisheries Atlas Virtual Lab](https://blue-cloud.d4science.org/group/globalfisheriesatlas) provided by [Blue-Cloud 2026](https://blue-cloud.d4science.org) european HORIZON research project which promotes and implements best practices for Open Science and FAIR data management in the marine domain. This Shiny app has been developed and is hosted in this VLab, accessible on this [link](https://shinyproxy.d4science.org/app/compare-tunaatlas-datasets-dev).
 
 Currently the shiny app use the renv package to record state of the packages used to run correctly the application. If you are using a different version of R than the one recorded on the lockfile, error loading the packages can happen.
 
@@ -40,10 +45,10 @@ A Dockerfile is provided on GHCR and can be used to build up containers with the
 To build and run the application issue the following commands
 ```
 sudo docker build -t shiny_compare_datasets <Path of the Dockerfile>
-sudo docker run -p 3839:3838 shiny_compare_datasets
+sudo docker run -p 3838:3838 shiny_compare_datasets
 ```
 
-And then point your browser to http://localhost:3839
+And then point your browser to http://localhost:3838
 
 As well it can be runned using the command 
 
