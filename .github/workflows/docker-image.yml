@@ -136,6 +136,6 @@ jobs:
             docker tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest
             docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest
           else
-            docker tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${TAG_NAME}
+            docker tag ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:${BRANCH_NAME} ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest
             docker push ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests:latest
           fi
