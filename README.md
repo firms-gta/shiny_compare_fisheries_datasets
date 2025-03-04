@@ -5,7 +5,10 @@ Shiny app to display and compare the contents of fisheries data : e.g. multiple 
 
 # Prequesite
 
-This app is first been built on top of a database but is meant to become more generic to display the content of any dataset as long as its structure is compliant with CWP format for fisheries data.  See details here : https://github.com/fdiwg 
+This Shiny app has first been built to display data stored in a database but has become more generic to display the content of any dataset as long as its structure is compliant with CWP format for fisheries data.
+Inputs data are now delivered by datasets which have been assigned DOIs on Zenodo to foster reproducibility of the work.
+
+See details here : https://github.com/fdiwg 
 
 ## Default dataset
 
