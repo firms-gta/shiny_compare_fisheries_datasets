@@ -2,9 +2,15 @@ timeSeriesUI <- function(id) {
   ns <- NS(id)
   tagList(
     # plotlyOutput(ns("plotly_time_series_all_datasets")),
-    plotlyOutput(ns("plotly_time_series_all_datasets"))
-    # dygraphOutput(ns("dygraph_all_datasets"),height="400")
+    plotlyOutput(ns("plotly_time_series_all_datasets"), height = 'auto', width = 'auto')
+    # dygraphOutput(ns("dygraph_all_datasets"), height = 'auto', width = 'auto')
   )
+  # fluidRow(
+  #   # column(10,plotlyOutput(ns("plotly_time_series_all_datasets"), height = 'auto', width = 'auto')),
+  #   plotlyOutput(ns("plotly_time_series_all_datasets"), height = '18%', width = '50%')
+  #   # column(2,textOutput("legendDivID"))
+  # )
+  
 }
 
 timeSeriesServer <- function(id,plot_df) {
@@ -31,13 +37,17 @@ timeSeriesServer <- function(id,plot_df) {
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% 
         spread(dataset, measurement_value, fill=0) #   %>%  mutate(total = rowSums(across(any_of(as.vector(target_ocean$ocean)))))
       df_i1 <- as_tibble(df_i1)  # %>% top_n(3)
+      df_i1_catch <- df_i1 %>% dplyr::select(!starts_with("effort"))
+      df_i1_effort <- df_i1 %>% dplyr::select(!starts_with("global_catch"))
       
       if(length(unique(df_i1$measurement_unit))>1){
-        df_i1_t <- df_i1 %>% filter(measurement_unit  == 't') 
-        df_i1_no <- df_i1 %>% filter(measurement_unit == 'no')  
+        # df_i1_catch <- df_i1 %>% filter(!grepl("catch",dataset))
+
+        df_i1_t <- df_i1_catch %>% filter(measurement_unit  == 't') 
+        df_i1_no <- df_i1_catch %>% filter(measurement_unit == 'no')  
         if(nrow(df_i1_t)>0){
           
-          # for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(species,year,measurement_unit))))){
+          # for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(year,measurement_unit))))){
           for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(year,measurement_unit)))) ){
             this_dataset <-colnames(dplyr::select(df_i1_t,-c(year,measurement_unit)))[d]
             if(sum(dplyr::select(df_i1_t, this_dataset))>0){
@@ -61,14 +71,14 @@ timeSeriesServer <- function(id,plot_df) {
         
         
       }else{
-        for(d in 1:length(colnames(dplyr::select(df_i1,-c(year,measurement_unit))))){
-          this_dataset <-colnames(dplyr::select(df_i1,-c(year,measurement_unit)))[d]
-          if(sum(dplyr::select(df_i1, this_dataset))>0){
+        for(d in 1:length(colnames(dplyr::select(df_i1_catch,-c(year,measurement_unit))))){
+          this_dataset <-colnames(dplyr::select(df_i1_catch,-c(year,measurement_unit)))[d]
+          if(sum(dplyr::select(df_i1_catch, this_dataset))>0){
             # data  <- df_i1  %>% dplyr::select(c(year,!!this_dataset))
             if(d==1){
-              fig <- plot_ly(df_i1, x = df_i1$year, y =df_i1[,this_dataset][[1]], name = this_dataset, type = 'scatter', mode = 'lines' )
+              fig <- plot_ly(df_i1_catch, x = df_i1_catch$year, y =df_i1_catch[,this_dataset][[1]], name = this_dataset, type = 'scatter', mode = 'lines' )
             }else{
-              fig <-  fig %>% add_trace(y = df_i1[,this_dataset][[1]], name = paste0(this_dataset,"_",d), mode = 'lines') 
+              fig <-  fig %>% add_trace(y = df_i1_catch[,this_dataset][[1]], name = paste0(this_dataset,"_",d), mode = 'lines') 
             }
           }
         }
@@ -79,7 +89,12 @@ timeSeriesServer <- function(id,plot_df) {
     flog.info("Starting dygraph_all_datasets with Dygraph")
     output$dygraph_all_datasets <- renderDygraph({
       
-      df_i1 <- data_all_datasets()  %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% spread(dataset, measurement_value, fill=0) 
+      df_i1 <- data_all_datasets()  %>% 
+        # mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't') , year = lubridate::ymd(df_i1$year, truncated = 2L)) %>% 
+        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't') , year = as.Date(as.character(df_i1$year), format = "%Y")) %>% 
+        spread(dataset, measurement_value, fill=0) 
+      # mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't') , year = as.Date(as.character(df_i1$year), format = "%Y")) %>% spread(dataset, measurement_value, fill=0) 
+      
       df_i1 <- as_tibble(df_i1)  # %>% top_n(3)
       
       tuna_catches_timeSeries <-NULL
@@ -93,9 +108,9 @@ timeSeriesServer <- function(id,plot_df) {
         #   df_i1 <- df_i1_t
         # }
         
-        # if(length(colnames(dplyr::select(df_i1_t,-c(species,year,measurement_unit))))>1){
-        for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(species,year,measurement_unit))))){
-          this_dataset <-colnames(dplyr::select(df_i1_t,-c(species,year,measurement_unit)))[d]
+        # if(length(colnames(dplyr::select(df_i1_t,-c(year,measurement_unit))))>1){
+        for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(year,measurement_unit))))){
+          this_dataset <-colnames(dplyr::select(df_i1_t,-c(year,measurement_unit)))[d]
           if(sum(dplyr::select(df_i1_t, this_dataset))>0){
             df_i1_t  <- df_i1_t  %>% dplyr::rename(!!paste0(this_dataset,'_t') := !!this_dataset)
             this_time_serie <- xts(x = dplyr::select(df_i1_t, c(paste0(this_dataset,'_t'))), order.by = df_i1_t$year)
@@ -104,9 +119,9 @@ timeSeriesServer <- function(id,plot_df) {
             }
           }
         }
-        # if(length(colnames(dplyr::select(df_i1_no,-c(species,year,measurement_unit))))>1){
-        for(d in 1:length(colnames(dplyr::select(df_i1_no,-c(species,year,measurement_unit))))){
-          this_dataset <- colnames(dplyr::select(df_i1_no,-c(species,year,measurement_unit)))[d]
+        # if(length(colnames(dplyr::select(df_i1_no,-c(year,measurement_unit))))>1){
+        for(d in 1:length(colnames(dplyr::select(df_i1_no,-c(year,measurement_unit))))){
+          this_dataset <- colnames(dplyr::select(df_i1_no,-c(year,measurement_unit)))[d]
           if(sum(dplyr::select(df_i1_no,this_dataset))>0){
             df_i1_no  <- df_i1_no  %>% dplyr::rename(!!paste0(this_dataset,'_no') := !!this_dataset)
             this_time_serie <- xts(x = dplyr::select(df_i1_no, c(paste0(this_dataset,'_no'))), order.by = df_i1_no$year)
@@ -115,8 +130,8 @@ timeSeriesServer <- function(id,plot_df) {
         }
         
       }else{
-        for(d in 1:length(colnames(dplyr::select(df_i1,-c(species,year,measurement_unit))))){
-          this_dataset <- colnames(dplyr::select(df_i1,-c(species,year,measurement_unit)))[d]
+        for(d in 1:length(colnames(dplyr::select(df_i1,-c(year,measurement_unit))))){
+          this_dataset <- colnames(dplyr::select(df_i1,-c(year,measurement_unit)))[d]
           this_time_serie <- xts(x = dplyr::select(df_i1, c(this_dataset)), order.by = df_i1$year)
           if(d==1){tuna_catches_timeSeries <- this_time_serie}else{
             tuna_catches_timeSeries <- cbind(tuna_catches_timeSeries, this_time_serie)

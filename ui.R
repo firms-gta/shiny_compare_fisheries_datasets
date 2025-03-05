@@ -1,4 +1,5 @@
 ui <- fluidPage(
+  # theme = bs_theme(version = 5),
   shinyjs::useShinyjs(),  # Set up shinyjs
   # titlePanel("Global Tuna Atlas"),
   navbarPage(title="Compare Global Tuna Atlas datasets",
@@ -25,12 +26,13 @@ ui <- fluidPage(
                         footer=modalButton("OK", icon =icon("check"))
                       ),
                       div(class="outer",
+                          theme = bs_theme(version = 5),
                           tags$head(includeCSS("./styles.css")),
                           # shinycssloaders::withSpinner(map_leafletUI("map_global")),
                           map_leafletUI("map_global"),
                           absolutePanel(id = "filters", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE,top = "12%",  left = "3%", width = "21%", height = "auto",
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "dataset",
                                           label = "Dataset",
                                           choices = list_values_dimensions$dataset,
@@ -39,7 +41,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "unit",
                                           label = "Unit",
                                           choices = list_values_dimensions$measurement_unit,
@@ -48,17 +50,18 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "source_authority",
                                           label = "Source authority",
                                           choices = list_values_dimensions$source_authority,
                                           multiple = TRUE,
                                           selected= list_default_filters$source_authority,
                                           options = list(`actions-box` = TRUE),
+                                          # subtext,
                                           width = "98%"
                                         ),
                                         # selectInput(
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "gridtype",
                                           label = "Grid size",
                                           choices = list_values_dimensions$gridtype,
@@ -67,7 +70,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           # selectInput(
                                           inputId = "species",
                                           label = "Species",
@@ -75,9 +78,10 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected= list_default_filters$species,
                                           options = list(`actions-box` = TRUE),
+                                          # autocomplete=TRUE,
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "year",
                                           label = "Year",
                                           choices = list_values_dimensions$year,
@@ -86,7 +90,7 @@ ui <- fluidPage(
                                           options = list(`actions-box` = TRUE),
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "gear_type",
                                           label = "Gear",
                                           # choices = c("All",list_values_dimensions$gear_type),
@@ -144,7 +148,8 @@ ui <- fluidPage(
                                         ),
                                         pieBarChartsUI(id = "pie_bar_charts")
                           ),
-                          absolutePanel(id = "plots", class = "panel panel-default", bottom =  "2%", left = "25%", width = "50%", fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "plots", class = "panel panel-default",  fixed=TRUE, 
+                                        draggable = FALSE, bottom =  "2%", left = "25%", width = "50%", height = "auto",
                                         # timeSeriesGearUI(id = "time_series_gear"),
                                         timeSeriesUI(id= "time_series")
                                         # fluidRow(

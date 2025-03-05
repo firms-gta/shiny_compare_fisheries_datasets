@@ -1,11 +1,12 @@
 pieBarChartsUI <- function(id) {
   ns <- NS(id)
   tagList(
-    plotlyOutput(ns("pie_gridtype_catch"), width="100%"),
     tags$br(),
-    plotlyOutput(ns("barplot_datasets"), width="100%"),
+    plotlyOutput(ns("pie_gridtype_catch"), height = 'auto', width = 'auto'),
     tags$br(),
-    plotlyOutput(ns("pie_ratio_catch"))
+    plotlyOutput(ns("barplot_datasets"), height = 'auto', width = 'auto'),
+    tags$br(),
+    plotlyOutput(ns("pie_ratio_catch"),height = 'auto', width = 'auto')
   )
 }
 

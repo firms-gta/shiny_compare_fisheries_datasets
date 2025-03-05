@@ -21,8 +21,12 @@ download_and_process_zenodo_data <- function() {
       this_rec <- zenodo$getRecordById(record_id)
       # this_rec <- zenodo$getRecordByConceptDOI(this_doi)
       # this_rec <- zenodo$getRecordById("10037645")
-      DOIs$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
-      DOIs$title[i] <- gsub("urn:","",this_rec$metadata$title)
+      if(!is.null(this_rec$metadata$related_identifiers[[1]]$identifier)){
+        DOIs$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
+      }
+      if(!is.null(this_rec$metadata$title)){
+        DOIs$title[i] <- gsub("urn:","",this_rec$metadata$title)
+      }
       readr::write_csv(x = DOIs,file = here::here("data/DOIs_enriched.csv")) 
       filepath <- here::here("data", DOIs$Filename[i])
       filename <- gsub("\\..*", "",DOIs$Filename[i])
@@ -97,7 +101,7 @@ download_and_process_zenodo_data <- function() {
         to_path <- newname
         
         if (file.exists(from_path)) {
-          flog.info("Copying QS file from %s to %s", from_path, to_path)
+          flog.info("File does exist, copying QS file from %s to %s", from_path, to_path)
           file.copy(from = from_path, to = to_path, overwrite = TRUE)
           file.remove(from_path)
         } else {
@@ -111,9 +115,10 @@ download_and_process_zenodo_data <- function() {
       flog.info("Dataset %s downloaded successfully from Zenodo or retrieved", newname)
       # Correction pour éviter de lire un ZIP comme un CSV
       this_df <- switch(file_mime,
-                        "csv" = read.csv(newname),
-                        "zip" = read.csv(target_csv),  # On lit le CSV extrait et renommé
-                        "qs" = qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_tibble()
+                        "csv" = read.csv(newname,colClasses=c('character'),stringsAsFactors = FALSE),
+                        "zip" = read.csv(target_csv,colClasses=c('character'),stringsAsFactors = FALSE),  # On lit le CSV extrait et renommé
+                        # "qs" = qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_tibble()
+                        "qs" = qread(newname) %>% dplyr::as_tibble()
       )
       
       if(any(grepl("geographic_identifier",colnames(this_df)))){
@@ -138,7 +143,8 @@ download_and_process_zenodo_data <- function() {
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Tons', 't')) %>% 
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
-        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))
+        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% 
+        dplyr::mutate(measurement_value=as.numeric(measurement_value)) 
       
     })
     loaded_data <- do.call(rbind, df_dois)

@@ -102,7 +102,7 @@ load_data <- function(mode="DOI"){
                        'global_nominal_catch_firms_level0_public_11410529') # c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
   default_species <- c('YFT') # c('YFT','SKJ','BET','SBF','ALB')
   default_year <- c(seq(1:10)+2010) # c(seq(min(list_values_dimensions$year):max(list_values_dimensions$year))+min(list_values_dimensions$year)-2) | c(seq(1950:2021)+1949) | c(seq((max(list_values_dimensions$year)-10):max(list_values_dimensions$year))+max(list_values_dimensions$year)-11)
-  default_gear_type <- default_gear_type <- c('1.1','1.2') # list_values_dimensions$gear_type #  c('01.1','01.2')
+  default_gear_type <- default_gear_type <- c('01.1','01.2') # list_values_dimensions$gear_type #  c('01.1','01.2')
   default_unit <- c('t')
   default_source_authority <- unique(list_values_dimensions$source_authority)
   default_gridtype <- c("1deg_x_1deg") # list_values_dimensions$gridtype # 

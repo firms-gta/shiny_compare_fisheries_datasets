@@ -69,10 +69,10 @@ server <- function(input, output, session) {
     # updateTextInput(session, "polygon", value = all_wkt)
     
     # current_dataset(list_values_dimensions$dataset)
-    updatePickerInput(session,"dataset",selected=list_values_dimensions$dataset)
+    shinyWidgets::updatePickerInput(session,"dataset",selected=list_values_dimensions$dataset)
     
     # current_species(list_values_dimensions$species)
-    updatePickerInput(session,"species",selected=list_values_dimensions$species,
+    shinyWidgets::updatePickerInput(session,"species",selected=list_values_dimensions$species,
                       choicesOpt = list(
                         disabled = disabled_choices,
                         style = ifelse(disabled_choices,
@@ -81,22 +81,22 @@ server <- function(input, output, session) {
                       ))
     
     # current_gear_type(list_values_dimensions$gear_type)
-    updatePickerInput(session,"gear_type",selected=list_values_dimensions$gear_type)
+    shinyWidgets::updatePickerInput(session,"gear_type",selected=list_values_dimensions$gear_type)
     
     # current_year(list_values_dimensions$year)
-    updatePickerInput(session,"year",selected=list_values_dimensions$year)
+    shinyWidgets::updatePickerInput(session,"year",selected=list_values_dimensions$year)
     
     # current_fishing_fleet(list_values_dimensions$fishing_fleet)
-    updatePickerInput(session,"fishing_fleet",selected=list_values_dimensions$fishing_fleet)
+    shinyWidgets::updatePickerInput(session,"fishing_fleet",selected=list_values_dimensions$fishing_fleet)
     
     # current_unit(list_values_dimensions$measurement_unit)
-    updatePickerInput(session,"unit",selected=list_values_dimensions$measurement_unit)
+    shinyWidgets::updatePickerInput(session,"unit",selected=list_values_dimensions$measurement_unit)
     
     # current_source_authority(list_values_dimensions$source_authority)
-    updatePickerInput(session,"source_authority",selected=list_values_dimensions$source_authority)
+    shinyWidgets::updatePickerInput(session,"source_authority",selected=list_values_dimensions$source_authority)
     
     # current_gridtype(list_values_dimensions$gridtype)
-    updatePickerInput(session,"gridtype",selected=list_values_dimensions$gridtype)
+    shinyWidgets::updatePickerInput(session,"gridtype",selected=list_values_dimensions$gridtype)
     
     # main_df <- default_df
     # main_df(whole_dataset())

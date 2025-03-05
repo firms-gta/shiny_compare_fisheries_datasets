@@ -32,7 +32,14 @@ load_filters_combinations <- function(df_sf,filename) {
     "gridtype" = unique(filters_combinations$gridtype) ,
     "fishing_fleet" = unique(filters_combinations$fishing_fleet)
     )
-  
+
+  # list_values_dimensions$gear_type %>% as_tibble() %>%
+  #   dplyr::rename(gear_type=value) %>%
+  #   dplyr::mutate(code=gear_type)  %>%
+  #   dplyr::left_join(y = read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv"),by = "code")
+  # 
+  # View(read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv"))
+
   
   flog.info("Returns a list of dataframe + velues for dimensions")
   list_filters = list(
