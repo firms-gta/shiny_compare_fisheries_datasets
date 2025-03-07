@@ -43,7 +43,7 @@ load_filters_combinations <- function(df_sf,filename) {
   names(species_ids) <- codelist_species$taxon_scientific_name
   
   if(!file.exists(here::here(file.path("data","codelist_gear.qs")))){
-    load_codelists(list_values_dimensions,list_dimensions=c("species"))
+    load_codelists(list_values_dimensions,list_dimensions=c("gear"))
   }
   codelist_gear <- qs::qread(here::here(file.path("data","codelist_gear.qs")))
   gear_ids <- codelist_gear$code
