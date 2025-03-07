@@ -1,5 +1,5 @@
 ui <- fluidPage(
-  # theme = bs_theme(version = 5),
+  theme = bs_theme(version = 5, bootswatch = "cerulean"),
   shinyjs::useShinyjs(),  # Set up shinyjs
   # titlePanel("Global Tuna Atlas"),
   navbarPage(title="Compare Global Tuna Atlas datasets",
@@ -19,17 +19,17 @@ ui <- fluidPage(
              tabPanel("Datasets overview",
                       modalDialog(
                         title = "Information",
-                        # includeHTML("doc/ribbon_GH.html"),
                         includeMarkdown("doc/popup.md"),
                         size = "l",
                         easyClose = TRUE,
                         footer=modalButton("OK", icon =icon("check"))
                       ),
                       div(class="outer",
-                          theme = bs_theme(version = 5),
+                          # theme = bs_theme(version = 5),
                           tags$head(includeCSS("./styles.css")),
                           # shinycssloaders::withSpinner(map_leafletUI("map_global")),
                           map_leafletUI("map_global"),
+                          shiny::tags$a('<a href="https://github.com/you"><img decoding="async" width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_red_aa0000.png" class="attachment-full size-full" alt="Fork me on GitHub" loading="lazy"></a>'),
                           absolutePanel(id = "filters", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE,top = "12%",  left = "3%", width = "21%", height = "auto",
                                         shinyWidgets::pickerInput(

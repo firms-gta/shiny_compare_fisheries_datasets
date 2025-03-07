@@ -1,4 +1,5 @@
 require(shiny)
+require(bslib)
 require(parallel)
 require(here)
 require(futile.logger)
