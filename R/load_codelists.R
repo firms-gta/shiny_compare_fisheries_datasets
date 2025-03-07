@@ -2,7 +2,7 @@ load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
   
   # From Data Structure Description: https://github.com/fdiwg/fdi-formats/blob/main/cwp_rh_generic_gta_taskI.json
   if(grepl("species",list_dimensions)){
-    library(worrms)
+    #library(worrms)
     cl_asfis_species <- read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/refs/heads/main/global/cwp/cl_asfis_species.csv")
     # name <- cl_asfis_species$taxon_scientific_name 
     # wm_name2id(name)
