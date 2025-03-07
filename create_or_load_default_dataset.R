@@ -10,6 +10,8 @@
   source(here::here('R/download_data.R'))
   source(here::here('R/load_data.R'))
   source(here::here('R/load_spatial_data.R'))
+  source(here::here('R/load_codelists.R'))
+  source(here::here('R/getWormsID.R'))
   source(here::here('R/load_default_dataset.R'))
   source(here::here('R/load_grouped_data.R'))
   source(here::here('R/load_filters_combinations.R'))
