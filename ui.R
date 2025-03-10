@@ -1,5 +1,6 @@
 ui <- fluidPage(
-  theme = bs_theme(version = 5, bootswatch = "cerulean"),
+  # theme = bs_theme(version = 5, bootswatch = "lumen"),
+  tags$head(includeCSS("./styles.css")),
   shinyjs::useShinyjs(),  # Set up shinyjs
   # titlePanel("Global Tuna Atlas"),
   navbarPage(title="Compare Global Tuna Atlas datasets",
@@ -26,10 +27,9 @@ ui <- fluidPage(
                       ),
                       div(class="outer",
                           # theme = bs_theme(version = 5),
-                          tags$head(includeCSS("./styles.css")),
                           # shinycssloaders::withSpinner(map_leafletUI("map_global")),
                           map_leafletUI("map_global"),
-                          shiny::tags$a('<a href="https://github.com/you"><img decoding="async" width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_red_aa0000.png" class="attachment-full size-full" alt="Fork me on GitHub" loading="lazy"></a>'),
+                          # shiny::tags$a('<a href="https://github.com/you"><img decoding="async" width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_red_aa0000.png" class="attachment-full size-full" alt="Fork me on GitHub" loading="lazy"></a>'),
                           absolutePanel(id = "filters", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE,top = "12%",  left = "3%", width = "21%", height = "auto",
                                         shinyWidgets::pickerInput(
@@ -118,8 +118,10 @@ ui <- fluidPage(
                                         #              style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large;
                                         #                                                                                    font-weight: bold;"),
                                         tags$br(),
-                                        actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map"), 
+                                        actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map"),
                                                      style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large; font-weight: bold;"),
+                                        # actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map")),
+                                        
                                         tags$br(),
                                         tags$br(),
                                         map_leafletUI("other"),
@@ -148,7 +150,7 @@ ui <- fluidPage(
                                         ),
                                         pieBarChartsUI(id = "pie_bar_charts")
                           ),
-                          absolutePanel(id = "plots", class = "panel panel-default",  fixed=TRUE, 
+                          absolutePanel(id = "timeSerie", class = "panel panel-default",  fixed=TRUE, 
                                         draggable = FALSE, bottom =  "2%", left = "25%", width = "50%", height = "auto",
                                         # timeSeriesGearUI(id = "time_series_gear"),
                                         timeSeriesUI(id= "time_series")

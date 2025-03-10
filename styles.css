@@ -7,7 +7,7 @@ div.outer {
   font-weight: bold;
   font-size: x-large;
   position: fixed;
-  top: 56px;
+  top: 1%;
   left: 0;
   right: 0;
   bottom: 0;
@@ -29,7 +29,7 @@ div.modal {
 
 
 
-/* Customize fonts */
+/* Customize fonts
 body, label, input, button, select { 
   color: black;
   font-size: xx-large;
@@ -37,8 +37,13 @@ body, label, input, button, select {
   font-family: 'Helvetica Neue', Helvetica;
 }
 
+ */
+ 
+ 
+/* 
 h1, h2, h3, h4 { font-weight: 400; }
-
+ */
+ 
 #filters {
   /* Appearance */
   border: 10px solid #3A506B;
@@ -47,7 +52,7 @@ h1, h2, h3, h4 { font-weight: 400; }
   cursor: move;
   /* Fade out while not hovering */
   opacity: 0.85;
-  zoom: 0.9;
+  /*zoom: 0.9;*/
   transition: opacity 500ms 1s;
   background-color:#9ec2e6;
 }
@@ -68,10 +73,25 @@ h1, h2, h3, h4 { font-weight: 400; }
   cursor: move;
   /* Fade out while not hovering */
   opacity: 0.85;
+  /*zoom: 0.9;*/
+  transition: opacity 500ms 1s;
+}
+
+
+#timeSerie {
+  /* Appearance */
+  border: 5px solid #3A506B;
+  border-radius: 30px;
+  background-color: #dcdcde;
+  padding: 0 10px 10px 10px;
+  cursor: move;
+  /* Fade out while not hovering */
+  opacity: 0.85;
   zoom: 0.9;
   transition: opacity 500ms 1s;
-
 }
+
+
 #plots:hover {
   /* Fade in while hovering */
   opacity: 0.75;
