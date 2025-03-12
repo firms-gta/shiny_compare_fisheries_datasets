@@ -15,6 +15,8 @@ div.outer {
   padding: 0;
 }
 
+
+
 div.modal {
   color: black;
   font-weight: normal;
@@ -67,7 +69,7 @@ h1, h2, h3, h4 { font-weight: 400; }
 #plots {
   /* Appearance */
   border: 5px solid #3A506B;
-  border-radius: 30px;
+  border-radius: 1%;
   background-color: #dcdcde;
   padding: 0 10px 10px 10px;
   cursor: move;
@@ -81,7 +83,7 @@ h1, h2, h3, h4 { font-weight: 400; }
 #timeSerie {
   /* Appearance */
   border: 5px solid #3A506B;
-  border-radius: 30px;
+  border-radius: 1%;
   background-color: #dcdcde;
   padding: 0 10px 10px 10px;
   cursor: move;

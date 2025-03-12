@@ -34,53 +34,40 @@ timeSeriesServer <- function(id,plot_df) {
     output$plotly_time_series_all_datasets <- renderPlotly({
       req(data_all_datasets())
       df_i1 = data_all_datasets()  %>% 
-        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% 
+        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'),measurement_value=as.integer(measurement_value)) %>% 
         spread(dataset, measurement_value, fill=0) #   %>%  mutate(total = rowSums(across(any_of(as.vector(target_ocean$ocean)))))
-      df_i1 <- as_tibble(df_i1)  # %>% top_n(3)
-      df_i1_catch <- df_i1 %>% dplyr::select(!starts_with("effort"))
-      df_i1_effort <- df_i1 %>% dplyr::select(!starts_with("global_catch"))
-      
-      if(length(unique(df_i1$measurement_unit))>1){
-        # df_i1_catch <- df_i1 %>% filter(!grepl("catch",dataset))
+      df_i1 <- as_tibble(df_i1)
+      all_years <- unique(df_i1$year)  %>% as_tibble() %>% dplyr::rename("year"=value)
 
-        df_i1_t <- df_i1_catch %>% filter(measurement_unit  == 't') 
-        df_i1_no <- df_i1_catch %>% filter(measurement_unit == 'no')  
-        if(nrow(df_i1_t)>0){
-          
-          # for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(year,measurement_unit))))){
-          for(d in 1:length(colnames(dplyr::select(df_i1_t,-c(year,measurement_unit)))) ){
-            this_dataset <-colnames(dplyr::select(df_i1_t,-c(year,measurement_unit)))[d]
-            if(sum(dplyr::select(df_i1_t, this_dataset))>0){
-              # data  <- df_i1_t  %>% dplyr::select(c(year,!!this_dataset))
-              if(d==1){
-                fig <- plot_ly(df_i1_t, x = df_i1_t$year, y =df_i1_t[,this_dataset][[1]], name = paste0(this_dataset,"_",d), type = 'scatter', mode = 'lines' )
-              }else{
-                fig <-  fig %>% add_trace(y = df_i1_t[,this_dataset][[1]], name = paste0(this_dataset,"_t"), mode = 'lines') 
+      fig <- NULL
+      if(length(unique(df_i1$measurement_unit))>0){
+        for(u in 1:length(unique(df_i1$measurement_unit))){
+          flog.info("Processing Unit ID and name %s:", unique(df_i1$measurement_unit)[u])
+          this_unit <- unique(df_i1$measurement_unit)[u]
+          df_i1_unit <- df_i1 %>% filter(measurement_unit  == this_unit) 
+          column_names <- setdiff(colnames(df_i1_unit),c("year","measurement_unit"))
+          for(d in 1:length(column_names) ){
+            this_dataset <- column_names[d]
+            flog.info("Processing now dataset name %s:", this_dataset)
+            df_i1_unit_this_dataset <- df_i1_unit %>% dplyr::select(year,this_dataset)
+            flog.info("Adding a time serie if total > 0")
+            if(sum(df_i1_unit_this_dataset[,c(this_dataset)])>0){
+              flog.info("Extending the time serie to all years (adding null values)")
+              df_i1_unit_this_dataset <- all_years %>% left_join(df_i1_unit_this_dataset)
+              df_i1_unit_this_dataset[,c(this_dataset)][is.na(df_i1_unit_this_dataset[,c(this_dataset)])] <- 0
+              this_name = paste0(this_dataset,"_",this_unit)
+              if(is.null(fig)){
+                flog.info("First dataset of the time serie")
+                fig <- plot_ly(df_i1_unit_this_dataset, x = df_i1_unit_this_dataset$year, y =df_i1_unit_this_dataset[,this_dataset][[1]], 
+                               name = this_name, type = 'scatter', mode = 'lines' )
+              }else{#class(fig)[1]=="plotly"
+                flog.info("Add new layer to the time serie")
+                fig <-  fig %>% add_trace(y = df_i1_unit_this_dataset[,this_dataset][[1]],
+                                          name = this_name, mode = 'lines') 
               }
             }
           }
-        }
-        if(nrow(df_i1_no)>0){
-          for(d in 1:length(colnames(dplyr::select(df_i1_no,-c(year,measurement_unit))))){
-            this_dataset <-colnames(dplyr::select(df_i1_no,-c(year,measurement_unit)))[d]
-            if(sum(dplyr::select(df_i1_no, this_dataset))>0){
-              fig <-  fig %>% add_trace(x = df_i1_no$year, y = df_i1_no[,this_dataset][[1]], name = paste0(this_dataset,"_no"), mode = 'lines') 
-            }
-          }
-        }
-        
-        
-      }else{
-        for(d in 1:length(colnames(dplyr::select(df_i1_catch,-c(year,measurement_unit))))){
-          this_dataset <-colnames(dplyr::select(df_i1_catch,-c(year,measurement_unit)))[d]
-          if(sum(dplyr::select(df_i1_catch, this_dataset))>0){
-            # data  <- df_i1  %>% dplyr::select(c(year,!!this_dataset))
-            if(d==1){
-              fig <- plot_ly(df_i1_catch, x = df_i1_catch$year, y =df_i1_catch[,this_dataset][[1]], name = this_dataset, type = 'scatter', mode = 'lines' )
-            }else{
-              fig <-  fig %>% add_trace(y = df_i1_catch[,this_dataset][[1]], name = paste0(this_dataset,"_",d), mode = 'lines') 
-            }
-          }
+            
         }
       }
       fig
@@ -156,8 +143,6 @@ timeSeriesServer <- function(id,plot_df) {
         dyRangeSelector() %>% dyLegend(labelsDiv = "legendDivID", labelsSeparateLines = T)
       
     })
-    
-    
     
   })
   flog.info("End of time series module")
