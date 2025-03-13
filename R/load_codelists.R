@@ -34,6 +34,7 @@ load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
     # View(standard_species)
     standard_species <- standard_species %>% 
       mutate(label = ifelse(is.na(label), code, label))
+    standard_species[,c("taxon_scientific_name")][is.na(standard_species[,c("taxon_scientific_name")])] <- "Unknown (required for effort)"
     qs::qsave(standard_species, here::here(file.path("data","codelist_species.qs")))
     }
   

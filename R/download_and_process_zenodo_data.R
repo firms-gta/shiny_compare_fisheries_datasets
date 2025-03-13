@@ -144,7 +144,7 @@ download_and_process_zenodo_data <- function() {
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% 
-        dplyr::mutate(measurement_value=as.numeric(measurement_value)) 
+        dplyr::mutate(measurement_value=as.numeric(measurement_value),codesource_area=as.character(codesource_area)) 
       
     })
     loaded_data <- do.call(rbind, df_dois)

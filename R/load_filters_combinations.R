@@ -13,9 +13,9 @@ load_filters_combinations <- function(df_sf,filename) {
   
   list_values_dimensions = list(
     "dataset" = unique(basename(filters_combinations$dataset)),
-    "species" = unique(basename(filters_combinations$species)),
+    "species" = unique(filters_combinations$species),
     "year" = unique(filters_combinations$year),
-    "gear_type" = unique(basename(filters_combinations$gear_type)),
+    "gear_type" = unique(filters_combinations$gear_type),
     "measurement_unit" = unique(filters_combinations$measurement_unit),
     "source_authority" = unique(filters_combinations$source_authority),
     "gridtype" = unique(filters_combinations$gridtype) ,
@@ -37,44 +37,54 @@ load_filters_combinations <- function(df_sf,filename) {
   # names(time_series_ids) <- c('a','b','c','d','e')
   if(!file.exists(here::here(file.path("data","codelist_species.qs")))){
     load_codelists(list_values_dimensions,list_dimensions=c("species"))
-  }
-  codelist_species <- qs::qread(here::here(file.path("data","codelist_species.qs")))
+  } 
+  codelist_species <- qs::qread(here::here(file.path("data","codelist_species.qs")))  %>% 
+    dplyr::filter(code %in% list_values_dimensions$species) %>% 
+    dplyr::arrange(label, .locale = "en")
   species_ids <- codelist_species$code
   names(species_ids) <- codelist_species$taxon_scientific_name
   
   if(!file.exists(here::here(file.path("data","codelist_gear.qs")))){
     load_codelists(list_values_dimensions,list_dimensions=c("gear"))
   }
-  codelist_gear <- qs::qread(here::here(file.path("data","codelist_gear.qs")))
+  codelist_gear <- qs::qread(here::here(file.path("data","codelist_gear.qs"))) %>% 
+    dplyr::filter(code %in% list_values_dimensions$gear_type) %>% 
+    dplyr::arrange(label, .locale = "en")
+  if(length(codelist_gear)!=length(list_values_dimensions$gear_type)){
+    codelist_gear$label <- codelist_gear$code 
+  }
   gear_ids <- codelist_gear$code
   names(gear_ids) <- codelist_gear$label
   
   if(!file.exists(here::here(file.path("data","codelist_source_authority.qs")))){
     load_codelists(list_values_dimensions,list_dimensions=c("source_authority"))
   }
-  codelist_source_authority <- qs::qread(here::here(file.path("data","codelist_source_authority.qs")))
+  codelist_source_authority <- qs::qread(here::here(file.path("data","codelist_source_authority.qs"))) %>% 
+    dplyr::arrange(label, .locale = "en")
   source_authority_ids <- codelist_source_authority$code
   names(source_authority_ids) <- codelist_source_authority$label
   
   if(!file.exists(here::here(file.path("data","codelist_fishing_fleet.qs")))){
     load_codelists(list_values_dimensions,list_dimensions=c("fishing_fleet"))
   }
-  codelist_fishing_fleet <- qs::qread(here::here(file.path("data","codelist_fishing_fleet.qs")))
+  codelist_fishing_fleet <- qs::qread(here::here(file.path("data","codelist_fishing_fleet.qs"))) %>% 
+    dplyr::arrange(label, .locale = "en")
   fishing_fleet_ids <- codelist_fishing_fleet$code
-  names(fishing_fleet_ids) <- codelist_fishing_fleet$label
+  names(fishing_fleet_ids) <- codelist_fishing_fleet$label 
   
   
   list_values_dimensions = list(
-    "dataset" = unique(basename(filters_combinations$dataset)),
+    "dataset" = unique(basename(filters_combinations$dataset)) %>% sort(),
     "species" = species_ids,
-    "year" = unique(filters_combinations$year),
+    "year" = unique(filters_combinations$year) %>% sort(),
     "gear_type" = gear_ids,
-    "measurement_unit" = unique(filters_combinations$measurement_unit),
+    "measurement_unit" = unique(filters_combinations$measurement_unit) %>% sort(),
     "source_authority" = source_authority_ids,
-    "gridtype" = unique(filters_combinations$gridtype) ,
+    "gridtype" = unique(filters_combinations$gridtype) %>% sort(),
     "fishing_fleet" = fishing_fleet_ids
     )
 
+  
   
   flog.info("Returns a list of dataframe + velues for dimensions")
   list_filters = list(
