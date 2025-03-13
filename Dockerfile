@@ -14,7 +14,6 @@ RUN apt update && apt upgrade -y
 
 # Install system libraries of general use with option -y to tells apt-get to assume the answer to all prompts is yes.
 
-
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
@@ -157,6 +156,8 @@ RUN R -e "renv::restore()"
 ##RUN Rscript update_data.R 
 # Copy the rest of the application code
 COPY . .
+COPY data/shinycatch.rds ./data/shinycatch.rds
+
 RUN ls -la
 RUN cd renv/library && ls -la
 RUN cd data && ls -la
