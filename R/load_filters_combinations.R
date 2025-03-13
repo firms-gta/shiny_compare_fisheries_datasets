@@ -48,9 +48,9 @@ load_filters_combinations <- function(df_sf,filename) {
     load_codelists(list_values_dimensions,list_dimensions=c("gear"))
   }
   codelist_gear <- qs::qread(here::here(file.path("data","codelist_gear.qs"))) %>% 
-    dplyr::filter(code %in% list_values_dimensions$gear_type) %>% 
     dplyr::arrange(label, .locale = "en")
-  if(length(codelist_gear)!=length(list_values_dimensions$gear_type)){
+  #in case mapping failed
+  if(nrow(codelist_gear)!=length(list_values_dimensions$gear_type)){
     codelist_gear$label <- codelist_gear$code 
   }
   gear_ids <- codelist_gear$code

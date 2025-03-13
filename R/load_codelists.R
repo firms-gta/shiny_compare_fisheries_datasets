@@ -33,7 +33,8 @@ load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
     }
     # View(standard_species)
     standard_species <- standard_species %>% 
-      mutate(label = ifelse(is.na(label), code, label))
+      mutate(label = ifelse(is.na(label), code, label))  %>% 
+      dplyr::arrange(label, .locale = "en")
     standard_species[,c("taxon_scientific_name")][is.na(standard_species[,c("taxon_scientific_name")])] <- "Unknown (required for effort)"
     qs::qsave(standard_species, here::here(file.path("data","codelist_species.qs")))
     }
@@ -43,7 +44,9 @@ load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
     standard_gear <- list_values_dimensions$gear_type %>% as_tibble() %>%
       dplyr::rename(gear_type=value) %>%
       dplyr::mutate(code=gear_type)  %>%
-      dplyr::left_join(y = read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv"),by = "code")
+      dplyr::left_join(y = read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv"),by = "code") %>% 
+      mutate(label = ifelse(is.na(label), code, label))  %>% 
+      dplyr::arrange(label, .locale = "en")
     # View(read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv"))
     qs::qsave(standard_gear, here::here(file.path("data","codelist_gear.qs")))
     }
@@ -53,7 +56,8 @@ load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
     standard_source_authority <- list_values_dimensions$source_authority %>% as_tibble() %>%
       dplyr::rename(source_authority=value) %>%
       dplyr::mutate(code=source_authority)  %>%
-      dplyr::left_join(y = read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/firms/gta/cl_tuna_rfmos.csv"),by = "code")
+      dplyr::left_join(y = read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/firms/gta/cl_tuna_rfmos.csv"),by = "code")  %>% 
+      dplyr::arrange(label, .locale = "en")
     # View(read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv"))
     qs::qsave(standard_source_authority, here::here(file.path("data","codelist_source_authority.qs")))
   }
@@ -63,17 +67,14 @@ load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
     standard_fishing_fleet <- list_values_dimensions$fishing_fleet %>% as_tibble() %>%
       dplyr::rename(fishing_fleet=value) %>%
       dplyr::mutate(code=fishing_fleet)  %>%
-      dplyr::left_join(y = read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/firms/gta/cl_fishing_fleet.csv"),by = "code")
+      dplyr::left_join(y = read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/firms/gta/cl_fishing_fleet.csv"),by = "code")  %>% 
+      dplyr::arrange(label, .locale = "en")
     # View(read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv"))
     standard_fishing_fleet <- standard_fishing_fleet %>% 
       mutate(label = ifelse(is.na(label), code, label))
       
     qs::qsave(standard_fishing_fleet, here::here(file.path("data","codelist_fishing_fleet.qs")))
   }
-  
-  
- 
-  
   
   
   # qs::qsave(standard_species, here::here(file.path("data","codelist_species.qs")))
