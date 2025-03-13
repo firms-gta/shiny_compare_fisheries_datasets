@@ -155,7 +155,6 @@ RUN R -e "renv::restore()"
 ##RUN Rscript update_data.R 
 # Copy the rest of the application code
 COPY . .
-COPY data/codelist_species.qs ./data/codelist_species.qs
 
 RUN ls -la
 RUN cd renv/library && ls -la
@@ -168,7 +167,7 @@ RUN cd data && ls -la
 # Exécuter le script avec sourcing avant l'appel de la fonction
 # RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
 # COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
-
+COPY data/codelist_species.qs ./data/codelist_species.qs
 RUN Rscript ./create_or_load_default_dataset.R
 RUN cd data && ls -la
 
