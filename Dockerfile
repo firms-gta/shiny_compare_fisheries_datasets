@@ -88,9 +88,8 @@ RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}" > /tmp/doi_csv_hash.txt
 RUN mkdir -p data 
 # Copy the CSV containing the data to download
 # Copy the script downloading the data from the CSV
-
 COPY data/DOI.csv ./data/DOI.csv
-COPY data/shinycatch.rds ./data/shinycatch.rds
+COPY data/codelist_species.qs ./data/codelist_species.qs
 # Add files downloaded from Zenodo DOIs => https://docs.docker.com/reference/dockerfile/#add
 ADD https://zenodo.org/record/5747175/files/global_catch_firms_level0_view.zip ./data/global_catch_firms_level0_view.zip
 ADD https://zenodo.org/record/11410529/files/global_nominal_catch_firms_level0_public.csv ./data/global_nominal_catch_firms_level0_public_11410529.csv
