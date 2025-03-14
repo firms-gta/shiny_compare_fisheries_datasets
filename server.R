@@ -422,6 +422,38 @@ server <- function(input, output, session) {
     main_df() %>% top_n(10)
   })
   
+  output$DT_DOIs <- renderDT({#escape = FALSE,
+    DOIs_metadata <- readr::read_csv(here::here("data/DOIs_enriched.csv")) %>% 
+      dplyr::select(c("identifier","title","DOI","Filename")) %>% 
+      dplyr::mutate(url= '<a href = \"https://doi.org/10.5281/zenodo.11410529\">https://doi.org/10.5281/zenodo.11410529</a>')
+  })
+  
+  output$markdown <- renderUI({
+    HTML(markdown::markdownToHTML(knit('doc/table.Rmd', quiet = TRUE)))
+  })
+  
+  
+  DOIs_metadata <- readr::read_csv(here::here("data/DOIs_enriched.csv")) %>% 
+    # dplyr::select(c("identifier","title","DOI","Filename")) %>% dplyr::rename("Identifier"=identifier,"Title"=title) %>% 
+    dplyr::select(c("title","DOI","Filename")) %>% dplyr::rename("Title"=title) %>% 
+    dplyr::mutate(Url= 'https://doi.org/10.5281/zenodo.11410529') |> gt() |> 
+    tab_header(
+      title = "Undelrying datasets",
+      subtitle = "Zenodo DOIs"
+    )  |> 
+    fmt_url(columns = Url)  |>
+    tab_style(
+      style = cell_borders(
+        # sides = c("t", "l"),
+        color = "black",
+        weight = px(3)
+      ),
+      locations = cells_body()
+    ) 
+  
+  output$tableDOIs <- render_gt(expr = DOIs_metadata, width = "100%",height="auto")
+  
+  
   flog.info("##########################################################")
   flog.info(" Modules forOutputs: maps / plots / charts")
   flog.info("##########################################################")

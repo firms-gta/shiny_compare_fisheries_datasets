@@ -16,21 +16,21 @@ download_and_process_zenodo_data <- function() {
     DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
     # Use the function with lapply for each DOI
     df_dois <-lapply(1:nrow(DOIs), function(i) {
-      this_doi <- DOIs$DOI[i]
-      record_id <- gsub(".*\\.", "",DOIs$DOI[i])
+      this_doi <- DOIs[i,]
+      this_url <- paste0("https://doi.org/",this_doi$identifier)
+      this_doi$URL <- paste0('<a href = "',this_url,'">',this_url,'</a>')
+      record_id <- gsub(".*\\.", "",this_doi$DOI)
       this_rec <- zenodo$getRecordById(record_id)
       # this_rec <- zenodo$getRecordByConceptDOI(this_doi)
-      # this_rec <- zenodo$getRecordById("10037645")
       if(!is.null(this_rec$metadata$related_identifiers[[1]]$identifier)){
-        DOIs$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
+        this_doi$identifier <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
       }
       if(!is.null(this_rec$metadata$title)){
-        DOIs$title[i] <- gsub("urn:","",this_rec$metadata$title)
+        this_doi$title <- gsub("urn:","",this_rec$metadata$title)
       }
-      readr::write_csv(x = DOIs,file = here::here("data/DOIs_enriched.csv")) 
-      filepath <- here::here("data", DOIs$Filename[i])
-      filename <- gsub("\\..*", "",DOIs$Filename[i])
-      file_mime=gsub(".*\\.", "",DOIs$Filename[i])
+      filepath <- here::here("data", this_doi$Filename)
+      filename <- gsub("\\..*", "",this_doi$Filename)
+      file_mime=gsub(".*\\.", "",this_doi$Filename)
       newname <- here::here("data", paste0(filename,"_",record_id,".",file_mime))
       DATA_DIR <- here::here("data")  # Utilisation exclusive de here
       
@@ -41,14 +41,14 @@ download_and_process_zenodo_data <- function() {
       if (file_mime == "zip") {
         flog.info("######################### CSV => ZIP DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        zip_path <- file.path(DATA_DIR, DOIs$Filename[i])
+        zip_path <- file.path(DATA_DIR, this_doi$Filename)
         extracted_csv <- file.path(DATA_DIR, paste0(filename, ".csv"))
         target_csv <- file.path(DATA_DIR, paste0(filename, "_", record_id, ".csv"))
         # Vérifier si le CSV extrait existe déjà avant de télécharger le ZIP
         if (!file.exists(target_csv)) {
           if (!file.exists(zip_path)) {
             flog.info("Downloading dataset: %s Zenodo record", record_id)
-            download_data(doi = DOIs$DOI[i], filename = DOIs$Filename[i], data_dir = DATA_DIR)
+            download_data(doi = DOIs$DOI[i], filename = this_doi$Filename, data_dir = DATA_DIR)
           } else {
             flog.info("ZIP file already exists: %s", zip_path)
           }
@@ -78,9 +78,9 @@ download_and_process_zenodo_data <- function() {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
         
-        download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", DOIs$Filename[i]), data_dir = DATA_DIR)
+        download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", this_doi$Filename), data_dir = DATA_DIR)
         
-        from_path <- file.path(DATA_DIR, DOIs$Filename[i])
+        from_path <- file.path(DATA_DIR, this_doi$Filename)
         to_path <- newname
         
         if (file.exists(from_path)) {
@@ -95,9 +95,9 @@ download_and_process_zenodo_data <- function() {
         flog.info("######################### QS FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
         
-        download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", DOIs$Filename[i]), data_dir = DATA_DIR)
+        download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", this_doi$Filename), data_dir = DATA_DIR)
         
-        from_path <- file.path(DATA_DIR, DOIs$Filename[i])
+        from_path <- file.path(DATA_DIR, this_doi$Filename)
         to_path <- newname
         
         if (file.exists(from_path)) {
@@ -146,9 +146,11 @@ download_and_process_zenodo_data <- function() {
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% 
         dplyr::mutate(measurement_value=as.numeric(measurement_value),codesource_area=as.character(codesource_area)) 
       
+      this_list <-list("metadata"=this_doi,"data"=this_df)
     })
-    loaded_data <- do.call(rbind, df_dois)
-    
+    loaded_metadata <- do.call(rbind, lapply(df_dois, function(l) l[[1]]))
+    readr::write_csv(x = loaded_metadata,file = here::here("data/DOIs_enriched.csv")) 
+    loaded_data <- do.call(rbind, lapply(df_dois, function(l) l[[2]]))
     gc()
     arrow::write_parquet(loaded_data, here::here("data/gta_dois.parquet"))
     rm(loaded_data)

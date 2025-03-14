@@ -38,7 +38,12 @@ ui <- fluidPage(
                                           choices = list_values_dimensions$dataset,
                                           multiple = TRUE,
                                           selected= list_default_filters$dataset,
-                                          options = list(`actions-box` = TRUE),
+                                          options = pickerOptions(
+                                            actionsBox = TRUE,
+                                            title = "Please select a dataset",
+                                            header = "Dataset"
+                                          ),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
                                         shinyWidgets::pickerInput(
@@ -48,6 +53,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected= list_default_filters$unit,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
                                         shinyWidgets::pickerInput(
@@ -58,6 +64,7 @@ ui <- fluidPage(
                                           selected= list_default_filters$source_authority,
                                           options = list(`actions-box` = TRUE),
                                           # subtext,
+                                          # width = "fit"
                                           width = "98%"
                                         ),
                                         # selectInput(
@@ -68,6 +75,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected= list_default_filters$gridtype,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
                                         shinyWidgets::pickerInput(
@@ -79,6 +87,7 @@ ui <- fluidPage(
                                           selected= list_default_filters$species,
                                           options = list(`actions-box` = TRUE),
                                           # autocomplete=TRUE,
+                                          # width = "fit"
                                           width = "98%"
                                         ),
                                         shinyWidgets::pickerInput(
@@ -88,6 +97,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected= list_default_filters$year,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
                                         shinyWidgets::pickerInput(
@@ -98,6 +108,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected= list_default_filters$gear_type,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fwit"
                                           width = "98%"
                                         ),
                                         shinyWidgets::pickerInput(
@@ -107,6 +118,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected= list_default_filters$fishing_fleet,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
                                         # textInput("yourWKT","Draw paste a spatial WKT",width="98%"),
@@ -188,28 +200,56 @@ ui <- fluidPage(
                         )
              ),
              navbarMenu("About",
-                        tabPanel("Context",
+                        tabPanel(title = "About the data",top = "12%",
+                                  # uiOutput('markdown')
+                                 # gt_output(outputId = "tableDOIs")
+                                  # DT::DTOutput("DT_DOIs",width = "50%",height="auto")
                                  fluidRow(
                                    # includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
                                    column(width =2,
                                           markdown('
-                                          [<img src="logo_VLab5.png" height="10%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
-                                          
+                                          [<img src="logo_VLab5.png" width="80%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+
                                           <br>
-                                          
-                                          [<img src="logo_IRD.svg" height="108">](https://www.ird.fr/)   
+                                          <br>
+                                          <br>
+
+                                          [<img src="logo_IRD.svg" height="15%">](https://www.ird.fr/)
                                                    ')
                                    ),
-                                   column(width =6,
-                                          includeMarkdown("doc/about.md"),
+                                   column(width = 8,
+                                          gt_output(outputId = "tableDOIs")
                                    ),
                                    column(width =2,
                                           markdown('
-                                          [<img src="BET_YFT_SKJ_ALB.svg" width="20%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+                                          [<img src="BET_YFT_SKJ_ALB.svg" width="100%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
                                                    ')
                                    )
                                  )
                         )
+                        # ,
+                        # tabPanel("Context",
+                                 # fluidRow(
+                                 #   # includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
+                                 #   column(width =2,
+                                 #          markdown('
+                                 #          [<img src="logo_VLab5.png" height="10%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+                                 # 
+                                 #          <br>
+                                 # 
+                                 #          [<img src="logo_IRD.svg" height="108">](https://www.ird.fr/)
+                                 #                   ')
+                                 #   ),
+                                 #   column(width =6,
+                                 #          includeMarkdown("doc/about.md"),
+                                 #   ),
+                                 #   column(width =2,
+                                 #          markdown('
+                                 #          [<img src="BET_YFT_SKJ_ALB.svg" width="20%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+                                 #                   ')
+                                 #   )
+                                 # )
+                        # )
              )
   )
 )
