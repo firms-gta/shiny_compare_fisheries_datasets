@@ -17,10 +17,15 @@ download_and_process_zenodo_data <- function() {
     # Use the function with lapply for each DOI
     df_dois <-lapply(1:nrow(DOIs), function(i) {
       this_doi <- DOIs[i,]
-      this_url <- paste0("https://doi.org/",this_doi$identifier)
-      this_doi$URL <- paste0('<a href = "',this_url,'">',this_url,'</a>')
       record_id <- gsub(".*\\.", "",this_doi$DOI)
       this_rec <- zenodo$getRecordById(record_id)
+      flog.info("Harvesting metadata %s:", record_id)
+      
+      this_doi$record_id <- record_id
+      this_doi$svg_badge <- gsub(pattern = "11410529",replacement = record_id,"https://zenodo.org/badge/DOI/10.5281/zenodo.11410529.svg")
+      # <a href="https://doi.org/10.5281/zenodo.11410529"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.11410529.svg" alt="DOI"></a>
+      this_doi$URL <- paste0("https://doi.org/",this_doi$DOI)
+      # this_doi$URL <- paste0('<a href="',this_url,'">',this_url,'</a>')
       # this_rec <- zenodo$getRecordByConceptDOI(this_doi)
       if(!is.null(this_rec$metadata$related_identifiers[[1]]$identifier)){
         this_doi$identifier <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
@@ -28,16 +33,19 @@ download_and_process_zenodo_data <- function() {
       if(!is.null(this_rec$metadata$title)){
         this_doi$title <- gsub("urn:","",this_rec$metadata$title)
       }
+      
+      flog.info("Downloading dataset")
+      
       filepath <- here::here("data", this_doi$Filename)
       filename <- gsub("\\..*", "",this_doi$Filename)
       file_mime=gsub(".*\\.", "",this_doi$Filename)
       newname <- here::here("data", paste0(filename,"_",record_id,".",file_mime))
       DATA_DIR <- here::here("data")  # Utilisation exclusive de here
       
+
       if (!dir.exists(DATA_DIR)) {
         dir.create(DATA_DIR, recursive = TRUE, showWarnings = FALSE)
       }
-      
       if (file_mime == "zip") {
         flog.info("######################### CSV => ZIP DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
@@ -52,13 +60,13 @@ download_and_process_zenodo_data <- function() {
           } else {
             flog.info("ZIP file already exists: %s", zip_path)
           }
-          
+
           flog.info("Unzipping file: %s", zip_path)
           unzip(zipfile = zip_path, exdir = DATA_DIR, overwrite = TRUE)
-          
+
           extracted_files <- list.files(DATA_DIR, full.names = TRUE)
           flog.info("Extracted files: %s", paste(extracted_files, collapse = ", "))
-          
+
           if (file.exists(extracted_csv)) {
             flog.info("Renaming extracted CSV from %s to %s", extracted_csv, target_csv)
             if (file.rename(from = extracted_csv, to = target_csv)) {
@@ -73,16 +81,16 @@ download_and_process_zenodo_data <- function() {
         } else {
           flog.info("Target CSV already exists: %s. Skipping extraction.", target_csv)
         }
-        
+
       } else if (!file.exists(newname) && file_mime == "csv") {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        
+
         download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", this_doi$Filename), data_dir = DATA_DIR)
-        
+
         from_path <- file.path(DATA_DIR, this_doi$Filename)
         to_path <- newname
-        
+
         if (file.exists(from_path)) {
           flog.info("Copying file from %s to %s", from_path, to_path)
           file.copy(from = from_path, to = to_path, overwrite = TRUE)
@@ -90,16 +98,16 @@ download_and_process_zenodo_data <- function() {
         } else {
           flog.warn("File %s does not exist!", from_path)
         }
-        
+
       } else if (!file.exists(newname) && file_mime == "qs") {
         flog.info("######################### QS FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        
+
         download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", this_doi$Filename), data_dir = DATA_DIR)
-        
+
         from_path <- file.path(DATA_DIR, this_doi$Filename)
         to_path <- newname
-        
+
         if (file.exists(from_path)) {
           flog.info("File does exist, copying QS file from %s to %s", from_path, to_path)
           file.copy(from = from_path, to = to_path, overwrite = TRUE)
@@ -107,11 +115,11 @@ download_and_process_zenodo_data <- function() {
         } else {
           flog.warn("File %s does not exist!", from_path)
         }
-        
+
         flog.info("Store distinct geometries in the dedicated sf object 'df_distinct_geom' to perform faster spatial analysis")
-        
+
       }
-      
+
       flog.info("Dataset %s downloaded successfully from Zenodo or retrieved", newname)
       # Correction pour éviter de lire un ZIP comme un CSV
       this_df <- switch(file_mime,
@@ -120,31 +128,33 @@ download_and_process_zenodo_data <- function() {
                         # "qs" = qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_tibble()
                         "qs" = qread(newname) %>% dplyr::as_tibble()
       )
-      
+
       if(any(grepl("geographic_identifier",colnames(this_df)))){
         flog.info("Renaming geographic_identifier column")
-        this_df <- this_df %>% 
+        this_df <- this_df %>%
           dplyr::rename(codesource_area=geographic_identifier)
       }
-      
+
       if(any(grepl("flag",colnames(this_df)))){
         flog.info("Renaming Flag column")
-        this_df <- this_df %>% 
+        this_df <- this_df %>%
           dplyr::rename(fishing_fleet=flag,gear_type=gear,fishing_mode=schooltype_label,measurement_unit=catchunit,measurement_value=value)
       }
       if(any(grepl("fishingfleet",colnames(this_df)))){
         flog.info("Renaming fishingfleet / gear / schooltype / unit / value columns")
-        this_df <- this_df %>% 
+        this_df <- this_df %>%
           dplyr::rename(fishing_fleet=fishingfleet,gear_type=gear,fishing_mode=schooltype,measurement_unit=unit,measurement_value=value)
-      }          
-      this_df <- this_df %>% 
+      }
+      this_df <- this_df %>%
         dplyr::select(c("source_authority","fishing_fleet","time_start","time_end","codesource_area","gear_type","species","fishing_mode","measurement_unit","measurement_value"))  %>%
         mutate(dataset=gsub(paste0(".",file_mime),"",newname), year=year(time_start))  %>%
-        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Tons', 't')) %>% 
-        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
-        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
-        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% 
-        dplyr::mutate(measurement_value=as.numeric(measurement_value),codesource_area=as.character(codesource_area)) 
+        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Tons', 't')) %>%
+        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>%
+        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>%
+        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>%
+        dplyr::mutate(measurement_value=as.numeric(measurement_value),codesource_area=as.character(codesource_area))
+
+      flog.info("All datasets have been downloaded")
       
       this_list <-list("metadata"=this_doi,"data"=this_df)
     })
