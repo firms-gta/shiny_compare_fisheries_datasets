@@ -160,6 +160,13 @@ RUN ls -la
 RUN cd renv/library && ls -la
 RUN cd data && ls -la
 
+COPY download_and_process_zenodo_data.R ./download_and_process_zenodo_data.R
+COPY R/download_data.R ./R/download_data.R
+COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
+
+# Run the data update script Downloading the data (cached if DOI.csv did not change).
+##RUN Rscript update_data.R 
+
 RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
 
 RUN cd data && ls -la
