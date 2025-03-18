@@ -115,7 +115,7 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       for(d in datasets){
         flog.info("Adding one layer for each selected dataset : %s", print(datasets))
         flog.info("Adding one layer for each selected dataset : %s",d)
-        this_layer <- data_map %>% filter(dataset %in% d)
+        this_layer <- data_map %>% dplyr::filter(dataset %in% d)
         flog.info("Number of lines : %s", nrow(this_layer))
         
         map <- map  %>% 
@@ -308,7 +308,9 @@ map_leafletServer <- function(id,map_df,map_wkt) {
       }else{
         flog.info("SF checking if remaining data in the new polygon just drawn !!")
         # disjoint_WKT <- new_selection %>% dplyr::filter(sf::st_crosses(., whole_footprint, sparse = FALSE))
-        disjoint_WKT <- new_selection %>% dplyr::filter(sf::st_disjoint(., whole_footprint, sparse = FALSE))
+        disjoint_WKT <- new_selection %>% 
+          dplyr::filter(apply(sf::st_disjoint(., whole_footprint, sparse = FALSE), 1, all))
+        
       }
       
       disjoint <- sf::st_as_sf(disjoint_WKT)

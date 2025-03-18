@@ -34,6 +34,8 @@ RUN apt-get update && apt-get install -y \
     libprotobuf-dev \
     protobuf-compiler \
     libjq-dev \
+    rasqal-utils \
+    raptor2-utils \
     cmake
    
 # general system libraries
@@ -62,9 +64,11 @@ RUN apt-get update && apt-get install -y \
     texinfo \
     software-properties-common \
     vim \
-    wget
+    dos2unix \
+    wget 
     
 RUN install2.r --error --skipinstalled --ncpus -1 redland
+
 RUN apt-get install -y \
     libcurl4 \
     libgit2-dev \
@@ -77,7 +81,6 @@ RUN apt-get install -y \
 ## update system libraries
 RUN apt update && apt upgrade -y && apt clean
 
-# Set the working directory
 WORKDIR /root/shiny_compare_tunaatlas_datasests
 
 # Echo the DOI_CSV_HASH for debugging and to stop cache if DOI.csv has changed (takes in input the hash of the DOI.csv file created in yml)
@@ -86,28 +89,31 @@ RUN echo "DOI_CSV_HASH=${DOI_CSV_HASH}" > /tmp/doi_csv_hash.txt
 
 # Create data repository to copy DOI.csv, a file listing the dataset to download from zenodo
 RUN mkdir -p data 
-# Copy the CSV containing the data to download
-# Copy the script downloading the data from the CSV
+
 COPY data/DOI.csv ./data/DOI.csv
-# Add files downloaded from Zenodo DOIs => https://docs.docker.com/reference/dockerfile/#add
-ADD https://github.com/firms-gta/shiny_compare_fisheries_datasets/raw/refs/heads/main/data/codelist_species.qs ./data/codelist_species.qs
-ADD https://zenodo.org/record/5747175/files/global_catch_firms_level0_view.zip ./data/global_catch_firms_level0_view.zip
-ADD https://zenodo.org/record/11410529/files/global_nominal_catch_firms_level0_public.csv ./data/global_nominal_catch_firms_level0_public_11410529.csv
-ADD https://zenodo.org/record/14184244/files/global_catch_tunaatlasird_level2.qs ./data/global_catch_tunaatlasird_level2_14184244.qs
-ADD https://zenodo.org/record/1164128/files/global_catch_tunaatlasird_level2.csv ./data/global_catch_tunaatlasird_level2_1164128.csv
-ADD https://zenodo.org/record/11460074/files/global_catch_firms_level0_public.csv ./data/global_catch_firms_level0_public_11460074.csv
-RUN cd ./data && ls -la
 
-# Could also try wget -L -O global_catch_firms_level0_public.csv "https://zenodo.org/record/11460074/files/global_catch_firms_level0_public.csv"
+# Appliquer dos2unix pour éviter les problèmes de formatage
+RUN dos2unix ./data/DOI.csv && cat -A ./data/DOI.csv
 
-#RUN R -e "install.packages(c('here', 'qs', 'dplyr', 'sf', 'futile.logger', 'purrr', 'tibble', 'readr', 'arrow', 'zen4R', 'lubridate', 'stringr', 'downloader', 'parallel'), repos='http://cran.r-project.org')"
-# Install R core package dependencies (we might specify the version of renv package)
-#RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
+# Télécharger les fichiers depuis Zenodo
+RUN echo "📥 Début du téléchargement des fichiers..." \
+    && bash -c "tail -n +2 ./data/DOI.csv | tr -d '\r' | while IFS=',' read -r DOI FILE; do \
+        RECORD_ID=\$(echo \"\$DOI\" | awk -F '/' '{print \$NF}' | sed 's/zenodo\\.//'); \
+        FILE_PATH=\"./data/\$FILE\"; \
+        NEWNAME=\"./data/\${FILE%.*}_\${RECORD_ID}.\${FILE##*.}\"; \
+        URL=\"https://zenodo.org/record/\$RECORD_ID/files/\$FILE?download=1\"; \
+        
+        echo \"📥 Téléchargement de \$FILE (Record ID: \$RECORD_ID)\"; \
+        
+        if wget -nv --retry-connrefused --waitretry=5 --timeout=600 --tries=1 -O \"\$FILE_PATH\" \"\$URL\"; then \
+            mv \"\$FILE_PATH\" \"\$NEWNAME\"; \
+            echo \"✅ Fichier téléchargé et renommé : \$NEWNAME\"; \
+        else \
+            echo \"⚠️ Échec du téléchargement avec wget, ajout du fichier pour ADD\"; \
+            echo \"\$DOI,\$FILE\" >> ./data/DOI_failed.csv; \
+        fi; \
+    done"
 
-# FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache AS base
-# Set environment variables for renv cache, see doc https://docs.docker.com/build/cache/backends/
-# ARG RENV_PATHS_ROOT
-# ARG defines a constructor argument called RENV_PATHS_ROOT. Its value is passed from the YAML file. An initial value is set up in case the YAML does not provide one
 ARG RENV_PATHS_ROOT=/root/.cache/R/renv
 ENV RENV_PATHS_ROOT=${RENV_PATHS_ROOT}
 
@@ -126,66 +132,37 @@ RUN if [ -z "${RENV_LOCK_HASH}" ]; then \
     echo "RENV_LOCK_HASH=${RENV_LOCK_HASH}" > /tmp/renv_lock_hash.txt
 
 # Create the renv cache directory
-# Make a directory in the container
 RUN mkdir -p ${RENV_PATHS_ROOT}
-
-# Install renv package that records the packages used in the shiny app
-RUN R -e "install.packages('renv', repos='https://cran.r-project.org/')"
 
 # Copy renv configuration and lockfile
 COPY renv.lock ./
-COPY .Rprofile ./
-COPY renv/activate.R renv/activate.R
-COPY renv/settings.json renv/settings.json
-#COPY renv renv
+COPY renv/activate.R renv/
+COPY renv/settings.json renv/
 
-# Set renv cache location: change default location of cache to project folder
-# see documentation for Multi-stage builds => https://cran.r-project.org/web/packages/renv/vignettes/docker.html
-RUN mkdir renv/.cache
-ENV RENV_PATHS_CACHE=renv/.cache
+# Install renv package that records the packages used in the shiny app
+RUN R -e "lockfile <- jsonlite::fromJSON('renv.lock'); renv_version <- lockfile$Packages[['renv']]$Version; install.packages('renv', repos='https://cran.r-project.org/', type='source', version=renv_version)"
 
 # Restore renv packages
 RUN R -e "renv::activate()" 
 # Used to setup the environment (with the path cache)
 RUN R -e "renv::restore()" 
-#RUN R -e "renv::repair()" 
+RUN R -e "renv::repair()" 
 
-#FROM ghcr.io/firms-gta/shiny_compare_tunaatlas_datasests-cache
-
-# Run the data update script Downloading the data (cached if DOI.csv did not change).
-##RUN Rscript update_data.R 
-# Copy the rest of the application code
 COPY . .
-
 RUN ls -la
 RUN cd renv/library && ls -la
 RUN cd data && ls -la
 
-# COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
-# COPY R/download_data.R ./R/download_data.R
-# COPY R/hotfix.R ./R/hotfix.R
-# COPY data/cl_nc_areas_simplfied.gpkg ./data/cl_nc_areas_simplfied.gpkg
-# Exécuter le script avec sourcing avant l'appel de la fonction
-# RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
-# COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
-# COPY data/codelist_species.qs ./data/codelist_species.qs
-RUN Rscript ./create_or_load_default_dataset.R
+RUN Rscript -e "source('R/download_and_process_zenodo_data.R'); source('R/download_data.R'); download_and_process_zenodo_data()"
+
 RUN cd data && ls -la
 
+RUN Rscript -e "source('create_or_load_default_dataset.R')"
 
-#RUN if [ -d "./data" ]; then \
-#      find ./data -type f ! \( \
-#        -name "whole_group_df.parquet" \
-#        -o -name "filters_combinations.parquet" \
-#        -o -name "df_distinct_geom_light.csv" \
-#        -o -name "default_df.parquet" \
-#        -o -name "DOI.csv" \
-#        -o -name "gta_dois.parquet" \
-#        -o -name "gta.parquet" \
-#      \) -delete; \
-#    fi && \
-#    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
+COPY . . 
+# attention copy . . invalide le cache 
+# après avoir run ça il faut recopier les nouvelles choses créées dans .data non ? 
+# Create directories for configuration
 
 # Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/

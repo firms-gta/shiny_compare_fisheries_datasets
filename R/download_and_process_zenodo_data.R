@@ -41,39 +41,51 @@ download_and_process_zenodo_data <- function() {
       if (file_mime == "zip") {
         flog.info("######################### CSV => ZIP DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
-        zip_path <- file.path(DATA_DIR, this_doi$Filename)
-        extracted_csv <- file.path(DATA_DIR, paste0(filename, ".csv"))
-        target_csv <- file.path(DATA_DIR, paste0(filename, "_", record_id, ".csv"))
-        # Vérifier si le CSV extrait existe déjà avant de télécharger le ZIP
-        if (!file.exists(target_csv)) {
-          if (!file.exists(zip_path)) {
-            flog.info("Downloading dataset: %s Zenodo record", record_id)
-            download_data(doi = DOIs$DOI[i], filename = this_doi$Filename, data_dir = DATA_DIR)
-          } else {
-            flog.info("ZIP file already exists: %s", zip_path)
-          }
+        
+        zip_original <- file.path(DATA_DIR, DOIs$Filename[i])  # Nom fourni par Zenodo
+        zip_renamed <- file.path(DATA_DIR, paste0(tools::file_path_sans_ext(DOIs$Filename[i]), "_", record_id, ".zip"))  # Format attendu
+        target_csv <- file.path(DATA_DIR, paste0(tools::file_path_sans_ext(DOIs$Filename[i]), "_", record_id, ".csv"))  # 🔹 Initialisation ici !
+        
+        # Vérifier les fichiers existants
+        files_in_data <- list.files(DATA_DIR, full.names = TRUE)
+        flog.info("Contenu du dossier DATA_DIR : %s", paste(files_in_data, collapse = ", "))
+        
+        if (file.exists(zip_renamed)) {
+          flog.info("ZIP file already exists with expected name: %s", zip_renamed)
+        } else if (file.exists(zip_original)) {
+          flog.info("ZIP file found with original name: %s, renaming to %s", zip_original, zip_renamed)
+          file.rename(zip_original, zip_renamed)
+        } else {
+          flog.info("Downloading dataset: %s Zenodo record", record_id)
+          download_data(doi = DOIs$DOI[i], filename = DOIs$Filename[i], data_dir = DATA_DIR)
           
-          flog.info("Unzipping file: %s", zip_path)
-          unzip(zipfile = zip_path, exdir = DATA_DIR, overwrite = TRUE)
+          if (file.exists(zip_original)) {
+            flog.info("Download successful, renaming file: %s -> %s", zip_original, zip_renamed)
+            file.rename(zip_original, zip_renamed)
+          } else if (!file.exists(zip_renamed)) {
+            flog.error("Download failed, ZIP file not found after download!")
+            stop("ZIP file not found after download.")
+          }
+        }
+        
+        # 🔹 Vérifier l'existence du CSV après extraction
+        if (file.exists(target_csv)) {
+          flog.info("Target CSV already exists: %s", target_csv)
+        } else {
+          flog.info("Extracting ZIP file: %s", zip_renamed)
+          unzip(zipfile = zip_renamed, exdir = DATA_DIR, overwrite = TRUE)
           
           extracted_files <- list.files(DATA_DIR, full.names = TRUE)
           flog.info("Extracted files: %s", paste(extracted_files, collapse = ", "))
           
+          extracted_csv <- file.path(DATA_DIR, paste0(tools::file_path_sans_ext(DOIs$Filename[i]), ".csv"))
           if (file.exists(extracted_csv)) {
             flog.info("Renaming extracted CSV from %s to %s", extracted_csv, target_csv)
-            if (file.rename(from = extracted_csv, to = target_csv)) {
-              flog.info("File successfully moved to %s", target_csv)
-              # file.remove(zip_path)  # Supprimer le ZIP si nécessaire
-            } else {
-              flog.warn("Failed to move extracted CSV to %s", target_csv)
-            }
+            file.rename(extracted_csv, target_csv)
           } else {
             flog.warn("Extraction failed, file %s does not exist!", extracted_csv)
           }
-        } else {
-          flog.info("Target CSV already exists: %s. Skipping extraction.", target_csv)
         }
-        
       } else if (!file.exists(newname) && file_mime == "csv") {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
