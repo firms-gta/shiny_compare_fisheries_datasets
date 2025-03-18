@@ -160,7 +160,7 @@ RUN ls -la
 RUN cd renv/library && ls -la
 RUN cd data && ls -la
 
-COPY download_and_process_zenodo_data.R ./download_and_process_zenodo_data.R
+COPY R/download_and_process_zenodo_data.R ./R/download_and_process_zenodo_data.R
 COPY R/download_data.R ./R/download_data.R
 COPY create_or_load_default_dataset.R ./create_or_load_default_dataset.R
 
