@@ -1,11 +1,12 @@
 pieBarChartsUI <- function(id) {
   ns <- NS(id)
   tagList(
-    plotlyOutput(ns("pie_gridtype_catch"), width="100%"),
     tags$br(),
-    plotlyOutput(ns("barplot_datasets"), width="100%"),
+    plotlyOutput(ns("pie_gridtype_catch"), height = 'auto', width = 'auto'),
     tags$br(),
-    plotlyOutput(ns("pie_ratio_catch"))
+    plotlyOutput(ns("barplot_datasets"), height = 'auto', width = 'auto'),
+    tags$br(),
+    plotlyOutput(ns("pie_ratio_catch"),height = 'auto', width = 'auto')
   )
 }
 
@@ -89,13 +90,12 @@ pieBarChartsServer <- function(id,plot_df) {
     output$barplot_datasets <- renderPlotly({
       # https://tutorials.cpsievert.me/20190821/#13
       # https://stackoverflow.com/questions/55002248/plotly-stacked-bar-chart-add-trace-loop-issue
-      df_i1 <- data_barplot_all_datasets()  %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))  %>% pivot_wider(names_from = measurement_unit, values_from = c("measurement_value", "count"), names_sep="_",values_fill = 0)
+      df_i1 <- data_barplot_all_datasets()  %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))  %>% 
+        pivot_wider(names_from = measurement_unit, values_from = c("measurement_value", "count"), names_sep="_",values_fill = 0)
       df_i1 <- as.data.frame(df_i1)
       # df_i1 <- data_barplot_all_datasets()  %>% mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))   %>% df_i1(id = rownames(.))  %>% pivot_wider(names_from = measurement_unit, measurement_values_from = c("measurement_value", "count"), names_sep="_",measurement_values_fill = 0, -id)  %>%  plot_ly(x = ~id, y=~measurement_value, type="bar", color=~variable) %>% layout(barmode = "stack")
-      
-      # mtcars %>%    df_i1(id = rownames(.)) %>% gather(key = "variable",measurement_value = "measurement_value",-id) %>%  plot_ly(x = ~id, y=~measurement_value, type="bar", color=~variable) %>%       layout(barmode = "stack")
-      
       # fig <- plot_ly(data=df_i1)
+      
       # for(c in 2:length(colnames(df_i1))){
       for(c in 1:length(colnames(dplyr::select(df_i1,-c(dataset))))){
         this_column_name <- colnames(dplyr::select(df_i1,-c(dataset)))[c]

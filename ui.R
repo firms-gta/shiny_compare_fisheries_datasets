@@ -1,4 +1,6 @@
 ui <- fluidPage(
+  # theme = bs_theme(version = 5, bootswatch = "lumen"),
+  tags$head(includeCSS("./styles.css")),
   shinyjs::useShinyjs(),  # Set up shinyjs
   # titlePanel("Global Tuna Atlas"),
   navbarPage(title="Compare Global Tuna Atlas datasets",
@@ -18,56 +20,65 @@ ui <- fluidPage(
              tabPanel("Datasets overview",
                       modalDialog(
                         title = "Information",
-                        # includeHTML("doc/ribbon_GH.html"),
                         includeMarkdown("doc/popup.md"),
                         size = "l",
                         easyClose = TRUE,
                         footer=modalButton("OK", icon =icon("check"))
                       ),
                       div(class="outer",
-                          tags$head(includeCSS("./styles.css")),
+                          # theme = bs_theme(version = 5),
                           # shinycssloaders::withSpinner(map_leafletUI("map_global")),
                           map_leafletUI("map_global"),
+                          # shiny::tags$a('<a href="https://github.com/you"><img decoding="async" width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_red_aa0000.png" class="attachment-full size-full" alt="Fork me on GitHub" loading="lazy"></a>'),
                           absolutePanel(id = "filters", class = "panel panel-default", fixed = TRUE,
                                         draggable = TRUE,top = "12%",  left = "3%", width = "21%", height = "auto",
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "dataset",
                                           label = "Dataset",
                                           choices = list_values_dimensions$dataset,
                                           multiple = TRUE,
                                           selected= list_default_filters$dataset,
-                                          options = list(`actions-box` = TRUE),
+                                          options = pickerOptions(
+                                            actionsBox = TRUE,
+                                            title = "Please select a dataset",
+                                            header = "Dataset"
+                                          ),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "unit",
                                           label = "Unit",
                                           choices = list_values_dimensions$measurement_unit,
                                           multiple = TRUE,
                                           selected= list_default_filters$unit,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "source_authority",
                                           label = "Source authority",
                                           choices = list_values_dimensions$source_authority,
                                           multiple = TRUE,
                                           selected= list_default_filters$source_authority,
                                           options = list(`actions-box` = TRUE),
+                                          # subtext,
+                                          # width = "fit"
                                           width = "98%"
                                         ),
                                         # selectInput(
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "gridtype",
                                           label = "Grid size",
                                           choices = list_values_dimensions$gridtype,
                                           multiple = TRUE,
                                           selected= list_default_filters$gridtype,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           # selectInput(
                                           inputId = "species",
                                           label = "Species",
@@ -75,18 +86,21 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected= list_default_filters$species,
                                           options = list(`actions-box` = TRUE),
+                                          # autocomplete=TRUE,
+                                          # width = "fit"
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "year",
                                           label = "Year",
                                           choices = list_values_dimensions$year,
                                           multiple = TRUE,
                                           selected= list_default_filters$year,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
-                                        pickerInput(
+                                        shinyWidgets::pickerInput(
                                           inputId = "gear_type",
                                           label = "Gear",
                                           # choices = c("All",list_values_dimensions$gear_type),
@@ -94,6 +108,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected= list_default_filters$gear_type,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fwit"
                                           width = "98%"
                                         ),
                                         shinyWidgets::pickerInput(
@@ -103,6 +118,7 @@ ui <- fluidPage(
                                           multiple = TRUE,
                                           selected= list_default_filters$fishing_fleet,
                                           options = list(`actions-box` = TRUE),
+                                          # width = "fit"
                                           width = "98%"
                                         ),
                                         # textInput("yourWKT","Draw paste a spatial WKT",width="98%"),
@@ -114,8 +130,10 @@ ui <- fluidPage(
                                         #              style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large;
                                         #                                                                                    font-weight: bold;"),
                                         tags$br(),
-                                        actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map"), 
+                                        actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map"),
                                                      style="color: #fff; background-color: #2271b1; border-color: #2e6da4;font-size: xx-large; font-weight: bold;"),
+                                        # actionButton(inputId ="resetWkt", label = "Remove spatial filter", icon("map")),
+                                        
                                         tags$br(),
                                         tags$br(),
                                         map_leafletUI("other"),
@@ -144,7 +162,8 @@ ui <- fluidPage(
                                         ),
                                         pieBarChartsUI(id = "pie_bar_charts")
                           ),
-                          absolutePanel(id = "plots", class = "panel panel-default", bottom =  "2%", left = "25%", width = "50%", fixed=TRUE, draggable = FALSE, height = "auto",
+                          absolutePanel(id = "timeSerie", class = "panel panel-default",  fixed=TRUE, 
+                                        draggable = FALSE, bottom =  "2%", left = "25%", width = "50%", height = "auto",
                                         # timeSeriesGearUI(id = "time_series_gear"),
                                         timeSeriesUI(id= "time_series")
                                         # fluidRow(
@@ -181,28 +200,56 @@ ui <- fluidPage(
                         )
              ),
              navbarMenu("About",
-                        tabPanel("Context",
+                        tabPanel(title = "About the data",top = "12%",
+                                  # uiOutput('markdown')
+                                 # gt_output(outputId = "tableDOIs")
+                                  # DT::DTOutput("DT_DOIs",width = "50%",height="auto")
                                  fluidRow(
                                    # includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
                                    column(width =2,
                                           markdown('
-                                          [<img src="logo_VLab5.png" height="10%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
-                                          
+                                          [<img src="logo_VLab5.png" width="80%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+
                                           <br>
-                                          
-                                          [<img src="logo_IRD.svg" height="108">](https://www.ird.fr/)   
+                                          <br>
+                                          <br>
+
+                                          [<img src="logo_IRD.svg" height="15%">](https://www.ird.fr/)
                                                    ')
                                    ),
-                                   column(width =6,
-                                          includeMarkdown("doc/about.md"),
+                                   column(width = 8,
+                                          gt_output(outputId = "tableDOIs")
                                    ),
                                    column(width =2,
                                           markdown('
-                                          [<img src="BET_YFT_SKJ_ALB.svg" width="20%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+                                          [<img src="BET_YFT_SKJ_ALB.svg" width="100%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
                                                    ')
                                    )
                                  )
                         )
+                        # ,
+                        # tabPanel("Context",
+                                 # fluidRow(
+                                 #   # includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
+                                 #   column(width =2,
+                                 #          markdown('
+                                 #          [<img src="logo_VLab5.png" height="10%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+                                 # 
+                                 #          <br>
+                                 # 
+                                 #          [<img src="logo_IRD.svg" height="108">](https://www.ird.fr/)
+                                 #                   ')
+                                 #   ),
+                                 #   column(width =6,
+                                 #          includeMarkdown("doc/about.md"),
+                                 #   ),
+                                 #   column(width =2,
+                                 #          markdown('
+                                 #          [<img src="BET_YFT_SKJ_ALB.svg" width="20%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+                                 #                   ')
+                                 #   )
+                                 # )
+                        # )
              )
   )
 )

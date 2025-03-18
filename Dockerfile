@@ -1,4 +1,8 @@
-FROM rocker/shiny:4.4.0
+FROM rocker/r-ver:4.2.3
+#FROM rocker/shiny:4.4.0
+#FROM rocker/shiny:latest
+#FROM rocker/r-ver:4.4.0
+#FROM rocker/r-ver:latest
 
 LABEL org.opencontainers.image.authors="julien.barde@ird.fr" org.opencontainers.image.authors="bastien.grasset@ird.fr"
 LABEL maintainer="Julien Barde <julien.barde@ird.fr>"
@@ -9,6 +13,7 @@ LABEL org.opencontainers.image.source https://github.com/firms-gta/shiny_compare
 RUN apt update && apt upgrade -y
 
 # Install system libraries of general use with option -y to tells apt-get to assume the answer to all prompts is yes.
+
 RUN apt-get update && apt-get install -y \
     sudo \
     pandoc \
@@ -32,7 +37,6 @@ RUN apt-get update && apt-get install -y \
     rasqal-utils \
     raptor2-utils \
     cmake
-
    
 # general system libraries
 # Note: this includes rdf/redland system libraries
@@ -53,9 +57,6 @@ RUN apt-get update && apt-get install -y \
     libmagick++-dev \
     libopenmpi-dev \
     libpcre2-dev \
-    libssl-dev \
-    libv8-dev \
-    libxml2-dev \
     libxslt1-dev \
     libzmq3-dev \
     lsb-release \
@@ -162,10 +163,12 @@ COPY . .
 # attention copy . . invalide le cache 
 # après avoir run ça il faut recopier les nouvelles choses créées dans .data non ? 
 # Create directories for configuration
+
+# Create directories for configuration
 RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 
 # Expose port 3838 for the Shiny app
 EXPOSE 3838
 
 # Define the entry point to run the Shiny app
-CMD ["R", "-e", "shiny::runApp('/root/shiny_compare_tunaatlas_datasests', host = '0.0.0.0', port = 3838)"]
+CMD ["R","-e","shiny::runApp('/root/shiny_compare_tunaatlas_datasests',host = '0.0.0.0',port = 3838)"]

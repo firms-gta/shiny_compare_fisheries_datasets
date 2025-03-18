@@ -1,7 +1,7 @@
 download_and_process_zenodo_data <- function() {
   sf::sf_use_s2(FALSE)
   lapply(c("here", "readr", "arrow", "qs", "sf", "dplyr", 
-           "zen4R", "futile.logger", "lubridate", "stringr"), 
+           "zen4R", "parallel","futile.logger", "lubridate", "stringr"), 
          function(pkg) {
            if (!requireNamespace(pkg, quietly = TRUE)) {
              install.packages(pkg)
@@ -9,24 +9,28 @@ download_and_process_zenodo_data <- function() {
            library(pkg, character.only = TRUE)
          })
   
-  list_DOIs <- here::here("data/DOI.csv")
-  DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
   if(!file.exists(here::here("data/gta_dois.parquet"))){
     require(zen4R)
     zenodo <- ZenodoManager$new()
+    list_DOIs <- here::here("data/DOI.csv")
+    DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
     # Use the function with lapply for each DOI
     df_dois <-lapply(1:nrow(DOIs), function(i) {
-      this_doi <- DOIs$DOI[i]
-      record_id <- gsub(".*\\.", "",DOIs$DOI[i])
+      this_doi <- DOIs[i,]
+      this_url <- paste0("https://doi.org/",this_doi$identifier)
+      this_doi$URL <- paste0('<a href = "',this_url,'">',this_url,'</a>')
+      record_id <- gsub(".*\\.", "",this_doi$DOI)
       this_rec <- zenodo$getRecordById(record_id)
       # this_rec <- zenodo$getRecordByConceptDOI(this_doi)
-      # this_rec <- zenodo$getRecordById("10037645")
-      DOIs$identifier[i] <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
-      DOIs$title[i] <- gsub("urn:","",this_rec$metadata$title)
-      readr::write_csv(x = DOIs,file = here::here("data/DOIs_enriched.csv")) 
-      filepath <- here::here("data", DOIs$Filename[i])
-      filename <- gsub("\\..*", "",DOIs$Filename[i])
-      file_mime=gsub(".*\\.", "",DOIs$Filename[i])
+      if(!is.null(this_rec$metadata$related_identifiers[[1]]$identifier)){
+        this_doi$identifier <- gsub("urn:","",this_rec$metadata$related_identifiers[[1]]$identifier)
+      }
+      if(!is.null(this_rec$metadata$title)){
+        this_doi$title <- gsub("urn:","",this_rec$metadata$title)
+      }
+      filepath <- here::here("data", this_doi$Filename)
+      filename <- gsub("\\..*", "",this_doi$Filename)
+      file_mime=gsub(".*\\.", "",this_doi$Filename)
       newname <- here::here("data", paste0(filename,"_",record_id,".",file_mime))
       DATA_DIR <- here::here("data")  # Utilisation exclusive de here
       
@@ -86,9 +90,9 @@ download_and_process_zenodo_data <- function() {
         flog.info("######################### CSV FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
         
-        download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", DOIs$Filename[i]), data_dir = DATA_DIR)
+        download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", this_doi$Filename), data_dir = DATA_DIR)
         
-        from_path <- file.path(DATA_DIR, DOIs$Filename[i])
+        from_path <- file.path(DATA_DIR, this_doi$Filename)
         to_path <- newname
         
         if (file.exists(from_path)) {
@@ -103,13 +107,13 @@ download_and_process_zenodo_data <- function() {
         flog.info("######################### QS FILE DONT EXIST")
         flog.info("Loading dataset: %s Zenodo record", record_id)
         
-        download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", DOIs$Filename[i]), data_dir = DATA_DIR)
+        download_data(doi = DOIs$DOI[i], filename = gsub(" ","%20", this_doi$Filename), data_dir = DATA_DIR)
         
-        from_path <- file.path(DATA_DIR, DOIs$Filename[i])
+        from_path <- file.path(DATA_DIR, this_doi$Filename)
         to_path <- newname
         
         if (file.exists(from_path)) {
-          flog.info("Copying QS file from %s to %s", from_path, to_path)
+          flog.info("File does exist, copying QS file from %s to %s", from_path, to_path)
           file.copy(from = from_path, to = to_path, overwrite = TRUE)
           file.remove(from_path)
         } else {
@@ -123,9 +127,10 @@ download_and_process_zenodo_data <- function() {
       flog.info("Dataset %s downloaded successfully from Zenodo or retrieved", newname)
       # Correction pour éviter de lire un ZIP comme un CSV
       this_df <- switch(file_mime,
-                        "csv" = read.csv(newname),
-                        "zip" = read.csv(target_csv),  # On lit le CSV extrait et renommé
-                        "qs" = qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_tibble()
+                        "csv" = read.csv(newname,colClasses=c('character'),stringsAsFactors = FALSE),
+                        "zip" = read.csv(target_csv,colClasses=c('character'),stringsAsFactors = FALSE),  # On lit le CSV extrait et renommé
+                        # "qs" = qread(newname) %>% dplyr::mutate(gear_type = gsub("0","",gear_type)) %>% dplyr::as_tibble()
+                        "qs" = qread(newname) %>% dplyr::as_tibble()
       )
       
       if(any(grepl("geographic_identifier",colnames(this_df)))){
@@ -150,10 +155,14 @@ download_and_process_zenodo_data <- function() {
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Tons', 't')) %>% 
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='Number of fish', 'no'))  %>% 
         mutate(measurement_unit=replace(measurement_unit,measurement_unit=='NO', 'no'))  %>% 
-        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't'))
+        mutate(measurement_unit=replace(measurement_unit,measurement_unit=='MT', 't')) %>% 
+        dplyr::mutate(measurement_value=as.numeric(measurement_value),codesource_area=as.character(codesource_area)) 
       
+      this_list <-list("metadata"=this_doi,"data"=this_df)
     })
-    loaded_data <- do.call(rbind, df_dois)
+    loaded_metadata <- do.call(rbind, lapply(df_dois, function(l) l[[1]]))
+    readr::write_csv(x = loaded_metadata,file = here::here("data/DOIs_enriched.csv")) 
+    loaded_data <- do.call(rbind, lapply(df_dois, function(l) l[[2]]))
     gc()
     arrow::write_parquet(loaded_data, here::here("data/gta_dois.parquet"))
     rm(loaded_data)
@@ -161,17 +170,7 @@ download_and_process_zenodo_data <- function() {
     rm(list = ls())
     gc()
   }
-    if(!file.exists(here::here("data/gta_geom.qs"))){
-      df_distinct_geom <- qread(here::here("data/global_catch_tunaatlasird_level2_14184244.qs")) %>%
-        dplyr::select(geographic_identifier, GRIDTYPE) %>% 
-        dplyr::mutate(ogc_fid = 1) %>% 
-        dplyr::rename(codesource_area=geographic_identifier,gridtype=GRIDTYPE,geom=geom_wkt) %>%
-        mutate(ogc_fid=row_number(codesource_area)) %>% 
-        dplyr::group_by(codesource_area,gridtype,geom) %>% dplyr::summarise(count = sum(ogc_fid)) %>% ungroup() %>%  st_set_crs(4326)
-      #%>% dplyr::mutate(geom_wkt=st_as_text(st_sfc(geom),EWKT = TRUE)) %>% dplyr::as_tibble() # st_as_sf(wkt="geom_wkt", crs=4326)
-      qs::qsave(df_distinct_geom, here::here("data/gta_geom.qs"))   
-    }
-  source(here::here("R/hotfix.R"))
+  
   #read all DOIs data from parquet file
   loaded_data <- arrow::read_parquet(here::here("data/gta_dois.parquet"))
   

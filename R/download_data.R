@@ -1,6 +1,7 @@
 download_data <- function(doi, filename, data_dir = here::here("data")) {
-  options(timeout = 60000) # Global timeout for downloads
+  options(timeout = 1000000) # Global timeout for downloads
   if (!dir.exists(data_dir)) dir.create(data_dir, recursive = TRUE)
+  require(parallel)
   require(here)
   success <- FALSE
   attempts <- 3
@@ -12,9 +13,9 @@ download_data <- function(doi, filename, data_dir = here::here("data")) {
     tryCatch({
       message(sprintf("Attempt %d: Exporting metadata for DOI %s", attempt, doi))
       zen4R::export_zenodo(doi = doi, filename = here::here(data_dir, paste0("metadata_", record_id)), format = "DublinCore")
-      
+      # Using cluster = 4 since  https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
       message(sprintf("Attempt %d: Downloading file '%s'", attempt, filename))
-      zen4R::download_zenodo(doi = doi, path = data_dir, files = filename, parallel_handler = parLapply, cl = makeCluster(12))
+      zen4R::download_zenodo(doi = doi,  parallel = TRUE, path = data_dir, files = filename, parallel_handler = parLapply, cl = makeCluster(4))
       
       if (file.exists(destfile)) {
         success <- TRUE

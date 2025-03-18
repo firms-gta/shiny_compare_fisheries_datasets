@@ -1,17 +1,18 @@
-  ########################################################## Load data from a list of DOIs ########################################################## 
   require(dplyr)
   require(zen4R)
   require(arrow)
   require(futile.logger)
   require(here)
-  all_wkt <- ""
-  within_areas <- NULL
-  here::i_am("create_or_load_default_dataset.R")
-  source(here::here('install.R'))
+  install.packages("gt")
   flog.info("Loading libraries")
+  source(here::here('install.R'))
+  sf::sf_use_s2(FALSE)
+  flog.info("All libraries loaded successfully.")
   source(here::here('R/download_data.R'))
   source(here::here('R/load_data.R'))
   source(here::here('R/load_spatial_data.R'))
+  source(here::here('R/load_codelists.R'))
+  source(here::here('R/getWormsID.R'))
   source(here::here('R/load_default_dataset.R'))
   source(here::here('R/load_grouped_data.R'))
   source(here::here('R/load_filters_combinations.R'))
@@ -19,11 +20,11 @@
   source(here::here('R/list_areas_within_wkt.R'))
   source(here::here('R/verify_filesize.R'))
   source(here::here('R/apply_filters.R'))
-  flog.info("Loading libraries")
-  flog.info("All libraries loaded successfully.")
-  spatial_processing_mode <- "sf" # "QGIS"
-  sf::sf_use_s2(FALSE)
-  mode="DOI"
   here::i_am("create_or_load_default_dataset.R")
+  all_wkt <- ""
+  within_areas <- NULL
+  spatial_processing_mode <- "sf" # "QGIS"
+  mode="DOI"
+  # df_distinct_geom <-  load_spatial_data()
   list_dataframes <- load_data(mode=mode)
   gc()

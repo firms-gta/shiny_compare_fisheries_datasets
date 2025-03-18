@@ -69,10 +69,10 @@ server <- function(input, output, session) {
     # updateTextInput(session, "polygon", value = all_wkt)
     
     # current_dataset(list_values_dimensions$dataset)
-    updatePickerInput(session,"dataset",selected=list_values_dimensions$dataset)
+    shinyWidgets::updatePickerInput(session,"dataset",selected=list_values_dimensions$dataset)
     
     # current_species(list_values_dimensions$species)
-    updatePickerInput(session,"species",selected=list_values_dimensions$species,
+    shinyWidgets::updatePickerInput(session,"species",selected=list_values_dimensions$species,
                       choicesOpt = list(
                         disabled = disabled_choices,
                         style = ifelse(disabled_choices,
@@ -81,22 +81,22 @@ server <- function(input, output, session) {
                       ))
     
     # current_gear_type(list_values_dimensions$gear_type)
-    updatePickerInput(session,"gear_type",selected=list_values_dimensions$gear_type)
+    shinyWidgets::updatePickerInput(session,"gear_type",selected=list_values_dimensions$gear_type)
     
     # current_year(list_values_dimensions$year)
-    updatePickerInput(session,"year",selected=list_values_dimensions$year)
+    shinyWidgets::updatePickerInput(session,"year",selected=list_values_dimensions$year)
     
     # current_fishing_fleet(list_values_dimensions$fishing_fleet)
-    updatePickerInput(session,"fishing_fleet",selected=list_values_dimensions$fishing_fleet)
+    shinyWidgets::updatePickerInput(session,"fishing_fleet",selected=list_values_dimensions$fishing_fleet)
     
     # current_unit(list_values_dimensions$measurement_unit)
-    updatePickerInput(session,"unit",selected=list_values_dimensions$measurement_unit)
+    shinyWidgets::updatePickerInput(session,"unit",selected=list_values_dimensions$measurement_unit)
     
     # current_source_authority(list_values_dimensions$source_authority)
-    updatePickerInput(session,"source_authority",selected=list_values_dimensions$source_authority)
+    shinyWidgets::updatePickerInput(session,"source_authority",selected=list_values_dimensions$source_authority)
     
     # current_gridtype(list_values_dimensions$gridtype)
-    updatePickerInput(session,"gridtype",selected=list_values_dimensions$gridtype)
+    shinyWidgets::updatePickerInput(session,"gridtype",selected=list_values_dimensions$gridtype)
     
     # main_df <- default_df
     # main_df(whole_dataset())
@@ -327,18 +327,31 @@ server <- function(input, output, session) {
     # }
     # map_df <- main_df  %>% dplyr::left_join(dplyr::as_tibble(df_distinct_geom), by=c('codesource_area')) %>%
     #   dplyr::mutate(geom=st_as_text(st_sfc(geom_wkt),EWKT = TRUE))
-    if(!exists("df_distinct_geom_light")){
-    df_distinct_geom_light <- qs::qread(here::here("data/df_distinct_geom_light.qs"))
-
-    
-    }
+    # if(!exists("df_distinct_geom_light")){
+    # df_distinct_geom_light <- qs::qread("data/df_distinct_geom_light.qs")
+    # }
     
     map_df <- main_df %>%
-      dplyr::group_by(dataset, measurement_unit, codesource_area) %>%
-      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>% 
-      dplyr::left_join(df_distinct_geom_light %>% dplyr::select(c(codesource_area, geom_wkt)), by=c('codesource_area')) %>%
+      dplyr::group_by(codesource_area, dataset, measurement_unit) %>%
+      dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%
       ungroup() %>%
-      st_as_sf(wkt="geom_wkt", crs=4326) 
+      dplyr::left_join(df_distinct_geom, by=c('codesource_area'))  %>% st_sf()
+    
+    # map_df <- main_df %>%
+    #   dplyr::group_by(codesource_area, dataset, measurement_unit) %>%
+    #   dplyr::summarise(measurement_value = sum(measurement_value, na.rm = TRUE)) %>%
+    #   ungroup()
+    # map_df <- df_distinct_geom %>% dplyr::right_join(map_df, by=c('codesource_area')) %>% st_sf()
+    # 
+    # map_df <- map_df %>%
+    #   dplyr::mutate(geom_wkt = as.character(geom_wkt)) 
+    # 
+    # map_df <- map_df %>%
+    #   dplyr::mutate(geometry = purrr::map(geom_wkt, ~ {
+    #     tryCatch(st_as_sfc(.x, crs=4326), error = function(e) NA)
+    #   })) %>%
+    #   dplyr::filter(!is.na(geometry))  %>%
+    #   st_as_sf(wkt="geom_wkt", crs=4326) #hotfix for now
     
     # map_df <- main_df %>%
     #   dplyr::left_join((df_distinct_geom_light ), by=c('codesource_area'))%>% 
@@ -408,6 +421,38 @@ server <- function(input, output, session) {
   output$DT_main_dataset <- renderDT({
     main_df() %>% top_n(10)
   })
+  
+  output$DT_DOIs <- renderDT({#escape = FALSE,
+    DOIs_metadata <- readr::read_csv(here::here("data/DOIs_enriched.csv")) %>% 
+      dplyr::select(c("identifier","title","DOI","Filename")) %>% 
+      dplyr::mutate(url= '<a href = \"https://doi.org/10.5281/zenodo.11410529\">https://doi.org/10.5281/zenodo.11410529</a>')
+  })
+  
+  output$markdown <- renderUI({
+    HTML(markdown::markdownToHTML(knit('doc/table.Rmd', quiet = TRUE)))
+  })
+  
+  
+  DOIs_metadata <- readr::read_csv(here::here("data/DOIs_enriched.csv")) %>% 
+    # dplyr::select(c("identifier","title","DOI","Filename")) %>% dplyr::rename("Identifier"=identifier,"Title"=title) %>% 
+    dplyr::select(c("title","DOI","Filename")) %>% dplyr::rename("Title"=title) %>% 
+    dplyr::mutate(Url= 'https://doi.org/10.5281/zenodo.11410529') |> gt() |> 
+    tab_header(
+      title = "Undelrying datasets",
+      subtitle = "Zenodo DOIs"
+    )  |> 
+    fmt_url(columns = Url)  |>
+    tab_style(
+      style = cell_borders(
+        # sides = c("t", "l"),
+        color = "black",
+        weight = px(3)
+      ),
+      locations = cells_body()
+    ) 
+  
+  output$tableDOIs <- render_gt(expr = DOIs_metadata, width = "100%",height="auto")
+  
   
   flog.info("##########################################################")
   flog.info(" Modules forOutputs: maps / plots / charts")

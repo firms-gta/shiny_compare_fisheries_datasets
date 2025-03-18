@@ -1,22 +1,28 @@
-# rm(list = ls())
-dir <- getwd()
+require(shiny)
+require(bslib)
 require(parallel)
 require(here)
 require(futile.logger)
 require(markdown)
 require(plotly)
 require(leaflet.extras)
-source(here::here('install.R'))
-flog.info("Loading libraries")
-flog.info("All libraries loaded successfully.")
-spatial_processing_mode <- "sf" # "QGIS"
+require(sf)
+require(shinyjs)
+require(shinyWidgets)
+require(DT)
+require(gt)
+require(zen4R)
+require(viridis)
+require(dygraphs)
+futile.logger::flog.info("Loading libraries")
+futile.logger::flog.info("All libraries loaded successfully.")
+futile.logger::flog.info("Turn s2 off for sf => avoid issues")
 sf::sf_use_s2(FALSE)
-all_wkt <- ""
-within_areas <- NULL
-# loadSupport(  ) ??
-futile.logger::flog.info("Load zenodo download function")
+futile.logger::flog.info("Load functions")
 source(here::here('R/download_data.R'))
 source(here::here('R/load_data.R'))
+source(here::here('R/load_codelists.R'))
+source(here::here('R/getWormsID.R'))
 source(here::here('R/load_spatial_data.R'))
 source(here::here('R/load_default_dataset.R'))
 source(here::here('R/load_grouped_data.R'))
@@ -25,10 +31,12 @@ source(here::here('R/update_current_filters.R'))
 source(here::here('R/list_areas_within_wkt.R'))
 source(here::here('R/verify_filesize.R'))
 source(here::here('R/apply_filters.R'))
-source(here::here("create_or_load_default_dataset.R"))
 # Initialize variables and reactive values and default WKT for mapping
+flog.info("Initialize variables")
 reset_all <- FALSE
-
+spatial_processing_mode <- "sf" # "QGIS"
+all_wkt <- ""
+within_areas <- NULL
 flog.info("Initialize reactive values")
 
 whole_dataset <- reactiveVal()
@@ -53,24 +61,17 @@ current_unit <- reactiveVal()
 current_gridtype <- reactiveVal()
 switch_unit <- reactiveVal(TRUE)
 flog.info("Reactive values initialized successfully.")
-
 # mode="DOI" | mode="gpkg" | mode="postgres" | mode="QS" | mode="parquet"
 mode="DOI"
 
 flog.info("Loading data with mode: %s", mode)
-# ########################################################## Load data from a list of DOIs ########################################################## 
-# list_DOIs <-"data/DOI.csv"
-# DOIs <- readr::read_csv(list_DOIs) %>% dplyr::mutate(identifier="",title="")
-# list_dataframes <- load_data(mode=mode)
+flog.info("Loading ist of data from other script : list_dataframes.")
+source(here::here("create_or_load_default_dataset.R"))
 whole_dataset(list_dataframes$whole_group_df)
 filters_combinations <- list_dataframes$filters_combinations
 list_values_dimensions <- list_dataframes$list_values_dimensions
 # flog.info("nrow(whole_group_df) %s: ",nrow(whole_dataset()))
-# whole_dataset(df_sf)
 flog.info("All data succesfully loaded")
-setwd(dir)
-
-
 df_distinct_geom <-  list_dataframes$df_distinct_geom
 all_polygons <- list_dataframes$all_polygons
 all_polygons_footprint <- list_dataframes$all_polygons_footprint
