@@ -2,4 +2,5 @@ renv/library/
 data/
 !data/DOI.csv
 !data/cl_nc_areas_simplfied.gpkg
+!data/codelist_species.qs
 
