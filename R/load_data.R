@@ -97,22 +97,21 @@ load_data <- function(mode="DOI"){
   flog.info("Set values of filters : list distinct values in the main dataset for each dimension")
   flog.info("Set filters values to be applied by default (before user selection)")
   # flog.info("Spatial filter :main WKT : %s", current_wkt())
-  default_dataset <- c('global_catch_tunaatlasird_level2_1164128',
-                       'global_catch_tunaatlasird_level2_14184244',
+  default_dataset <- c('global_catch_tunaatlasird_level2_14184244',
                        'global_nominal_catch_firms_level0_public_11410529') # c('global_catch_ird_level2','global_catch_5deg_1m_firms_level1')
   default_dataset <- unique(list_values_dimensions$dataset)
   default_species <- c('YFT') # c('YFT','SKJ','BET','SBF','ALB')
   default_species <- c('YFT','UNK') # c('YFT','SKJ','BET','SBF','ALB')
   default_year <- c(seq(1:10)+2010) # c(seq(min(list_values_dimensions$year):max(list_values_dimensions$year))+min(list_values_dimensions$year)-2) | c(seq(1950:2021)+1949) | c(seq((max(list_values_dimensions$year)-10):max(list_values_dimensions$year))+max(list_values_dimensions$year)-11)
   default_gear_type <- c('01.1','01.2') # list_values_dimensions$gear_type #  c('01.1','01.2')
-  default_gear_type <- unique(list_values_dimensions$gear_type)
+  # default_gear_type <- unique(list_values_dimensions$gear_type)
   default_unit <- c('t')
-  default_unit <- unique(list_values_dimensions$measurement_unit)
+  # default_unit <- unique(list_values_dimensions$measurement_unit)
   default_source_authority <- unique(list_values_dimensions$source_authority)
   default_gridtype <- c("1deg_x_1deg") # list_values_dimensions$gridtype # 
-  default_gridtype <-unique(list_values_dimensions$gridtype)
+  # default_gridtype <-unique(list_values_dimensions$gridtype)
   default_fishing_fleet <- c('EUFRA','EUESP')
-  default_fishing_fleet <- unique(list_values_dimensions$fishing_fleet)
+  # default_fishing_fleet <- unique(list_values_dimensions$fishing_fleet)
   flog.info("Default filters values set.")
   target_wkt <- "POLYGON ((-53.789063 21.616579,98.964844 21.616579,98.964844 -35.746512,-53.789063 -35.746512,-53.789063 21.616579))"
   current_selection <- st_sf(st_as_sfc(target_wkt, crs = 4326))

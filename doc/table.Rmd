@@ -47,14 +47,14 @@ The default datasets used by this app have been assigned DOIs on Zenodo :
 
 ```{r  echo=F ,results='asis' }
 DOIs_metadata |> 
+  dplyr::select(c("DOI_Link","Filename","Title","Citation"))  |>  
     gt() |> 
     tab_header(
-      title = "Undelrying datasets",
+      title = "Underlying datasets",
       subtitle = "Zenodo DOIs"
     )  |> 
     fmt_markdown(columns = DOI_Link) |> 
     fmt_markdown(columns = Citation) |> 
-    fmt_url(columns = Url)  |> 
     tab_style(
       style = cell_borders(
         # sides = c("t", "l"),
@@ -64,6 +64,7 @@ DOIs_metadata |>
       locations = cells_body()
     ) 
 # |>
+    # fmt_url(columns = Url)  |> 
 #   gtExtras::gt_img_rows(columns = Rmd_badge, height = 25)|>
 #   cols_merge(
 #     columns = c(Rmd_badge, Url), pattern = "{1} {2}"
@@ -87,7 +88,7 @@ The code of this Shiny app is open and freely available on a [GitHub repository]
 
 Part of this work is inherited from previous IRD "[Atlas of tropical tuna fisheries - World catches and environment](https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers11-03/010012425.pdf)" written by Alain Fonteneau and Sardara project.
 
-[<img src="Atlas_Alain_FontenauFront_Page.svg" height="100px">](https://www.documentation.ird.fr/hor/fdi:010012425).
+[<img src="Atlas_Alain_FontenauFront_Page.svg" height="300px">](https://www.documentation.ird.fr/hor/fdi:010012425).
 
 
 # Contact
