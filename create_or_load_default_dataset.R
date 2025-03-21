@@ -3,7 +3,6 @@
   require(arrow)
   require(futile.logger)
   require(here)
-  install.packages("gt")
   flog.info("Loading libraries")
   source(here::here('install.R'))
   sf::sf_use_s2(FALSE)
