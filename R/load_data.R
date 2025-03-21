@@ -168,7 +168,9 @@ load_data <- function(mode="DOI"){
     "list_default_filters"=list_default_filters,
     "init_whole_default_df"= init_whole_default_df,
     "default_footprint"= default_footprint,
-    "default_df"= default_df
+    "default_df"= default_df,
+    "biblio"= biblio,
+    "codelist_source_authority"= codelist_source_authority
   )
   
   qs::qsave(list_df,here::here("data/list_dataframes.qs"))

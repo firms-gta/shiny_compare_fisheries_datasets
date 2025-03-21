@@ -95,6 +95,9 @@ whole_filtered_df(init_whole_default_df)
 current_selection_footprint_wkt(default_footprint)
 filtered_default_df(default_df)
 
+biblio  <- list_dataframes$biblio
+codelist_source_authority  <- list_dataframes$codelist_source_authority
+
 
 flog.info("########################## LOAD MODULES")
 # Source external R scripts for additional functionalities
