@@ -91,6 +91,8 @@ RUN mkdir -p data
 COPY data/DOI.csv ./data/DOI.csv
 # Add files downloaded from Zenodo DOIs => https://docs.docker.com/reference/dockerfile/#add
 ADD https://github.com/firms-gta/shiny_compare_fisheries_datasets/raw/refs/heads/main/data/codelist_species.qs ./data/codelist_species.qs
+ADD https://raw.githubusercontent.com/firms-gta/shiny_compare_fisheries_datasets/refs/heads/main/data/cl_tuna_rfmos_enriched.csv ./data/cl_tuna_rfmos_enriched.csv
+ADD https://raw.githubusercontent.com/firms-gta/shiny_compare_fisheries_datasets/refs/heads/main/data/codelist_unit_2025.csv ./data/codelist_unit_2025.csv
 ADD https://zenodo.org/record/5747175/files/global_catch_firms_level0_view.zip ./data/global_catch_firms_level0_view.zip
 ADD https://zenodo.org/record/11410529/files/global_nominal_catch_firms_level0_public.csv ./data/global_nominal_catch_firms_level0_public_11410529.csv
 ADD https://zenodo.org/record/14184244/files/global_catch_tunaatlasird_level2.qs ./data/global_catch_tunaatlasird_level2_14184244.qs
