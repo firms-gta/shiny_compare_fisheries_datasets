@@ -374,7 +374,7 @@ server <- function(input, output, session) {
     #   }
     map_df
     
-  })
+  }) 
   
   
   plot_df <- reactive({
@@ -432,16 +432,21 @@ server <- function(input, output, session) {
     HTML(markdown::markdownToHTML(knit('doc/table.Rmd', quiet = TRUE)))
   })
   
-  
+  # fmt_markdown(columns =  ) |> 
+    
   DOIs_metadata <- readr::read_csv(here::here("data/DOIs_enriched.csv")) %>% 
     # dplyr::select(c("identifier","title","DOI","Filename")) %>% dplyr::rename("Identifier"=identifier,"Title"=title) %>% 
-    dplyr::select(c("title","DOI","Filename")) %>% dplyr::rename("Title"=title) %>% 
-    dplyr::mutate(Url= 'https://doi.org/10.5281/zenodo.11410529') |> gt() |> 
+    dplyr::select(c("Rmd_badge","URL","Filename","title","Citation")) %>% 
+    # dplyr::mutate(Citation= RefManageR::Cite(RefManageR::GetBibEntryWithDOI(URL), .opts = list(style = "text", bib.style = "authoryear")))  %>% 
+    dplyr::rename("Title"=title,Url= URL) |>
+    gt() |> 
     tab_header(
       title = "Undelrying datasets",
       subtitle = "Zenodo DOIs"
     )  |> 
-    fmt_url(columns = Url)  |>
+    fmt_markdown(columns = Rmd_badge) |> 
+    fmt_markdown(columns = Citation) |> 
+    fmt_url(columns = Url)  |> 
     tab_style(
       style = cell_borders(
         # sides = c("t", "l"),

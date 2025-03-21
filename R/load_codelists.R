@@ -1,5 +1,22 @@
 load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
   
+  
+  if(grepl("dataset",list_dimensions)){
+    standard_dataset <- list_values_dimensions$dataset %>% as_tibble() %>%
+      dplyr::rename(dataset=value) %>%
+      dplyr::mutate(code=dataset,label=dataset)  %>%
+      dplyr::left_join(y = read_csv(here::here(file.path("data","DOIs_enriched.csv"))),by = "code")  %>% 
+      dplyr::arrange(label, .locale = "en")
+    # View(standard_dataset)
+    standard_dataset <- standard_dataset %>% 
+      mutate(label = ifelse(is.na(label), code, label))
+    View(standard_dataset)
+    # palette_unit <- colorQuantile("YlOrRd", NULL, n = nrow(standard_dataset))
+    palette_unit <- brewer.pal(n = nrow(standard_dataset), name = "Dark2")
+    standard_dataset$style <- palette_unit
+    qs::qsave(standard_dataset, here::here(file.path("data","codelist_dataset.qs")))
+  }
+  
   # From Data Structure Description: https://github.com/fdiwg/fdi-formats/blob/main/cwp_rh_generic_gta_taskI.json
   if(grepl("species",list_dimensions)){
     #library(worrms)
@@ -56,7 +73,8 @@ load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
     standard_source_authority <- list_values_dimensions$source_authority %>% as_tibble() %>%
       dplyr::rename(source_authority=value) %>%
       dplyr::mutate(code=source_authority)  %>%
-      dplyr::left_join(y = read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/firms/gta/cl_tuna_rfmos.csv"),by = "code")  %>% 
+      # dplyr::left_join(y = read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/firms/gta/cl_tuna_rfmos.csv"),by = "code")  %>% 
+      dplyr::left_join(y = read_csv(here::here(file.path("data","cl_tuna_rfmos_enriched.csv"))),by = "code")  %>% 
       dplyr::arrange(label, .locale = "en")
     # View(read_csv("https://raw.githubusercontent.com/fdiwg/fdi-codelists/main/global/cwp/cl_isscfg_gear.csv"))
     qs::qsave(standard_source_authority, here::here(file.path("data","codelist_source_authority.qs")))
@@ -76,6 +94,22 @@ load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
     qs::qsave(standard_fishing_fleet, here::here(file.path("data","codelist_fishing_fleet.qs")))
   }
   
+  
+  if(grepl("measurement_unit",list_dimensions)){
+    standard_measurement_unit <- list_values_dimensions$measurement_unit %>% as_tibble() %>%
+      dplyr::rename(measurement_unit=value) %>%
+      dplyr::mutate(code=measurement_unit)  %>%
+      dplyr::left_join(y = read_csv(here::here(file.path("data","codelist_unit_2025.csv"))),by = "code")  %>% 
+      dplyr::arrange(label, .locale = "en")
+    # View(standard_measurement_unit)
+    standard_measurement_unit <- standard_measurement_unit %>% 
+      mutate(label = ifelse(is.na(label), code, label))
+    # View(standard_measurement_unit)
+    # palette_unit <- colorQuantile("YlOrRd", NULL, n = nrow(standard_measurement_unit))
+    palette_unit <- brewer.pal(n = nrow(standard_measurement_unit), name = "Dark2")
+    
+    qs::qsave(standard_measurement_unit, here::here(file.path("data","codelist_measurement_unit.qs")))
+  }
   
   # qs::qsave(standard_species, here::here(file.path("data","codelist_species.qs")))
   # codelist_species <- qs::qread(here::here(file.path("data","codelist_species.qs"))) %>% 

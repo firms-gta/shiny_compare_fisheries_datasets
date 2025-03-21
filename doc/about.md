@@ -11,7 +11,7 @@ This repository contains work in progress. Results presented here do not represe
 
 # Code
 
-The code of this Shiny app is open and freely available on a [GitHub repository](https://github.com/firms-gta/darwin_core_viewer) and main releases have been assigned DOIs on Zenodo. The code can be directly executed within the RStudio server hosted by the virtual lab. 
+The code of this Shiny app is open and freely available on a [GitHub repository](https://github.com/firms-gta/shiny_compare_fisheries_datasets) and main releases have been assigned DOIs on Zenodo. The code can be directly executed within the RStudio server hosted by the virtual lab. 
 
 # Data
 

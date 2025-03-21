@@ -15,7 +15,20 @@ div.outer {
   padding: 0;
 }
 
+div.mainpanel {
+  color: black;
+  font-weight: bold;
+  font-size: x-large;
+  position: fixed;
+  top: 5%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  padding: 5;
+  border: 5px solid #3A506B;
 
+}
 
 div.modal {
   color: black;

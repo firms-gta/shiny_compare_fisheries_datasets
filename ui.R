@@ -36,10 +36,15 @@ ui <- fluidPage(
                                           inputId = "dataset",
                                           label = "Dataset",
                                           choices = list_values_dimensions$dataset,
+                                          choicesOpt = list(
+                                            # style = c("color:#1B9E77; font-size: 150%;","color:#D95F02; font-size: 150%;", "color:#7570B3; font-size: 150%;","color:#E7298A; font-size: 150%;","color:#66A61E; font-size: 150%;", "color:#E6AB02; font-size: 150%;")
+                                            style = paste0("color:",brewer.pal(n = length(list_values_dimensions$dataset),name = "Dark2"),"; font-size: 150%;")
+                                          ),
                                           multiple = TRUE,
                                           selected= list_default_filters$dataset,
                                           options = pickerOptions(
                                             actionsBox = TRUE,
+                                            liveSearchStyle = "contains",
                                             title = "Please select a dataset",
                                             header = "Dataset"
                                           ),
@@ -60,6 +65,10 @@ ui <- fluidPage(
                                           inputId = "source_authority",
                                           label = "Source authority",
                                           choices = list_values_dimensions$source_authority,
+                                          choicesOpt = list(
+                                            # style = c("color:#1B9E77; font-size: 150%;","color:#D95F02; font-size: 150%;", "color:#7570B3; font-size: 150%;","color:#E7298A; font-size: 150%;","color:#66A61E; font-size: 150%;", "color:#E6AB02; font-size: 150%;")
+                                            style = paste0("color:#",codelist_source_authority$style,"; font-size: 150%;")
+                                          ),
                                           multiple = TRUE,
                                           selected= list_default_filters$source_authority,
                                           options = list(`actions-box` = TRUE),
@@ -83,9 +92,19 @@ ui <- fluidPage(
                                           inputId = "species",
                                           label = "Species",
                                           choices = list_values_dimensions$species,
+                                          choicesOpt = list(
+                                            # style = c("color:#1B9E77; font-size: 150%;","color:#D95F02; font-size: 150%;", "color:#7570B3; font-size: 150%;","color:#E7298A; font-size: 150%;","color:#66A61E; font-size: 150%;", "color:#E6AB02; font-size: 150%;")
+                                            style = paste0("color:",colorRampPalette(brewer.pal(n = length(list_values_dimensions$species),name = "Dark2"))(length(list_values_dimensions$species)),"; font-size: 150%;")
+                                          ),
                                           multiple = TRUE,
                                           selected= list_default_filters$species,
-                                          options = list(`actions-box` = TRUE),
+                                          options = pickerOptions(
+                                            actionsBox = TRUE,
+                                            selectedTextFormat = "count",
+                                            liveSearchStyle = "contains",
+                                            title = "Please select a species",
+                                            header = "Species"
+                                          ),
                                           # autocomplete=TRUE,
                                           # width = "fit"
                                           width = "98%"
@@ -199,15 +218,13 @@ ui <- fluidPage(
                           textOutput("current_filters")
                         )
              ),
-             navbarMenu("About",
-                        tabPanel(title = "About the data",top = "12%",
-                                  # uiOutput('markdown')
-                                 # gt_output(outputId = "tableDOIs")
-                                  # DT::DTOutput("DT_DOIs",width = "50%",height="auto")
-                                 fluidRow(
-                                   # includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
-                                   column(width =2,
-                                          markdown('
+             tabPanel(
+               title = "About the Data",
+               div(class="mainpanel",
+                   fluidRow(
+                     # includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
+                     column(width =2,
+                            markdown('
                                           [<img src="logo_VLab5.png" width="80%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
 
                                           <br>
@@ -216,17 +233,47 @@ ui <- fluidPage(
 
                                           [<img src="logo_IRD.svg" height="15%">](https://www.ird.fr/)
                                                    ')
-                                   ),
-                                   column(width = 8,
-                                          gt_output(outputId = "tableDOIs")
-                                   ),
-                                   column(width =2,
-                                          markdown('
+                     ),
+                     column(width = 8,
+                            # gt_output(outputId = "tableDOIs")
+                            uiOutput('markdown')
+                     ),
+                     column(width =2,
+                            markdown('
                                           [<img src="BET_YFT_SKJ_ALB.svg" width="100%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
                                                    ')
-                                   )
-                                 )
-                        )
+                     )
+                   )
+               )
+             )#,
+             # navbarMenu("About",
+             #            tabPanel(title = "About the data",top = "12%",
+             #                      # uiOutput('markdown')
+             #                     # gt_output(outputId = "tableDOIs")
+             #                      # DT::DTOutput("DT_DOIs",width = "50%",height="auto")
+             #                     fluidRow(
+             #                       # includeMarkdown("https://raw.githubusercontent.com/juldebar/IRDTunaAtlas/master/README.md")
+             #                       column(width =2,
+             #                              markdown('
+             #                              [<img src="logo_VLab5.png" width="80%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+             # 
+             #                              <br>
+             #                              <br>
+             #                              <br>
+             # 
+             #                              [<img src="logo_IRD.svg" height="15%">](https://www.ird.fr/)
+             #                                       ')
+             #                       ),
+             #                       column(width = 8,
+             #                              gt_output(outputId = "tableDOIs")
+             #                       ),
+             #                       column(width =2,
+             #                              markdown('
+             #                              [<img src="BET_YFT_SKJ_ALB.svg" width="100%">](https://blue-cloud.d4science.org/group/globalfisheriesatlas)
+             #                                       ')
+             #                       )
+             #                     )
+             #            )
                         # ,
                         # tabPanel("Context",
                                  # fluidRow(
@@ -250,6 +297,6 @@ ui <- fluidPage(
                                  #   )
                                  # )
                         # )
-             )
+             # )
   )
 )
