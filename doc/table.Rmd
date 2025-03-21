@@ -19,7 +19,7 @@ DOIs_metadata <-  readr::read_csv(here::here("data/DOIs_enriched.csv")) %>%
     # dplyr::select(c("identifier","title","DOI","Filename")) %>% dplyr::rename("Identifier"=identifier,"Title"=title) %>% 
     dplyr::select(c("Rmd_badge","URL","Filename","title","Citation")) %>% 
     # dplyr::mutate(Citation= RefManageR::Cite(RefManageR::GetBibEntryWithDOI(URL), .opts = list(style = "text", bib.style = "authoryear")))  %>% 
-    dplyr::rename("DOI-Link"=Rmd_badge,"Title"=title, Url= URL) 
+    dplyr::rename("DOI_Link"=Rmd_badge,"Title"=title, Url= URL) 
 # zenodo_DOI_template="doc/zenodo.111222333444.svg"
 # con <- file(here::here(zenodo_DOI_template),"r")
 # lines <- readLines(con)
@@ -52,7 +52,7 @@ DOIs_metadata |>
       title = "Undelrying datasets",
       subtitle = "Zenodo DOIs"
     )  |> 
-    fmt_markdown(columns = DOI-Link) |> 
+    fmt_markdown(columns = DOI_Link) |> 
     fmt_markdown(columns = Citation) |> 
     fmt_url(columns = Url)  |> 
     tab_style(
@@ -107,9 +107,11 @@ NoCite(biblio, title = "*")
 PrintBibliography(biblio, .opts = list(check.entries = FALSE))
 ```
 
-[<img src="logo_blue-cloud_2026.svg" height="10%">](https://blue-cloud.d4science.org)
 
 # Funding
 This work has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No. [101094227](https://doi.org/10.3030/101094227) and No. [862409](https://doi.org/10.3030/862409) (Blue-Cloud H2020 project).
+
+[<img src="logo_blue-cloud_2026.svg" height="10%">](https://blue-cloud.d4science.org)
+
 
 </div>
