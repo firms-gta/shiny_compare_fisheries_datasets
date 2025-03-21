@@ -105,7 +105,7 @@ This repository contains work in progress. Results presented here do not represe
 
 ```{r results = "asis", echo = FALSE}
 NoCite(biblio, title = "*")
-PrintBibliography(biblio, .opts = list(check.entries = FALSE))
+PrintBibliography(biblio, .opts = list(check.entries = FALSE, sorting = "ynt"))
 ```
 
 
