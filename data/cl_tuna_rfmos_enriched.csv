@@ -1,0 +1,6 @@
+code,uri,label,definition,ocean,style
+CCSBT,https://www.ccsbt.org,CCSBT,Commission for the Conservation of Southern Bluefin Tuna,Southern seas,94f8f9
+IATTC,https://www.iattc.org,IATTC,Inter-American Tropical Tuna Commission,Eastern Pacific Ocean,9ccda8
+ICCAT,https://www.iccat.int,ICCAT,International Commission for the Conservation of Atlantic Tunas,Atlantic,fbc882
+IOTC,https://www.iotc.org,IOTC,Indian Ocean Tuna Commission,Indian Ocean,e9606e
+WCPFC,https://www.wcpfc.int,WCFPC,Western & Central Pacific Fisheries Commission,Western Pacific Ocean,91c6e5
