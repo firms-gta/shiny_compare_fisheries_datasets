@@ -10,7 +10,7 @@ load_codelists <- function(list_values_dimensions,list_dimensions=NULL){
     # View(standard_dataset)
     standard_dataset <- standard_dataset %>% 
       mutate(label = ifelse(is.na(label), code, label))
-    View(standard_dataset)
+    # View(standard_dataset)
     # palette_unit <- colorQuantile("YlOrRd", NULL, n = nrow(standard_dataset))
     palette_unit <- brewer.pal(n = nrow(standard_dataset), name = "Dark2")
     standard_dataset$style <- palette_unit
