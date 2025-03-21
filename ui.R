@@ -211,13 +211,13 @@ ui <- fluidPage(
              #   title = "Your filters",
              #   textOutput("selected_var")
              # ),
-             navbarMenu("Browse underlying filters",
-                        tabPanel(
-                          title = "SQL query: query_metadata",
-                          tags$br(),
-                          textOutput("current_filters")
-                        )
-             ),
+             # navbarMenu("Browse underlying filters",
+             #            tabPanel(
+             #              title = "SQL query: query_metadata",
+             #              tags$br(),
+             #              textOutput("current_filters")
+             #            )
+             # ),
              tabPanel(
                title = "About the Data",
                div(class="mainpanel",

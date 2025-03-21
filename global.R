@@ -33,6 +33,7 @@ source(here::here('R/verify_filesize.R'))
 source(here::here('R/apply_filters.R'))
 # Initialize variables and reactive values and default WKT for mapping
 flog.info("Initialize variables")
+biblio  <- NULL
 codelist_source_authority  <- NULL
 reset_all <- FALSE
 spatial_processing_mode <- "sf" # "QGIS"

@@ -38,7 +38,7 @@ download_and_process_zenodo_data <- function() {
       writeLines(lines, here::here(paste0("data/",basename(this_doi$bibfile))))
       this_citation <-   RefManageR::ReadBib(here::here(paste0("data/",basename(this_doi$bibfile))), check = FALSE)
       # BibOptions(check.entries = FALSE, style = "markdown", bib.style = "alphabetic", cite.style = 'alphabetic')
-      BibOptions(check.entries = FALSE, style = "markdown", cite.style = "authoryear", bib.style = "numeric")
+      BibOptions(check.entries = FALSE, style = "markdown", cite.style = "numeric", bib.style = "numeric")
       # this_citation <-   RefManageR::GetBibEntryWithDOI(this_doi$URL)
       # this_doi$bibentry <- RefManageR::GetBibEntryWithDOI(this_doi$URL)
       # dd= print(RefManageR::GetBibEntryWithDOI(this_doi$URL), .opts = list(style = "text", bib.style = "authoryear"))
