@@ -196,4 +196,4 @@ RUN mkdir -p /etc/shiny_compare_tunaatlas_datasests/
 EXPOSE 3838
 
 # Define the entry point to run the Shiny app
-CMD ["R","-e","shiny::runApp('/root/shiny_compare_tunaatlas_datasests',host = '0.0.0.0',port = 3838)"]
+CMD ["R","-e","shiny::runApp('/root/shiny_compare_tunaatlas_datasests',port=3838,host='0.0.0.0')"]
