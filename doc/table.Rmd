@@ -2,6 +2,9 @@
 title: 'Table of datasets used in this app'
 output: html_document
 ---
+<!-- bibliography: "bibliography/refs.bib" -->
+<!-- csl: "bibliography/nature.csl" -->
+<!-- link-citations: false -->
 
 
 

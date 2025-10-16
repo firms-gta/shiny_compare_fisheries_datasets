@@ -4,6 +4,7 @@
 # c("Thunnini","Lamnidae","Lamnidae","Scombroidei")
 # testworms <- getWormsID("Scombroidei")
 # from https://www.marinespecies.org/aphia/webservice/Aphia_webservice_R_elaborate.txt
+# https://www.marinespecies.org/aphia.php?p=webservice&type=r
 getWormsID  <- function(namesToMatch){
   # #Use the libraries
   # library(jsonlite) #https://cran.r-project.org/web/packages/jsonlite/

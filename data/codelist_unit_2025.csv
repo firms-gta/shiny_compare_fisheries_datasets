@@ -1,33 +1,33 @@
-"code","label","effortunitnamefr","effortunitnamees"
-"BOATS","Number of boats",NA,NA
-"DAYS","Number of days at sea",NA,NA
-"D.FISH.G","Number of days at fishing ground",NA,NA
-"FDAYS","Number of fishing days",NA,NA
-"FHOURS","Number of hours fishing",NA,NA
-"HOOKS","Number of hooks",NA,NA
-"HOURS","Number of hours at sea",NA,NA
-"LINES","Number of lines (poles)",NA,NA
-"MD","Men-days",NA,NA
-"NETS","net-days",NA,NA
-"NO.TRAPS","Number of traps",NA,NA
-"N.POLE-D","Number of pole-days (baitboat fishing)",NA,NA
-"SETS","Number of sets",NA,NA
-"SUC.D.FI","Number of successful fishing days",NA,NA
-"SUC.SETS","Number of successful sets made",NA,NA
-"TRAP D","Number of trap-days",NA,NA
-"TRIPS","Number of trips",NA,NA
-"NO DATA","Data not available",NA,NA
-"LINE.DAYS","Number of Line days( ~ nr. Fshing days)",NA,NA
-"HRSRH","Number of hours searching",NA,NA
-"KM.SETS","Length of nets (kilometers)",NA,NA
-"NO.FADS.VIS",NA,NA,NA
-"NO.MTZAS",NA,NA,NA
-"-none-",NA,NA,NA
-"NO.NETS","Number of nets",NA,NA
-"Hours.STD","Number of hours fishing standardized (to be merged ??)",NA,NA
-"Hours.FAD",NA,NA,NA
-"Hours.FSC",NA,NA,NA
-"STDHR","Number of hours fishing standardized (to be merged ??)",NA,NA
-"DUR.SETS","Duration of sets","Durée des calées",NA
-"no","Number of fish (catch unit)","Nombre de poissons (unité d'effort)",NA
-"t","Tons of fish (catch unit)","Tonnes de poissons (unité d'effort)",NA
+"code","label","effortunitnamefr","effortunitnamees","group","group","link","tRFMOs","style"
+"BOATS","Number of boats",NA,NA,effort,,,,
+"DAYS","Number of days at sea",NA,NA,effort,time (in days),,,
+"D.FISH.G","Number of days at fishing ground",NA,NA,effort,time (in days),,,
+"FDAYS","Number of fishing days",heures_de_mer,NA,effort,time (in days),,,
+"FHOURS","Number of hours fishing",heures_de_peche,NA,effort,time (in hours),,,
+"HOOKS","Number of hooks",NA,NA,effort,,,,
+"HOURS","Number of hours at sea",NA,NA,effort,time (in hours),,,
+"LINES","Number of lines (poles)",NA,NA,effort,,,,
+"MD","Men-days",NA,NA,effort,,,,
+"NETS","net-days",NA,NA,effort,NETS,,,
+"NO.TRAPS","Number of traps",NA,NA,effort,,,,
+"N.POLE-D","Number of pole-days (baitboat fishing)",NA,NA,effort,,,,
+"SETS","Number of sets",NA,NA,effort,,,,
+"SUC.D.FI","Number of successful fishing days",NA,NA,effort,,,,
+"SUC.SETS","Number of successful sets made",NA,NA,effort,,,,
+"TRAP D","Number of trap-days",NA,NA,effort,,,,
+"TRIPS","Number of trips",NA,NA,effort,,,,
+"NO DATA","Data not available"  (to be merged ??),NA,NA,effort,,"-none-" ??,,
+"LINE.DAYS","Number of Line days( ~ nr. Fshing days)",NA,NA,effort,time (in days),,,
+"HRSRH","Number of hours searching",NA,NA,effort,time (in hours),,,
+"KM.SETS","Length of nets (kilometers)",NA,NA,effort,,,,
+"NO.FADS.VIS",NA,NA,NA,effort,,,,
+"NO.MTZAS",NA,NA,NA,effort,,,,
+"-none-",NA  (to be merged ??),NA,NA,effort,,"NO DATA" ??,,
+"NO.NETS","Number of nets",NA,NA,effort,NETS,,,
+"Hours.STD","Number of hours fishing standardized (to be merged ??)",NA,NA,effort,time (in hours),,,
+"Hours.FAD",NA,NA,NA,effort,time (in hours),,,
+"Hours.FSC",NA,NA,NA,effort,time (in hours),,,
+"STDHR","Number of hours fishing standardized (to be merged ??)",heure_de_peche_apres_standardisation,NA,effort,time (in hours),,,
+"DUR.SETS","Duration of sets","Durée des calées",NA,effort,time,,,
+"no","Number of fish (catch unit)","Nombre de poissons (unité d'effort)",NA,catch,,,,
+"t","Tons of fish (catch unit)","Tonnes de poissons (unité d'effort)",NA,catch,,,,
